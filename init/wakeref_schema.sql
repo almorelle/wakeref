@@ -190,6 +190,8 @@ select
 from figures f
 left join categories c on c.id = f.category_id;
 
+alter view figures_full set (security_invoker = true);
+
 -- ────────────────────────────────────────────────────────────
 -- 9. RECHERCHE FULL-TEXT
 -- ────────────────────────────────────────────────────────────
