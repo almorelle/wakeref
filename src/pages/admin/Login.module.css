@@ -1,0 +1,36 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--c-bg);
+}
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-xl);
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+}
+.logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2rem;
+}
+.logo i { color: var(--c-wake); font-size: 24px; }
+.form { display: flex; flex-direction: column; gap: 14px; }
+.error {
+  font-size: 13px;
+  color: var(--c-danger);
+  background: #ef444415;
+  border: 1px solid #ef444430;
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+}

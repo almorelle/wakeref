@@ -1,0 +1,47 @@
+.page { display: flex; flex-direction: column; }
+
+.filters {
+  display: flex;
+  gap: 6px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface);
+  position: sticky;
+  top: 52px;
+  z-index: 10;
+}
+.filters::-webkit-scrollbar { display: none; }
+
+.chip {
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--c-border2);
+  color: var(--c-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  white-space: nowrap;
+}
+.chip:hover { color: var(--c-text); border-color: var(--c-border2); }
+.chip.active {
+  background: var(--chip-color, var(--c-accent));
+  border-color: transparent;
+  color: #fff;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 1.25rem;
+}
+
+@media (max-width: 700px) {
+  .filters { top: 0; }
+}

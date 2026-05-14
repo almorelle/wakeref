@@ -1,0 +1,98 @@
+.page { display: flex; flex-direction: column; }
+
+.hero {
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  padding: 2rem 1.25rem 1.5rem;
+}
+.heroText { margin-bottom: 1.25rem; }
+.title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  background: linear-gradient(135deg, #f0f0f8 30%, var(--c-wake));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.sub { font-size: 14px; color: var(--c-muted); }
+
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 10px 14px;
+  transition: border-color var(--t-fast);
+}
+.searchWrap:focus-within { border-color: var(--c-accent); }
+.searchWrap i { color: var(--c-muted); font-size: 18px; flex-shrink: 0; }
+.searchInput {
+  flex: 1;
+  font-size: 15px;
+  color: var(--c-text);
+  background: none;
+  border: none;
+  outline: none;
+}
+.searchInput::placeholder { color: var(--c-faint); }
+.clearBtn { color: var(--c-faint); padding: 2px; display: flex; align-items: center; }
+.clearBtn:hover { color: var(--c-muted); }
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 1.5rem;
+}
+.empty { font-size: 14px; color: var(--c-muted); padding: 1rem 0; }
+
+.catGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-top: 0.75rem;
+}
+.catCard {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+  text-align: left;
+}
+.catCard:hover {
+  border-color: var(--cat-color, var(--c-accent));
+  background: var(--c-surface2);
+}
+.catCard i {
+  font-size: 22px;
+  color: var(--cat-color, var(--c-accent));
+}
+.catName {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@media (max-width: 500px) {
+  .catGrid { grid-template-columns: repeat(2, 1fr); }
+  .title { font-size: 26px; }
+}

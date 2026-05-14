@@ -1,0 +1,162 @@
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
+import { CategoryBadge } from '../components/Badges'
+import { useT } from '../i18n/useT'
+import styles from './Quiz.module.css'
+
+function shuffle(arr) { return [...arr].sort(() => Math.random() - .5) }
+
+export default function Quiz() {
+  const [allFigures, setAllFigures] = useState([])
+  const [questions, setQuestions] = useState([])
+  const [idx, setIdx] = useState(0)
+  const [score, setScore] = useState(0)
+  const [answered, setAnswered] = useState(null)
+  const [chosen, setChosen] = useState(null)
+  const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const tr = useT()
+  const TOTAL = 5
+
+  useEffect(() => {
+    supabase.from('figures_full').select('*').then(({ data }) => {
+      if (data) setAllFigures(data)
+      setLoading(false)
+    })
+  }, [])
+
+  const buildQuiz = useCallback(() => {
+    const withVideos = allFigures.filter(f => {
+      const vids = typeof f.videos === 'string' ? JSON.parse(f.videos) : f.videos || []
+      return vids.length > 0
+    })
+    const pool = withVideos.length >= TOTAL ? withVideos : allFigures
+    const selected = shuffle(pool).slice(0, TOTAL)
+    const qs = selected.map(correct => {
+      const wrongs = shuffle(allFigures.filter(f => f.id !== correct.id)).slice(0, 3)
+      return { correct, options: shuffle([correct, ...wrongs]) }
+    })
+    setQuestions(qs); setIdx(0); setScore(0); setAnswered(null); setChosen(null); setDone(false)
+  }, [allFigures])
+
+  useEffect(() => { if (allFigures.length) buildQuiz() }, [allFigures, buildQuiz])
+
+  const answer = (fig) => {
+    if (answered) return
+    setChosen(fig.id)
+    const correct = fig.id === questions[idx].correct.id
+    setAnswered(correct ? 'correct' : 'wrong')
+    if (correct) setScore(s => s + 1)
+  }
+
+  const next = () => {
+    if (idx + 1 >= TOTAL) { setDone(true); return }
+    setIdx(i => i + 1); setAnswered(null); setChosen(null)
+  }
+
+  const getVideoUrl = (figure) => {
+    const vids = typeof figure.videos === 'string' ? JSON.parse(figure.videos) : figure.videos || []
+    if (!vids.length) return null
+    const v = vids[0]
+    if (v.file_path) {
+      const { data } = supabase.storage.from('videos').getPublicUrl(v.file_path)
+      return data.publicUrl
+    }
+    return null
+  }
+
+  if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
+
+  if (done) {
+    const pct = score / TOTAL
+    const msgs = tr.quizScoreMsgs
+    return (
+      <div className="page-container">
+        <div className={styles.scorePage}>
+          <div className={styles.scoreCircle}>
+            <span className={styles.scoreNum}>{score}</span>
+            <span className={styles.scoreTotal}>/ {TOTAL}</span>
+          </div>
+          <p className={styles.scoreMsg}>{msgs[Math.min(Math.floor(pct * 4.99), 4)]}</p>
+          <div className={styles.scoreBreakdown}>
+            {questions.map((q, i) => (
+              <div key={i} className={styles.scoreRow}>
+                <span className={styles.scoreFig}>{q.correct.name}</span>
+                <CategoryBadge slug={q.correct.category_slug} name={q.correct.category_name} />
+              </div>
+            ))}
+          </div>
+          <button className="btn btn-primary" onClick={buildQuiz}>
+            <i className="ti ti-refresh" /> {tr.quizReplay}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!questions.length) return <span className="spinner" style={{ marginTop: '3rem' }} />
+
+  const q = questions[idx]
+  const videoUrl = getVideoUrl(q.correct)
+
+  return (
+    <div className="page-container">
+      <div className={styles.quiz}>
+        <div className={styles.progress}>
+          {Array.from({ length: TOTAL }, (_, i) => (
+            <div key={i} className={`${styles.progBar} ${i < idx ? styles.done : i === idx ? styles.current : ''}`} />
+          ))}
+        </div>
+        <p className={styles.counter}>{idx + 1} / {TOTAL}</p>
+
+        <div className={styles.videoWrap}>
+          {videoUrl
+            ? <video src={videoUrl} autoPlay loop muted playsInline className={styles.video} />
+            : (
+              <div className={styles.videoPlaceholder}>
+                <i className="ti ti-player-play" />
+                <span>{q.correct.category_name}</span>
+              </div>
+            )
+          }
+          {answered && (
+            <div className={`${styles.videoOverlay} ${answered === 'correct' ? styles.correct : styles.wrong}`}>
+              <i className={`ti ${answered === 'correct' ? 'ti-check' : 'ti-x'}`} />
+            </div>
+          )}
+        </div>
+
+        <p className={styles.question}>{tr.quizQuestion}</p>
+
+        <div className={styles.options}>
+          {q.options.map(opt => {
+            let cls = styles.opt
+            if (answered) {
+              if (opt.id === q.correct.id) cls += ` ${styles.optCorrect}`
+              else if (opt.id === chosen) cls += ` ${styles.optWrong}`
+              else cls += ` ${styles.optDim}`
+            }
+            return (
+              <button key={opt.id} className={cls} onClick={() => answer(opt)}>{opt.name}</button>
+            )
+          })}
+        </div>
+
+        {answered && (
+          <div className={`${styles.feedback} ${answered === 'correct' ? styles.feedbackOk : styles.feedbackKo}`}>
+            {answered === 'correct'
+              ? <><i className="ti ti-check" /> {tr.quizCorrect(q.correct.name)}</>
+              : <><i className="ti ti-x" /> {tr.quizWrong(q.correct.name)} — {q.correct.description?.substring(0, 80)}…</>
+            }
+          </div>
+        )}
+
+        {answered && (
+          <button className="btn btn-primary" style={{ alignSelf: 'flex-end' }} onClick={next}>
+            {idx + 1 < TOTAL ? tr.quizNext : tr.quizResult}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -1,0 +1,31 @@
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast);
+  user-select: none;
+}
+.card:hover {
+  border-color: var(--c-border2);
+  background: var(--c-surface2);
+}
+.body { flex: 1; min-width: 0; }
+.name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--c-text);
+  display: block;
+  margin-bottom: 6px;
+}
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}

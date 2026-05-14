@@ -1,0 +1,32 @@
+.switcher {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.btn {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  padding: 5px 9px;
+  color: var(--c-faint);
+  transition: all var(--t-fast);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.btn:hover { color: var(--c-muted); }
+.btn.active {
+  background: var(--c-surface3);
+  color: var(--c-text);
+}
+.sep {
+  width: 1px;
+  height: 14px;
+  background: var(--c-border);
+  flex-shrink: 0;
+}
