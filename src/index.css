@@ -43,6 +43,19 @@
   --t-mid:  200ms ease;
 }
 
+[data-theme="light"] {
+  --c-bg:        #f5f5f8;
+  --c-surface:   #ffffff;
+  --c-surface2:  #ededf4;
+  --c-surface3:  #e3e3ee;
+  --c-border:    #00000010;
+  --c-border2:   #0000001e;
+
+  --c-text:      #0d0d1a;
+  --c-muted:     #60607a;
+  --c-faint:     #b0b0c8;
+}
+
 html { font-size: 16px; -webkit-font-smoothing: antialiased; }
 
 body {
