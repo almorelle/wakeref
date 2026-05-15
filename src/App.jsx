@@ -11,29 +11,33 @@ import AdminFigures from './pages/admin/AdminFigures'
 import FigureForm from './pages/admin/FigureForm'
 import AdminVideos from './pages/admin/AdminVideos'
 import AdminTakedowns from './pages/admin/AdminTakedowns'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 
 export default function App() {
   return (
-    <Routes>
-      {/* Pages publiques */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/figures" element={<Figures />} />
-        <Route path="/figures/:slug" element={<FigureDetail />} />
-        <Route path="/quiz" element={<Quiz />} />
-      </Route>
+    <>
+        <Routes>
+          {/* Pages publiques */}
+          <Route element={<PublicLayout />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/figures" element={<Figures />} />
+            <Route path="/figures/:slug" element={<FigureDetail />} />
+            <Route path="/quiz" element={<Quiz />} />
+          </Route>
 
-      {/* Admin */}
-      <Route path="/admin/login" element={<Login />} />
-      <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<AdminDashboard />} />
-        <Route path="figures" element={<AdminFigures />} />
-        <Route path="figures/new" element={<FigureForm />} />
-        <Route path="figures/:id/edit" element={<FigureForm />} />
-        <Route path="videos" element={<AdminVideos />} />
-        <Route path="takedowns" element={<AdminTakedowns />} />
-      </Route>
-    </Routes>
+          {/* Admin */}
+          <Route path="/admin/login" element={<Login />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="figures" element={<AdminFigures />} />
+            <Route path="figures/new" element={<FigureForm />} />
+            <Route path="figures/:id/edit" element={<FigureForm />} />
+            <Route path="videos" element={<AdminVideos />} />
+            <Route path="takedowns" element={<AdminTakedowns />} />
+          </Route>
+        </Routes>
+      <SpeedInsights />
+    </>
   )
 }
 
