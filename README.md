@@ -116,3 +116,11 @@ vercel
 Ajoute les variables d'environnement dans le dashboard Vercel :
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+
+## Licences
+
+**Code** — MIT License, voir [LICENSE](./LICENSE)
+
+**Contenu** (descriptions, conseils, données des figures) —
+[Creative Commons Attribution-NonCommercial 4.0](https://creativecommons.org/licenses/by-nc/4.0/)
+Libre d'utilisation à des fins non commerciales avec attribution.
