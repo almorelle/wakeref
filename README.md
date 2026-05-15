@@ -1,6 +1,8 @@
 # WakeRef
 
-Référentiel wakeboard & wakeskate — webapp React + Supabase.
+Référentiel wakeboard & wakeskate
+
+![Screenshot of the preview of the website](/assets/images/preview.png)
 
 ## Stack
 
@@ -106,7 +108,7 @@ src/
 | `/admin/videos` | Upload et gestion vidéos |
 | `/admin/takedowns` | Demandes de retrait |
 
-## Déploiement Vercel (recommandé)
+## Déploiement Vercel
 
 ```bash
 npm i -g vercel
