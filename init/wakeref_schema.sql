@@ -1,17 +1,20 @@
 -- ============================================================
--- WakeRef — Schéma Supabase v3
+-- WakeRef — Schéma Supabase v4
 -- 12 catégories, i18n FR/EN, figures switch
+-- Security hardened (search_path, security_invoker, bucket)
 -- À exécuter sur un projet vierge
 -- ============================================================
 
 -- ────────────────────────────────────────────────────────────
--- 1. EXTENSIONS + WRAPPER IMMUTABLE
+-- 1. EXTENSIONS (dans schéma dédié)
 -- ────────────────────────────────────────────────────────────
-create extension if not exists "unaccent";
+create schema if not exists extensions;
+create extension if not exists "unaccent" schema extensions;
 
-create or replace function immutable_unaccent(text)
-returns text language sql immutable strict parallel safe as $$
-  select public.unaccent('public.unaccent', $1);
+create or replace function public.immutable_unaccent(text)
+returns text language sql immutable strict parallel safe
+set search_path = public as $$
+  select extensions.unaccent('extensions.unaccent', $1);
 $$;
 
 -- ────────────────────────────────────────────────────────────
@@ -63,12 +66,13 @@ create table figures (
 );
 
 create index figures_search_idx on figures
-  using gin(to_tsvector('french', immutable_unaccent(
+  using gin(to_tsvector('french', public.immutable_unaccent(
     coalesce(name,'') || ' ' || coalesce(description,'')
   )));
 
-create or replace function set_updated_at()
-returns trigger language plpgsql as $$
+create or replace function public.set_updated_at()
+returns trigger language plpgsql
+set search_path = public as $$
 begin new.updated_at = now(); return new; end;
 $$;
 
@@ -115,8 +119,13 @@ insert into storage.buckets (id, name, public)
 values ('videos', 'videos', true)
 on conflict do nothing;
 
+-- Lecture restreinte : pas de listing global du bucket
 create policy "Videos publiques"
-  on storage.objects for select using (bucket_id = 'videos');
+  on storage.objects for select
+  using (
+    bucket_id = 'videos'
+    and (storage.foldername(name))[1] is not null
+  );
 
 create policy "Upload admin seulement"
   on storage.objects for insert
@@ -129,23 +138,23 @@ create policy "Delete admin seulement"
 -- ────────────────────────────────────────────────────────────
 -- 7. ROW LEVEL SECURITY
 -- ────────────────────────────────────────────────────────────
-alter table categories    enable row level security;
-alter table figures       enable row level security;
-alter table prerequisites enable row level security;
-alter table videos        enable row level security;
+alter table categories        enable row level security;
+alter table figures           enable row level security;
+alter table prerequisites     enable row level security;
+alter table videos            enable row level security;
 
-create policy "Lecture publique categories"   on categories    for select using (true);
-create policy "Lecture publique figures"      on figures       for select using (published = true);
+create policy "Lecture publique categories"    on categories    for select using (true);
+create policy "Lecture publique figures"       on figures       for select using (published = true);
 create policy "Lecture publique prerequisites" on prerequisites for select using (true);
-create policy "Lecture publique videos"       on videos        for select using (takedown_requested = false);
+create policy "Lecture publique videos"        on videos        for select using (takedown_requested = false);
 
-create policy "Ecriture admin figures"      on figures       for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
-create policy "Ecriture admin categories"   on categories    for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
-create policy "Ecriture admin prerequisites" on prerequisites for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
-create policy "Ecriture admin videos"       on videos        for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
+create policy "Ecriture admin figures"         on figures       for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
+create policy "Ecriture admin categories"      on categories    for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
+create policy "Ecriture admin prerequisites"   on prerequisites for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
+create policy "Ecriture admin videos"          on videos        for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
 
 -- ────────────────────────────────────────────────────────────
--- 8. VUE figures_full
+-- 8. VUE figures_full (security_invoker = RLS respecté)
 -- ────────────────────────────────────────────────────────────
 create view figures_full as
 select
@@ -157,12 +166,10 @@ select
   c.name  as category_name,
   c.slug  as category_slug,
   c.color as category_color,
-  -- figure originale si c'est un switch
   case when f.switch_of is not null then
     (select json_build_object('id', o.id, 'name', o.name, 'slug', o.slug)
      from figures o where o.id = f.switch_of)
   end as switch_of_figure,
-  -- versions switch de cette figure
   coalesce(
     (select json_agg(json_build_object('id', s.id, 'name', s.name, 'slug', s.slug))
      from figures s where s.switch_of = f.id),
@@ -190,16 +197,18 @@ select
 from figures f
 left join categories c on c.id = f.category_id;
 
+-- RLS respecté par la vue (security_invoker)
 alter view figures_full set (security_invoker = true);
 
 -- ────────────────────────────────────────────────────────────
 -- 9. RECHERCHE FULL-TEXT
 -- ────────────────────────────────────────────────────────────
-create or replace function search_figures(query text)
-returns setof figures_full language sql stable as $$
+create or replace function public.search_figures(query text)
+returns setof figures_full language sql stable
+set search_path = public as $$
   select * from figures_full
-  where to_tsvector('french', immutable_unaccent(coalesce(name,'') || ' ' || coalesce(description,'')))
-        @@ plainto_tsquery('french', immutable_unaccent(query))
+  where to_tsvector('french', public.immutable_unaccent(coalesce(name,'') || ' ' || coalesce(description,'')))
+        @@ plainto_tsquery('french', public.immutable_unaccent(query))
      or name ilike '%' || query || '%'
   order by case when lower(name) = lower(query) then 0 else 1 end, name;
 $$;
@@ -219,14 +228,15 @@ create table takedown_requests (
 
 alter table takedown_requests enable row level security;
 
+-- Intentionnellement permissif : n'importe qui peut soumettre une demande de retrait
 create policy "Insertion publique takedown" on takedown_requests for insert with check (true);
 create policy "Lecture admin takedown"      on takedown_requests for select using (auth.role() = 'authenticated');
 
 -- ────────────────────────────────────────────────────────────
 -- 11. GRANTS
 -- ────────────────────────────────────────────────────────────
+grant usage on schema public to anon, authenticated;
 grant select on categories, figures, prerequisites, videos, figures_full to anon, authenticated;
 grant select on takedown_requests to authenticated;
-grant execute on function search_figures(text)     to anon, authenticated;
-grant execute on function immutable_unaccent(text) to anon, authenticated;
-grant usage on schema public to anon, authenticated;
+grant execute on function public.search_figures(text)     to anon, authenticated;
+grant execute on function public.immutable_unaccent(text) to anon, authenticated;
