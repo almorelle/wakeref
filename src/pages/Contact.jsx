@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useT } from '../i18n/useT'
 import styles from './Contact.module.css'
 
-const FORMSPREE_ID = 'TON_ID_FORMSPREE' // Remplace par ton ID sur formspree.io
+const FORMSPREE_ID = 'xykvggzg'
 
 export default function Contact() {
   const tr = useT()
