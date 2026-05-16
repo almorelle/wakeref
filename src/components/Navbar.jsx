@@ -12,6 +12,7 @@ export default function Navbar() {
     { to: '/',        icon: 'ti-home',    label: tr.home    },
     { to: '/figures', icon: 'ti-list',    label: tr.figures },
     { to: '/quiz',    icon: 'ti-help',    label: tr.quiz    },
+    { to: '/contact', icon: 'ti-mail',    label: tr.contact  },
   ]
 
   return (
