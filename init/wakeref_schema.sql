@@ -240,3 +240,8 @@ grant select on categories, figures, prerequisites, videos, figures_full to anon
 grant select on takedown_requests to authenticated;
 grant execute on function public.search_figures(text)     to anon, authenticated;
 grant execute on function public.immutable_unaccent(text) to anon, authenticated;
+grant insert, update, delete on public.videos to authenticated;
+grant insert, update, delete on public.categories to authenticated;
+grant insert, update, delete on public.figures to authenticated;
+grant insert, update, delete on public.prerequisites to authenticated;
+grant insert, update, delete on public.takedown_requests to authenticated;
