@@ -42,6 +42,38 @@ export default function FigureDetail() {
     return null
   }
 
+  const renderVideoMedia = (v) => {
+    const url = getVideoUrl(v)
+
+    // Upload direct
+    if (v.source_type === 'upload' && url) {
+      return <video src={url} controls playsInline className={styles.video} />
+    }
+
+    // Instagram
+    if (v.source_type === 'instagram' && v.source_url) {
+      return (
+        <a href={v.source_url} target="_blank" rel="noopener noreferrer" className={styles.platformThumb}>
+          <i className="ti ti-brand-instagram" style={{ color: '#E1306C' }} />
+          <span>Voir sur Instagram</span>
+        </a>
+      )
+    }
+
+    // YouTube
+    if (v.source_type === 'youtube' && v.source_url) {
+      return (
+        <a href={v.source_url} target="_blank" rel="noopener noreferrer" className={styles.platformThumb}>
+          <i className="ti ti-brand-youtube" style={{ color: '#FF0000' }} />
+          <span>Voir sur YouTube</span>
+        </a>
+      )
+    }
+
+    // Fallback
+    return <div className={styles.videoPlaceholder}><i className="ti ti-player-play" /></div>
+  }
+
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
   if (!figure) return (
     <div className="page-container" style={{ paddingTop: '2rem' }}>
@@ -55,7 +87,6 @@ export default function FigureDetail() {
   const prereqs = typeof figure.prerequisites === 'string' ? JSON.parse(figure.prerequisites) : figure.prerequisites || []
   const videos  = typeof figure.videos === 'string'       ? JSON.parse(figure.videos)       : figure.videos  || []
 
-  // Champs localisés
   const desc = localize(figure, 'description')
   const tips = localize(figure, 'tips') || []
 
@@ -108,38 +139,33 @@ export default function FigureDetail() {
             ? <p className={styles.empty}>{tr.noVideos}</p>
             : (
               <div className={styles.videosGrid}>
-                {videos.map(v => {
-                  const url = getVideoUrl(v)
-                  return (
-                    <div key={v.id} className={styles.videoCard}>
-                      {url
-                        ? <video src={url} controls playsInline className={styles.video} />
-                        : <div className={styles.videoPlaceholder}><i className="ti ti-player-play" /></div>
-                      }
-                      <div className={styles.videoMeta}>
-                        {v.creator_name && (
-                          <a href={v.creator_url || '#'} target="_blank" rel="noopener noreferrer" className={styles.creator}>
-                            <i className={`ti ${v.source_type === 'instagram' ? 'ti-brand-instagram' : 'ti-brand-youtube'}`} />
-                            {v.creator_name}
-                          </a>
-                        )}
-                        {v.source_url && (
-                          <a href={v.source_url} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
-                            {tr.originalSource} <i className="ti ti-external-link" />
-                          </a>
-                        )}
-                        {v.caption && <p className={styles.caption}>{v.caption}</p>}
-                        <div className={styles.creditNote}>
-                          <i className="ti ti-info-circle" />
-                          {tr.pedagogicNote}{' '}
-                          <button className={styles.takedownBtn} onClick={() => { setTakedownVideo(v); setTakedownSent(false) }}>
-                            {tr.takedownCta}
-                          </button>
-                        </div>
+                {videos.map(v => (
+                  <div key={v.id} className={styles.videoCard}>
+                    {renderVideoMedia(v)}
+                    <div className={styles.videoMeta}>
+                      {v.title && <p className={styles.videoTitle}>{v.title}</p>}
+                      {v.creator_name && (
+                        <a href={v.creator_url || '#'} target="_blank" rel="noopener noreferrer" className={styles.creator}>
+                          <i className={`ti ${v.source_type === 'instagram' ? 'ti-brand-instagram' : v.source_type === 'youtube' ? 'ti-brand-youtube' : 'ti-video'}`} />
+                          {v.creator_name}
+                        </a>
+                      )}
+                      {v.source_type === 'upload' && v.source_url && (
+                        <a href={v.source_url} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
+                          {tr.originalSource} <i className="ti ti-external-link" />
+                        </a>
+                      )}
+                      {v.caption && <p className={styles.caption}>{v.caption}</p>}
+                      <div className={styles.creditNote}>
+                        <i className="ti ti-info-circle" />
+                        {tr.pedagogicNote}{' '}
+                        <button className={styles.takedownBtn} onClick={() => { setTakedownVideo(v); setTakedownSent(false) }}>
+                          {tr.takedownCta}
+                        </button>
                       </div>
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
               </div>
             )
           }
