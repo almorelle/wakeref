@@ -1,17 +1,16 @@
 import { NavLink } from 'react-router-dom'
 import LangSwitcher from './LangSwitcher'
 import { useT } from '../i18n/useT'
-import { useTheme } from '../contexts/ThemeContext'
 import styles from './Navbar.module.css'
 
 export default function Navbar() {
   const tr = useT()
-  const { theme, toggleTheme } = useTheme()
 
   const links = [
     { to: '/',        icon: 'ti-home',    label: tr.home    },
     { to: '/figures', icon: 'ti-list',    label: tr.figures },
     { to: '/quiz',    icon: 'ti-help',    label: tr.quiz    },
+    { to: '/contact', icon: 'ti-mail',    label: tr.contact  },
   ]
 
   return (
@@ -33,13 +32,6 @@ export default function Navbar() {
             </NavLink>
           ))}
         </nav>
-        <button
-          className={`btn-icon ${styles.themeBtn}`}
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-        >
-          <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon'}`} />
-        </button>
         <LangSwitcher />
       </header>
 
@@ -56,13 +48,6 @@ export default function Navbar() {
           </NavLink>
         ))}
         <div className={styles.bottomLang}>
-          <button
-            className={`btn-icon ${styles.themeBtn}`}
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-          >
-            <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon'}`} />
-          </button>
           <LangSwitcher />
         </div>
       </nav>
