@@ -69,6 +69,20 @@ export const t = {
 
     // Difficulty
     difficulty: 'Difficulté',
+    contact: 'Contact',
+
+    // Contact
+    contactTitle:     'Contact',
+    contactSub:       'Une question, une suggestion, un signalement ? Envoie-moi un message.',
+    contactName:      'Nom',
+    contactNamePh:    'Ton nom ou pseudo',
+    contactEmail:     'Email',
+    contactMessage:   'Message',
+    contactMessagePh: 'Dis-moi tout…',
+    contactSend:      'Envoyer',
+    contactSending:   'Envoi en cours…',
+    contactSuccess:   'Message envoyé ! Je te répondrai dès que possible.',
+    contactError:     'Une erreur est survenue. Réessaie ou contacte-moi directement.',
   },
 
   en: {
@@ -141,6 +155,20 @@ export const t = {
 
     // Difficulty
     difficulty: 'Difficulty',
+    contact: 'Contact',
+
+    // Contact
+    contactTitle:     'Contact',
+    contactSub:       'A question, suggestion, or report? Send me a message.',
+    contactName:      'Name',
+    contactNamePh:    'Your name or handle',
+    contactEmail:     'Email',
+    contactMessage:   'Message',
+    contactMessagePh: 'Tell me everything…',
+    contactSend:      'Send',
+    contactSending:   'Sending…',
+    contactSuccess:   'Message sent! I will get back to you as soon as possible.',
+    contactError:     'Something went wrong. Please try again.',
   },
 }
 
