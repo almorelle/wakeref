@@ -48,6 +48,8 @@ export const t = {
     quizNext:      'Question suivante →',
     quizResult:    'Voir le résultat →',
     quizReplay:    'Rejouer',
+    quizNoVideosTitle: 'Quiz indisponible',
+    quizNoVideos: 'Aucune vidéo disponible pour le moment. Reviens bientôt !',
     quizCorrect:   (name) => `Bonne réponse ! ${name}`,
     quizWrong:     (name) => `C'était : ${name}`,
     quizScoreMsgs: [
@@ -135,6 +137,8 @@ export const t = {
     quizNext:      'Next question →',
     quizResult:    'See result →',
     quizReplay:    'Play again',
+    quizNoVideosTitle: 'Quiz unavailable',
+    quizNoVideos: 'No videos available yet. Check back soon!',
     quizCorrect:   (name) => `Correct! ${name}`,
     quizWrong:     (name) => `It was: ${name}`,
     quizScoreMsgs: [

@@ -30,13 +30,14 @@
   background: var(--c-surface2);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  aspect-ratio: 16/9;
   overflow: hidden;
-  max-height: 280px;
 }
 .video {
-  width: 100%; height: 100%;
-  object-fit: cover;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  background: var(--c-surface3);
+  display: block;
 }
 .videoPlaceholder {
   width: 100%; height: 100%;
@@ -171,3 +172,37 @@
 }
 .scoreRow:last-child { border-bottom: none; }
 .scoreFig { font-family: var(--font-display); font-weight: 600; }
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 4rem 2rem;
+  text-align: center;
+  max-width: 360px;
+  margin: 0 auto;
+}
+.emptyIcon {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-xl);
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  color: var(--c-muted);
+  margin-bottom: 8px;
+}
+.emptyTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+.emptyText {
+  font-size: 14px;
+  color: var(--c-muted);
+  line-height: 1.6;
+}
