@@ -63,12 +63,18 @@ export default function FigureDetail() {
 
     // YouTube
     if (v.source_type === 'youtube' && v.source_url) {
-      return (
-        <a href={v.source_url} target="_blank" rel="noopener noreferrer" className={styles.platformThumb}>
-          <i className="ti ti-brand-youtube" style={{ color: '#FF0000' }} />
-          <span>Voir sur YouTube</span>
-        </a>
-      )
+      const videoId = v.source_url.match(/(?:v=|youtu\.be\/)([^&\s]+)/)?.[1]
+      if (videoId) {
+        return (
+          <iframe
+            src={`https://www.youtube.com/embed/${videoId}`}
+            className={styles.video}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            style={{ border: 'none', width: '100%', aspectRatio: '16/9', height: 'auto' }}
+          />
+        )
+      }
     }
 
     // Fallback
