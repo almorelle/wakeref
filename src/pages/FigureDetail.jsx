@@ -5,6 +5,7 @@ import DifficultyDots from '../components/DifficultyDots'
 import { SportBadge, CategoryBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
 import { useLocalizedField } from '../contexts/LanguageContext'
+import SEO from '../components/SEO'
 import styles from './FigureDetail.module.css'
 
 export default function FigureDetail() {
@@ -104,6 +105,13 @@ export default function FigureDetail() {
         </div>
       </div>
 
+      <SEO
+        titleFr={figure.name}
+        titleEn={figure.name}
+        descriptionFr={figure.description?.substring(0, 160)}
+        descriptionEn={figure.description_en?.substring(0, 160) || figure.description?.substring(0, 160)}
+        path={'/figures/' + figure.slug}
+      />
       <div className="page-container">
         <section className={styles.section}>
           <p className="section-title"><i className="ti ti-file-description" /> {tr.description}</p>
