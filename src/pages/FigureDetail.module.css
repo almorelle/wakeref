@@ -88,11 +88,11 @@
 }
 .video {
   width: 100%;
-  aspect-ratio: 9/16;
-  object-fit: cover;
-  display: block;
-  max-height: 280px;
+  height: auto;
+  max-height: 500px;
+  object-fit: contain;
   background: var(--c-surface3);
+  display: block;
 }
 .videoPlaceholder {
   width: 100%;
