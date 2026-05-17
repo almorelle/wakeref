@@ -2,7 +2,7 @@
 
 Référentiel wakeboard & wakeskate
 
-![Screenshot of the preview of the website](/assets/images/preview.png)
+![Preview of the website](/public/og-image.jpg)
 
 ## Stack
 
