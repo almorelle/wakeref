@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import styles from './AdminFigures.module.css'
+import { ContextBadge } from '../../components/Badges'
 
 export default function AdminFigures() {
   const [figures, setFigures] = useState([])
@@ -65,6 +66,7 @@ export default function AdminFigures() {
               <div className={styles.rowMeta}>
                 <span className={`badge badge-${f.category_slug}`}>{f.category_name}</span>
                 <span className={`badge badge-${f.sport === 'wakeskate' ? 'ws' : 'wake'}`}>{f.sport}</span>
+                {f.contexts?.map(ctx => <ContextBadge key={ctx} context={ctx} />)}
                 <span style={{ fontSize: 12, color: 'var(--c-muted)' }}>Difficulté {f.difficulty}/5</span>
                 {!f.published && <span className="badge" style={{ background: '#ef444420', color: 'var(--c-danger)' }}>Non publié</span>}
               </div>
@@ -73,7 +75,7 @@ export default function AdminFigures() {
               <button className="btn btn-ghost btn-sm btn-icon" title="Vidéos" onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
                 <i className="ti ti-video" />
               </button>
-              <button className="btn btn-ghost btn-sm btn-icon" title="Modifier" onClick={() => navigate(`/admin/figures/${f.id}/edit`)}>
+              <button className="btn btn-ghost btn-sm btn-icon" title="Modifier" onClick={() => navigate(`/admin/figures/${f.id}/edit`, {state: { figureIds: filtered.map(f => f.id) }})}>
                 <i className="ti ti-pencil" />
               </button>
               <button className="btn btn-ghost btn-sm btn-icon" title="Supprimer" style={{ color: 'var(--c-danger)' }} onClick={() => deleteFigure(f.id, f.name)}>

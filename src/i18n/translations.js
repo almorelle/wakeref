@@ -64,12 +64,19 @@ export const t = {
 
     // Catégories
     catNames: {
-      grabs:     'Grabs',
-      spins:     'Spins',
-      inverts:   'Inverts',
-      slides:    'Slides',
-      surface:   'Surface',
-      wakeskate: 'Wakeskate',
+      grabs:        'Grabs',
+      slides:       'Slides',
+      wakeskate:    'Wakeskate',
+      spin:         'Spin',
+      railey:       'Railey',
+      's-bend':       'S-Bend',
+      hinterberger: 'Hinterberger',
+      backroll:     'Backroll',
+      front:        'Front',
+      tantrum:      'Tantrum',
+      shoveit:      'Shoveit',
+      fliptricks:   'Fliptricks',
+      specials:     'Specials',
     },
 
     // Difficulty
@@ -155,12 +162,19 @@ export const t = {
 
     // Catégories
     catNames: {
-      grabs:     'Grabs',
-      spins:     'Spins',
-      inverts:   'Inverts',
-      slides:    'Slides',
-      surface:   'Surface',
-      wakeskate: 'Wakeskate',
+      grabs:        'Grabs',
+      slides:       'Slides',
+      wakeskate:    'Wakeskate',
+      spin:         'Spin',
+      railey:       'Railey',
+      's-bend':       'S-Bend',
+      hinterberger: 'Hinterberger',
+      backroll:     'Backroll',
+      front:        'Front',
+      tantrum:      'Tantrum',
+      shoveit:      'Shoveit',
+      fliptricks:   'Fliptricks',
+      specials:     'Specials',
     },
 
     // Difficulty
