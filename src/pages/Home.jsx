@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
 import styles from './Home.module.css'
+import SEO from '../components/SEO'
 
 const CAT_ICONS = {
   grabs: 'ti-hand-grab', spins: 'ti-rotate-clockwise', inverts: 'ti-flip-vertical',
@@ -41,9 +42,16 @@ export default function Home() {
 
   return (
     <div className={styles.page}>
+      <SEO
+        titleFr="WakeRef"
+        titleEn="WakeRef"
+        descriptionFr="Référentiel complet des figures de wakeboard et wakeskate."
+        descriptionEn="Complete wakeboard and wakeskate trick reference."
+        path="/"
+      />
       <div className={styles.hero}>
         <div className={styles.heroText}>
-          <h1 className={styles.title}>WakeRef</h1>
+          <h1 className="sr-only">WakeRef — Référentiel wakeboard et wakeskate</h1>
           <p className={styles.sub}>{tr.appSubtitle}</p>
         </div>
         <div className={styles.searchWrap}>

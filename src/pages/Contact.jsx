@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useT } from '../i18n/useT'
 import styles from './Contact.module.css'
+import SEO from '../components/SEO'
 
 const FORMSPREE_ID = 'xykvggzg'
 
@@ -34,6 +35,13 @@ export default function Contact() {
   return (
     <div className="page-container">
       <div className={styles.page}>
+      <SEO
+        titleFr="Contact"
+        titleEn="Contact"
+        descriptionFr="Une question ou une suggestion ? Contacte-moi."
+        descriptionEn="A question or suggestion? Get in touch."
+        path="/contact"
+      />
         <div className={styles.header}>
           <h1 className={styles.title}>{tr.contactTitle}</h1>
           <p className={styles.sub}>{tr.contactSub}</p>

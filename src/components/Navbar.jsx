@@ -19,8 +19,7 @@ export default function Navbar() {
     <>
       <header className={styles.topbar}>
         <NavLink to="/" className={styles.logo}>
-          <i className="ti ti-wave-sine" />
-          WakeRef
+          <img src={theme === 'dark' ? '/logo-line-white.png' : '/logo-line-black.png'} alt="WakeRef" height={36} />
         </NavLink>
         <nav className={styles.topnav}>
           {links.map(l => (

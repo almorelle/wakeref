@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
 import styles from './Figures.module.css'
+import SEO from '../components/SEO'
 
 export default function Figures() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -33,6 +34,13 @@ export default function Figures() {
 
   return (
     <div className={styles.page}>
+      <SEO
+        titleFr="Figures"
+        titleEn="Tricks"
+        descriptionFr="Liste complète des figures de wakeboard et wakeskate, par catégorie."
+        descriptionEn="Complete list of wakeboard and wakeskate tricks, by category."
+        path="/figures"
+      />
       <div className={styles.filters}>
         <button
           className={`${styles.chip} ${activeFilter === 'tous' ? styles.active : ''}`}

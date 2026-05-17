@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { CategoryBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
 import styles from './Quiz.module.css'
+import SEO from '../components/SEO'
 
 function shuffle(arr) { return [...arr].sort(() => Math.random() - .5) }
 
@@ -101,6 +102,13 @@ export default function Quiz() {
 
   return (
     <div className="page-container">
+      <SEO
+        titleFr="Quiz"
+        titleEn="Quiz"
+        descriptionFr="Teste tes connaissances sur les figures de wakeboard et wakeskate."
+        descriptionEn="Test your knowledge of wakeboard and wakeskate tricks."
+        path="/quiz"
+      />
       <div className={styles.quiz}>
         <div className={styles.progress}>
           {Array.from({ length: TOTAL }, (_, i) => (
