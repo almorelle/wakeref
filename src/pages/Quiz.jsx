@@ -16,6 +16,7 @@ export default function Quiz() {
   const [chosen, setChosen] = useState(null)
   const [done, setDone] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [noVideos, setNoVideos] = useState(false)
   const tr = useT()
   const TOTAL = 5
 
@@ -29,10 +30,18 @@ export default function Quiz() {
   const buildQuiz = useCallback(() => {
     const withVideos = allFigures.filter(f => {
       const vids = typeof f.videos === 'string' ? JSON.parse(f.videos) : f.videos || []
-      return vids.length > 0
+      return vids.some(v => v.file_path) // file_path = upload direct uniquement
     })
-    const pool = withVideos.length >= TOTAL ? withVideos : allFigures
+
+    if (withVideos.length === 0) {
+      setNoVideos(true)
+      return
+    }
+    setNoVideos(false)
+
+    const pool = withVideos
     const selected = shuffle(pool).slice(0, TOTAL)
+
     const qs = selected.map(correct => {
       const wrongs = shuffle(allFigures.filter(f => f.id !== correct.id)).slice(0, 3)
       return { correct, options: shuffle([correct, ...wrongs]) }
@@ -58,7 +67,7 @@ export default function Quiz() {
   const getVideoUrl = (figure) => {
     const vids = typeof figure.videos === 'string' ? JSON.parse(figure.videos) : figure.videos || []
     if (!vids.length) return null
-    const v = vids[0]
+    const v = vids.find(v => v.file_path)
     if (v.file_path) {
       const { data } = supabase.storage.from('videos').getPublicUrl(v.file_path)
       return data.publicUrl
@@ -67,6 +76,18 @@ export default function Quiz() {
   }
 
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
+
+  if (noVideos) return (
+    <div className="page-container">
+      <div className={styles.emptyState}>
+        <div className={styles.emptyIcon}>
+          <i className="ti ti-video-off" aria-hidden="true" />
+        </div>
+        <h2 className={styles.emptyTitle}>{tr.quizNoVideosTitle}</h2>
+        <p className={styles.emptyText}>{tr.quizNoVideos}</p>
+      </div>
+    </div>
+  )
 
   if (done) {
     const pct = score / TOTAL
