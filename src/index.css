@@ -21,12 +21,19 @@
   --c-success:   #22c55e;
 
   /* Catégories */
-  --cat-grabs:    #3b82f6;
-  --cat-spins:    #8b5cf6;
-  --cat-inverts:  #f59e0b;
-  --cat-slides:   #22c55e;
-  --cat-surface:  #94a3b8;
-  --cat-wakeskate:#ef4444;
+  --cat-grabs:        #3b82f6;
+  --cat-slides:       #22c55e;
+  --cat-wakeskate:    #ef4444;
+  --cat-spin:         #6366f1;
+  --cat-railey:       #0ea5e9;
+  --cat-s-bend:       #06b6d4;
+  --cat-hinterberger: #8b5cf6;
+  --cat-backroll:     #f59e0b;
+  --cat-front:        #22c55e;
+  --cat-tantrum:      #ef4444;
+  --cat-shoveit:      #f97316;
+  --cat-fliptricks:   #ec4899;
+  --cat-specials:     #a855f7;
 
   /* Typography */
   --font-display: 'Syne', sans-serif;
@@ -184,14 +191,21 @@ select.input { appearance: none; }
   letter-spacing: .03em;
   font-family: var(--font-display);
 }
-.badge-wake   { background: #06b6d420; color: var(--c-wake); }
-.badge-ws     { background: #f59e0b20; color: var(--c-ws); }
-.badge-grabs    { background: #3b82f620; color: var(--cat-grabs); }
-.badge-spins    { background: #8b5cf620; color: var(--cat-spins); }
-.badge-inverts  { background: #f59e0b20; color: var(--cat-inverts); }
-.badge-slides   { background: #22c55e20; color: var(--cat-slides); }
-.badge-surface  { background: #94a3b820; color: var(--cat-surface); }
-.badge-wakeskate{ background: #ef444420; color: var(--cat-wakeskate); }
+.badge-wake         { background: #06b6d420; color: var(--c-wake); }
+.badge-ws           { background: #f59e0b20; color: var(--c-ws); }
+.badge-grabs        { background: #3b82f620; color: var(--cat-grabs); }
+.badge-slides       { background: #22c55e20; color: var(--cat-slides); }
+.badge-wakeskate    { background: #ef444420; color: var(--cat-wakeskate); }
+.badge-spin         { background: #6366f120; color: var(--cat-spin); }
+.badge-railey       { background: #0ea5e920; color: var(--cat-railey); }
+.badge-s-bend       { background: #06b6d420; color: var(--cat-s-bend); }
+.badge-hinterberger { background: #8b5cf620; color: var(--cat-hinterberger); }
+.badge-backroll     { background: #f59e0b20; color: var(--cat-backroll); }
+.badge-front        { background: #22c55e20; color: var(--cat-front); }
+.badge-tantrum      { background: #ef444420; color: var(--cat-tantrum); }
+.badge-shoveit      { background: #f9730620; color: var(--cat-shoveit); }
+.badge-fliptricks   { background: #ec489920; color: var(--cat-fliptricks); }
+.badge-specials     { background: #a855f720; color: var(--cat-specials); }
 
 /* Difficulté */
 .diff {

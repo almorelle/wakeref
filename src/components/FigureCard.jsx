@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import DifficultyDots from './DifficultyDots'
-import { SportBadge, CategoryBadge } from './Badges'
+import { SportBadge, CategoryBadge, ContextBadge } from './Badges'
 import styles from './FigureCard.module.css'
 
 export default function FigureCard({ figure }) {
@@ -18,6 +18,9 @@ export default function FigureCard({ figure }) {
         <div className={styles.meta}>
           <CategoryBadge slug={figure.category_slug} name={figure.category_name} />
           <SportBadge sport={figure.sport} />
+          {figure.contexts?.map(ctx => (
+            <ContextBadge key={ctx} context={ctx} />
+          ))}
           <DifficultyDots value={figure.difficulty} />
         </div>
       </div>

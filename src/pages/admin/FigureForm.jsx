@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import styles from './FigureForm.module.css'
+import { useLocation } from 'react-router-dom'
 
 export default function FigureForm() {
   const { id } = useParams()
@@ -24,7 +25,13 @@ export default function FigureForm() {
     description: '', tips: ['', '', '', ''],
     description_en: '', tips_en: ['', '', '', ''],
   })
+
   const [prereqIds, setPrereqIds] = useState([])
+  const location = useLocation()
+  const figureIds = location.state?.figureIds || []
+  const currentIndex = figureIds.indexOf(parseInt(id))
+  const prevId = figureIds[currentIndex - 1]
+  const nextId = figureIds[currentIndex + 1]
 
   useEffect(() => {
     // Charger catégories + liste figures toujours
@@ -122,7 +129,6 @@ export default function FigureForm() {
 
     toast(isEdit ? 'Figure mise à jour !' : 'Figure créée !', 'success')
     setSaving(false)
-    setTimeout(() => navigate('/admin/figures'), 800)
   }
 
   if (loading) return <span className="spinner" />
@@ -139,6 +145,16 @@ export default function FigureForm() {
         <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/figures')}>
           <i className="ti ti-arrow-left" /> Retour
         </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost btn-sm" disabled={!prevId}
+            onClick={() => navigate(`/admin/figures/${prevId}/edit`, { state: location.state })}>
+            <i className="ti ti-arrow-left" /> Précédent
+          </button>
+          <button className="btn btn-ghost btn-sm" disabled={!nextId}
+            onClick={() => navigate(`/admin/figures/${nextId}/edit`, { state: location.state })}>
+            Suivant <i className="ti ti-arrow-right" />
+          </button>
+        </div>
         <h1 className={styles.title}>{isEdit ? 'Modifier la figure' : 'Nouvelle figure'}</h1>
       </div>
 
