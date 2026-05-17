@@ -1,0 +1,71 @@
+name: Daily Database Backup
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Tous les jours à 3h UTC
+  workflow_dispatch:     # Déclenchement manuel possible
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget -qO- https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo tee /etc/apt/trusted.gpg.d/pgdg.asc
+          echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+
+      - name: Run pg_dump
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          /usr/lib/postgresql/17/bin/pg_dump "${{ secrets.SUPABASE_DB_URL }}" \
+            --no-owner \
+            --no-acl \
+            --format=plain \
+            --file=backup_${DATE}.sql
+          gzip backup_${DATE}.sql
+          echo "BACKUP_FILE=backup_${DATE}.sql.gz" >> $GITHUB_ENV
+
+      - name: Upload to Supabase Storage
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          curl -X POST \
+            "${SUPABASE_URL}/storage/v1/object/backups/${BACKUP_FILE}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+            -H "apikey: ${SUPABASE_SERVICE_KEY}" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @${BACKUP_FILE}
+
+      - name: Cleanup old backups (keep last 30 days)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          CUTOFF=$(date -d '30 days ago' +%Y-%m-%d)
+          # Liste les fichiers et supprime ceux plus vieux que 30 jours
+          curl -s \
+            "${SUPABASE_URL}/storage/v1/object/list/backups" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{"prefix": "backup_", "limit": 100}' | \
+          python3 -c "
+          import sys, json
+          data = json.load(sys.stdin)
+          files = data if isinstance(data, list) else data.get('items', [])
+          cutoff = '${CUTOFF}'
+          old = [f['name'] for f in files if isinstance(f, dict) and f.get('name', '') < 'backup_' + cutoff + '.sql.gz']
+          print('\n'.join(old))
+          " | while read file; do
+            if [ -n "$file" ]; then
+              curl -X DELETE \
+                "${SUPABASE_URL}/storage/v1/object/backups/${file}" \
+                -H "Authorization: Bearer ${SUPABASE_SERVICE_KEY}"
+              echo "Deleted: $file"
+            fi
+          done
