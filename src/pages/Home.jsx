@@ -7,8 +7,18 @@ import styles from './Home.module.css'
 import SEO from '../components/SEO'
 
 const CAT_ICONS = {
-  grabs: 'ti-hand-grab', spins: 'ti-rotate-clockwise', inverts: 'ti-flip-vertical',
-  slides: 'ti-layout-sidebar', surface: 'ti-waves', wakeskate: 'ti-skateboard',
+  spin:         'ti-rotate-clockwise',
+  railey:       'ti-arrow-up',
+  's-bend':     'ti-arrow-zig-zag',
+  hinterberger: 'ti-arrow-loop-right',
+  backroll:     'ti-rotate-2',
+  front:        'ti-rotate-clockwise-2',
+  tantrum:      'ti-arrow-back-up',
+  grabs:        'ti-hand-grab',
+  slides:       'ti-minus',
+  shoveit:      'ti-flip-horizontal',
+  fliptricks:   'ti-rotate-clockwise-2',
+  specials:     'ti-star',
 }
 
 export default function Home() {
@@ -111,6 +121,22 @@ export default function Home() {
                 >
                   <i className={`ti ${CAT_ICONS[c.slug] || 'ti-star'}`} />
                   <span className={styles.catName}>{tr.catNames[c.slug] || c.name}</span>
+                </button>
+              ))}
+              {[
+                { value: 'kicker',    label: 'Kicker',    icon: 'ti-escalator-up', color: '#f59e0b' },
+                { value: 'jib',       label: 'Jib',       icon: 'ti-escalator',    color: '#10b981' },
+                { value: 'flat',      label: 'Flat',      icon: 'ti-ripple',       color: '#06b6d4' },
+                { value: 'air_trick', label: 'Air Trick', icon: 'ti-arrows-up',    color: '#ec4899' },
+              ].map(ctx => (
+                <button
+                  key={ctx.value}
+                  className={styles.catCard}
+                  onClick={() => navigate(`/figures?ctx=${ctx.value}`)}
+                  style={{ '--cat-color': ctx.color }}
+                >
+                  <i className={`ti ${ctx.icon}`} />
+                  <span className={styles.catName}>{ctx.label}</span>
                 </button>
               ))}
             </div>

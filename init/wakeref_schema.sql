@@ -246,3 +246,4 @@ grant insert, update, delete on public.figures to authenticated;
 grant insert, update, delete on public.prerequisites to authenticated;
 grant insert, update, delete on public.takedown_requests to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
+alter table figures add column contexts text[];
