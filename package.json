@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "build": "node scripts/generate-sitemap.js && vite build"
+    "dev": "vite",
+    "build": "node scripts/generate-sitemap.js && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",
