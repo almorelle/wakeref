@@ -100,7 +100,7 @@ export default function Home() {
 
         {!query.trim() && (
           <>
-            <p className="section-title">{tr.categories}</p>
+            <p className="section-title" style={{ marginTop: '1.5rem' }}>{tr.categories}</p>
             <div className={styles.catGrid}>
               {categories.map(c => (
                 <button
