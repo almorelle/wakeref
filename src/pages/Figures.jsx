@@ -12,6 +12,7 @@ export default function Figures() {
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const activeFilter = searchParams.get('cat') || 'tous'
+  const activeContext = searchParams.get('ctx') || ''
   const tr = useT()
 
   useEffect(() => {
@@ -24,12 +25,22 @@ export default function Figures() {
     setLoading(true)
     let q = supabase.from('figures_full').select('*').order('name')
     if (activeFilter !== 'tous') q = q.eq('category_slug', activeFilter)
+    if (activeContext) q = q.contains('contexts', [activeContext])
     q.then(({ data }) => { setFigures(data || []); setLoading(false) })
-  }, [activeFilter])
+  }, [activeFilter, activeContext])
+
+  const setContext = (ctx) => {
+    const params = {}
+    if (activeFilter !== 'tous') params.cat = activeFilter
+    if (ctx) params.ctx = ctx
+    setSearchParams(params)
+  }
 
   const setFilter = (slug) => {
-    if (slug === 'tous') setSearchParams({})
-    else setSearchParams({ cat: slug })
+    const params = {}
+    if (slug !== 'tous') params.cat = slug
+    if (activeContext) params.ctx = activeContext
+    setSearchParams(params)
   }
 
   return (
@@ -53,6 +64,21 @@ export default function Figures() {
             onClick={() => setFilter(c.slug)}
             style={activeFilter === c.slug ? { '--chip-color': c.color } : {}}
           >{tr.catNames[c.slug] || c.name}</button>
+        ))}
+      </div>
+      <div className={styles.filters} style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', borderBottom: 'none', borderTop: '1px solid var(--c-border)' }}>
+        {[
+          { value: '',          label: tr.all       },
+          { value: 'kicker',    label: 'Kicker'     },
+          { value: 'jib',       label: 'Jib'        },
+          { value: 'flat',      label: 'Flat'       },
+          { value: 'air_trick', label: 'Air Trick'  },
+        ].map(ctx => (
+          <button
+            key={ctx.value}
+            className={`${styles.chip} ${activeContext === ctx.value ? styles.active : ''}`}
+            onClick={() => setContext(ctx.value)}
+          >{ctx.label}</button>
         ))}
       </div>
       <div className="page-container">

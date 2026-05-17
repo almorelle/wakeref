@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import DifficultyDots from '../components/DifficultyDots'
-import { SportBadge, CategoryBadge } from '../components/Badges'
+import { SportBadge, CategoryBadge, ContextBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
 import { useLocalizedField } from '../contexts/LanguageContext'
 import SEO from '../components/SEO'
@@ -102,6 +102,7 @@ export default function FigureDetail() {
           <CategoryBadge slug={figure.category_slug} name={figure.category_name} />
           <SportBadge sport={figure.sport} />
           <DifficultyDots value={figure.difficulty} />
+          {figure.contexts?.map(ctx => <ContextBadge key={ctx} context={ctx} />)}
         </div>
       </div>
 

@@ -62,6 +62,7 @@ select
   f.description, f.description_en,
   f.tips, f.tips_en,
   f.is_switch, f.switch_of,
+  f.contexts,
   f.published, f.created_at, f.updated_at,
   c.name  as category_name,
   c.slug  as category_slug,

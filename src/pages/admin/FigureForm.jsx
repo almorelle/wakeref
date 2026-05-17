@@ -20,6 +20,7 @@ export default function FigureForm() {
   const [form, setForm] = useState({
     name: '', slug: '', category_id: '', sport: 'wakeboard',
     difficulty: 2, published: true,
+    contexts: [],
     description: '', tips: ['', '', '', ''],
     description_en: '', tips_en: ['', '', '', ''],
   })
@@ -62,6 +63,7 @@ export default function FigureForm() {
           sport: fig.sport,
           difficulty: fig.difficulty,
           published: fig.published,
+          contexts: fig.contexts || [],
           description: fig.description || '',
           tips: [...(fig.tips || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips || []).length + 1)),
           description_en: fig.description_en || '',
@@ -98,6 +100,7 @@ export default function FigureForm() {
       slug: form.slug || genSlug(form.name),
       category_id: form.category_id ? parseInt(form.category_id) : null,
       difficulty: parseInt(form.difficulty),
+      contexts: form.contexts,
       tips: form.tips.filter(t => t.trim()),
       tips_en: form.tips_en.filter(t => t.trim()),
     }
@@ -230,6 +233,32 @@ export default function FigureForm() {
               <label key={f.id} className={`${styles.prereqItem} ${prereqIds.includes(f.id) ? styles.prereqChecked : ''}`}>
                 <input type="checkbox" checked={prereqIds.includes(f.id)} onChange={() => togglePrereq(f.id)} />
                 {f.name}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Contextes</label>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            {[
+              { value: 'kicker',    label: 'Kicker'    },
+              { value: 'jib',       label: 'Jib'       },
+              { value: 'flat',      label: 'Flat'       },
+              { value: 'air_trick', label: 'Air Trick' },
+            ].map(ctx => (
+              <label key={ctx.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
+                <input
+                  type="checkbox"
+                  checked={form.contexts.includes(ctx.value)}
+                  onChange={e => {
+                    const next = e.target.checked
+                      ? [...form.contexts, ctx.value]
+                      : form.contexts.filter(c => c !== ctx.value)
+                    set('contexts', next)
+                  }}
+                />
+                {ctx.label}
               </label>
             ))}
           </div>
