@@ -10,6 +10,7 @@ export const t = {
     searchPlaceholder: 'Rechercher une figure…',
     categories:    'Catégories',
     recentFigures: 'Figures récentes',
+    recentVideos:  'Dernières vidéos ajoutées',
     noResults:     (q) => `Aucune figure trouvée pour « ${q} »`,
 
     // Figures list
@@ -96,6 +97,7 @@ export const t = {
     searchPlaceholder: 'Search a trick…',
     categories:        'Categories',
     recentFigures:     'Recent tricks',
+    recentVideos:      'Last added videos',
     noResults:         (q) => `No trick found for "${q}"`,
 
     // Figures list

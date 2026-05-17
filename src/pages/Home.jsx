@@ -17,6 +17,7 @@ export default function Home() {
   const [searching, setSearching] = useState(false)
   const [categories, setCategories] = useState([])
   const [recent, setRecent] = useState([])
+  const [videos, setVideos] = useState([])
   const navigate = useNavigate()
   const tr = useT()
 
@@ -27,6 +28,20 @@ export default function Home() {
     supabase.from('figures_full').select('*').order('created_at', { ascending: false }).limit(5).then(({ data }) => {
       if (data) setRecent(data)
     })
+    supabase.from('videos')
+      .select('figure_id')
+      .eq('takedown_requested', false)
+      .order('uploaded_at', { ascending: false })
+      .limit(5)
+      .then(async ({ data: vids }) => {
+        if (!vids?.length) return
+        const ids = [...new Set(vids.map(v => v.figure_id))]
+        const { data: figs } = await supabase
+          .from('figures_full')
+          .select('*')
+          .in('id', ids)
+        if (figs) setVideos(figs)
+      })
   }, [])
 
   useEffect(() => {
@@ -105,6 +120,15 @@ export default function Home() {
                 <p className="section-title" style={{ marginTop: '2rem' }}>{tr.recentFigures}</p>
                 <div className={styles.list}>
                   {recent.map(f => <FigureCard key={f.id} figure={f} />)}
+                </div>
+              </>
+            )}
+
+            {videos.length > 0 && (
+              <>
+                <p className="section-title" style={{ marginTop: '2rem' }}>{tr.recentVideos}</p>
+                <div className={styles.list}>
+                  {videos.map(f => <FigureCard key={f.id} figure={f} />)}
                 </div>
               </>
             )}
