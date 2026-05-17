@@ -85,7 +85,9 @@ export default function FigureDetail() {
     </div>
   )
 
-  const prereqs = typeof figure.prerequisites === 'string' ? JSON.parse(figure.prerequisites) : figure.prerequisites || []
+  const prereqs       = typeof figure.prerequisites === 'string' ? JSON.parse(figure.prerequisites) : figure.prerequisites || []
+  const switchOf       = figure.switch_of_figure ? (typeof figure.switch_of_figure === 'string' ? JSON.parse(figure.switch_of_figure) : figure.switch_of_figure) : null
+  const switchVersions = typeof figure.switch_versions === 'string' ? JSON.parse(figure.switch_versions) : figure.switch_versions || []
   const videos  = typeof figure.videos === 'string'       ? JSON.parse(figure.videos)       : figure.videos  || []
 
   const desc = localize(figure, 'description')
@@ -141,6 +143,24 @@ export default function FigureDetail() {
             )
           }
         </section>
+
+        {(switchOf || switchVersions.length > 0) && (
+          <section className={styles.section}>
+            <p className="section-title"><i className="ti ti-arrows-exchange" /> {switchOf ? tr.switchOf : tr.switchVersions}</p>
+            <div className={styles.prereqs}>
+              {switchOf && (
+                <Link to={'/figures/' + switchOf.slug} className={styles.prereqChip}>
+                  {switchOf.name}
+                </Link>
+              )}
+              {switchVersions.map(s => (
+                <Link key={s.id} to={'/figures/' + s.slug} className={styles.prereqChip}>
+                  {s.name}
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className={styles.section}>
           <p className="section-title"><i className="ti ti-video" /> {tr.videos}</p>
