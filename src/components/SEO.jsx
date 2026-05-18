@@ -12,7 +12,7 @@ const DEFAULT = {
   },
   en: {
     title:       'WakeRef',
-    description: 'Complete wakeboard and wakeskate trick reference.',
+    description: 'Complete wakeboard and wakeskate tricks reference.',
   },
 }
 
