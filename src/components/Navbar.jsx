@@ -43,6 +43,18 @@ export default function Navbar() {
         <LangSwitcher />
       </header>
 
+      {/* Top bar mobile — logo uniquement */}
+      <header className={styles.topbarMobile}>
+        <NavLink to="/" className={styles.logo}>
+          <img
+            src={theme === 'dark' ? '/logo-line-white.png' : '/logo-line-black.png'}
+            alt="WakeRef"
+            height={36}
+          />
+        </NavLink>
+        <LangSwitcher />
+      </header>
+
       <nav className={styles.bottombar}>
         {links.map(l => (
           <NavLink
