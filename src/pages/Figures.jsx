@@ -11,8 +11,9 @@ export default function Figures() {
   const [figures, setFigures] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
-  const activeFilter = searchParams.get('cat') || 'tous'
-  const activeContext = searchParams.get('ctx') || ''
+  const activeFilter  = searchParams.get('cat')   || 'tous'
+  const activeContext = searchParams.get('ctx')   || ''
+  const activeSport   = searchParams.get('sport') || ''
   const tr = useT()
 
   useEffect(() => {
@@ -26,21 +27,37 @@ export default function Figures() {
     let q = supabase.from('figures_full').select('*').order('name')
     if (activeFilter !== 'tous') q = q.eq('category_slug', activeFilter)
     if (activeContext) q = q.contains('contexts', [activeContext])
+    if (activeSport)  q = q.eq('sport', activeSport)
     q.then(({ data }) => { setFigures(data || []); setLoading(false) })
-  }, [activeFilter, activeContext])
+  }, [activeFilter, activeContext, activeSport])
 
-  const setContext = (ctx) => {
-    const params = {}
-    if (activeFilter !== 'tous') params.cat = activeFilter
-    if (ctx) params.ctx = ctx
-    setSearchParams(params)
+  const buildParams = (overrides) => {
+    const base = {}
+    if (activeFilter !== 'tous') base.cat = activeFilter
+    if (activeContext) base.ctx = activeContext
+    if (activeSport)  base.sport = activeSport
+    return { ...base, ...overrides }
   }
 
   const setFilter = (slug) => {
-    const params = {}
-    if (slug !== 'tous') params.cat = slug
-    if (activeContext) params.ctx = activeContext
-    setSearchParams(params)
+    const p = buildParams({ cat: slug !== 'tous' ? slug : undefined })
+    delete p.cat
+    if (slug !== 'tous') p.cat = slug
+    setSearchParams(p)
+  }
+
+  const setContext = (ctx) => {
+    const p = buildParams({})
+    if (ctx) p.ctx = ctx
+    else delete p.ctx
+    setSearchParams(p)
+  }
+
+  const setSport = (sport) => {
+    const p = buildParams({})
+    if (sport) p.sport = sport
+    else delete p.sport
+    setSearchParams(p)
   }
 
   return (
@@ -52,6 +69,7 @@ export default function Figures() {
         descriptionEn="Complete list of wakeboard and wakeskate tricks, by category."
         path="/figures"
       />
+      {/* Filtre catégories */}
       <div className={styles.filters}>
         <button
           className={`${styles.chip} ${activeFilter === 'tous' ? styles.active : ''}`}
@@ -66,13 +84,30 @@ export default function Figures() {
           >{tr.catNames[c.slug] || c.name}</button>
         ))}
       </div>
+
+      {/* Filtre sport + contexte */}
       <div className={styles.filters} style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', borderBottom: 'none', borderTop: '1px solid var(--c-border)' }}>
+        <button
+          className={`${styles.chip} ${activeSport === '' ? styles.active : ''}`}
+          onClick={() => setSport('')}
+        >{tr.all}</button>
+        <button
+          className={`${styles.chip} ${activeSport === 'wakeboard' ? styles.active : ''}`}
+          onClick={() => setSport('wakeboard')}
+        >Wakeboard</button>
+        <button
+          className={`${styles.chip} ${activeSport === 'wakeskate' ? styles.active : ''}`}
+          onClick={() => setSport('wakeskate')}
+        >Wakeskate</button>
+
+        <span style={{ width: 1, background: 'var(--c-border)', margin: '0 4px', alignSelf: 'stretch' }} />
+
         {[
-          { value: '',          label: tr.all       },
-          { value: 'kicker',    label: 'Kicker'     },
-          { value: 'jib',       label: 'Jib'        },
+          { value: '',          label: tr.all      },
+          { value: 'kicker',    label: 'Kicker'    },
+          { value: 'jib',       label: 'Jib'       },
           { value: 'flat',      label: 'Flat'       },
-          { value: 'air_trick', label: 'Air Trick'  },
+          { value: 'air_trick', label: 'Air Trick' },
         ].map(ctx => (
           <button
             key={ctx.value}
@@ -81,6 +116,7 @@ export default function Figures() {
           >{ctx.label}</button>
         ))}
       </div>
+
       <div className="page-container">
         {loading && <span className="spinner" />}
         {!loading && figures.length === 0 && (
