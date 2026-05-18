@@ -112,6 +112,48 @@ array['Reserved for elite riders','Very aggressive carve','Wrapped or double han
 array['Figure d''élite absolue','HS BS 900 maîtrisé','Hauteur et vitesse maximales','Conditions parfaites'],
 array['Absolute elite trick','Mastered HS BS 900','Maximum height and speed','Perfect conditions']);
 
+('ts-bs-720','TS BS 720',
+(select id from categories where slug='spin'),'wakeboard',4,
+'Double rotation backside complète (720°) depuis le wake toeside. Requiert hauteur maximale et double handle pass.',
+'Double backside full rotation (720°) off the toeside wake. Requires maximum height and double handle pass.',
+array['TS BS 540 solide','Hauteur maximale au décollage','Double handle pass rapide','Anticiper l''atterrissage'],
+array['Solid TS BS 540','Maximum height at takeoff','Fast double handle pass','Anticipate landing']),
+
+('ts-bs-900','TS BS 900',
+(select id from categories where slug='spin'),'wakeboard',5,
+'Deux rotations et demie backside (900°) depuis le wake toeside. Figure d''élite.',
+'Two and a half backside rotations (900°) off the toeside wake. Elite trick.',
+array['TS BS 720 solide','Hauteur exceptionnelle requise','Rotation très compacte','Repérer l''atterrissage le plus tôt possible'],
+array['Solid TS BS 720','Exceptional height required','Very compact rotation','Spot landing as early as possible']),
+
+('ts-fs-900','TS FS 900',
+(select id from categories where slug='spin'),'wakeboard',5,
+'Deux rotations et demie frontside (900°) depuis le wake toeside. Figure d''élite.',
+'Two and a half frontside rotations (900°) off the toeside wake. Elite trick.',
+array['TS FS 720 solide','Hauteur exceptionnelle requise','Rotation très compacte','Repérer l''atterrissage le plus tôt possible'],
+array['Solid TS FS 720','Exceptional height required','Very compact rotation','Spot landing as early as possible']),
+
+('ts-fs-1080','TS FS 1080',
+(select id from categories where slug='spin'),'wakeboard',5,
+'Trois rotations frontside complètes (1080°) depuis le wake toeside. Figure de compétition au plus haut niveau mondial.',
+'Three full frontside rotations (1080°) off the toeside wake. Competition trick at the highest world level.',
+array['TS FS 900 maîtrisé','Hauteur et vitesse maximales','Rotation wrapped ou double handle pass','Conditions parfaites requises'],
+array['Mastered TS FS 900','Maximum height and speed','Wrapped or double handle pass rotation','Perfect conditions required']);
+
+('ts-fs-720','TS FS 720',
+(select id from categories where slug='spin'),'wakeboard',5,
+'Deux rotations frontside complètes (720°) depuis le wake toeside. Figure de compétition au plus haut niveau mondial.',
+'Two full frontside rotations (720°) off the toeside wake. Competition trick at the highest world level.',
+array['TS FS 540 solide','Hauteur maximale au décollage','Double handle pass rapide','Anticiper l''atterrissage'],
+array['Solid TS FS 540','Maximum height at takeoff','Fast double handle pass','Anticipate landing']);
+
+('ts-bs-1080','TS BS 1080',
+(select id from categories where slug='spin'),'wakeboard',5,
+'Trois rotations frontside complètes (1080°) depuis le wake toeside. Figure de compétition au plus haut niveau mondial.',
+'Three full frontside rotations (1080°) off the toeside wake. Competition trick at the highest world level.',
+array['TS BS 900 maîtrisé','Hauteur et vitesse maximales','Rotation wrapped ou double handle pass','Conditions parfaites requises'],
+array['Mastered TS BS 900','Maximum height and speed','Wrapped or double handle pass rotation','Perfect conditions required']);
+
 -- Prérequis Spin
 insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='hs-fs-360' and r.slug='hs-fs-180';
 insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='hs-bs-360' and r.slug='hs-bs-180';
@@ -127,3 +169,9 @@ insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures
 insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='hs-bs-900' and r.slug='hs-bs-720';
 insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='hs-fs-1080' and r.slug='hs-fs-900';
 insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='hs-bs-1080' and r.slug='hs-bs-900';
+insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='ts-bs-720' and r.slug='ts-bs-540';
+insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='ts-fs-720' and r.slug='ts-fs-540';
+insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='ts-bs-900' and r.slug='ts-bs-720';
+insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='ts-fs-900' and r.slug='ts-fs-540';
+insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='ts-fs-1080' and r.slug='ts-fs-900';
+insert into prerequisites (figure_id, requires_id) select f.id,r.id from figures f,figures r where f.slug='ts-bs-1080' and r.slug='ts-bs-900';
