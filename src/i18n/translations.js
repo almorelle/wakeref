@@ -69,7 +69,7 @@ export const t = {
       wakeskate:    'Wakeskate',
       spin:         'Spin',
       railey:       'Railey',
-      's-bend':       'S-Bend',
+      's-bend':     'S-Bend',
       hinterberger: 'Hinterberger',
       backroll:     'Backroll',
       front:        'Front',
@@ -77,6 +77,7 @@ export const t = {
       shoveit:      'Shoveit',
       fliptricks:   'Fliptricks',
       specials:     'Specials',
+      whip:         'Whip',
     },
 
     // Difficulty
@@ -175,6 +176,7 @@ export const t = {
       shoveit:      'Shoveit',
       fliptricks:   'Fliptricks',
       specials:     'Specials',
+      whip:         'Whip',
     },
 
     // Difficulty

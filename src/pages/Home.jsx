@@ -19,6 +19,7 @@ const CAT_ICONS = {
   shoveit:      'ti-flip-horizontal',
   fliptricks:   'ti-rotate-clockwise-2',
   specials:     'ti-star',
+  whip:         'ti-arrow-down-from-arc',
 }
 
 export default function Home() {

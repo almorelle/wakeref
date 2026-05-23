@@ -34,6 +34,7 @@
   --cat-shoveit:      #f97316;
   --cat-fliptricks:   #ec4899;
   --cat-specials:     #a855f7;
+  --cat-whip:         #f43f5e;
 
   /* Typography */
   --font-display: 'Syne', sans-serif;
@@ -206,6 +207,7 @@ select.input { appearance: none; }
 .badge-shoveit      { background: #f9730620; color: var(--cat-shoveit); }
 .badge-fliptricks   { background: #ec489920; color: var(--cat-fliptricks); }
 .badge-specials     { background: #a855f720; color: var(--cat-specials); }
+.badge-whip         { background: #f43f5e20; color: var(--cat-whip); }
 
 /* Difficulté */
 .diff {

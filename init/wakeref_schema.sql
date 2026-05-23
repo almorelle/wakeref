@@ -41,6 +41,7 @@ insert into categories (name, slug, color, sort_order) values
   ('Shove-it',     'shoveit',      '#f97316', 10),
   ('Flip Tricks',  'fliptricks',   '#ec4899', 11),
   ('Specials',     'specials',     '#a855f7', 12);
+  ('Whip',         'Whip',         '#f43f5e', 13);
 
 -- ────────────────────────────────────────────────────────────
 -- 3. FIGURES
