@@ -38,6 +38,24 @@
 .toplink.active { color: var(--c-wake); background: #06b6d415; }
 
 /* ── Bottom bar (mobile) ── */
+.topbarMobile {
+  display: none;
+  height: 48px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  padding: 0 1.25rem;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+@media (max-width: 700px) {
+  .topbar { display: none; }
+  .topbarMobile { display: flex; }
+  .bottombar { display: flex; }
+}
 .bottombar {
   display: none;
   position: fixed;
