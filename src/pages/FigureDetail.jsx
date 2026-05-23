@@ -63,14 +63,21 @@ export default function FigureDetail() {
 
     // YouTube
     if (v.source_type === 'youtube' && v.source_url) {
-      const videoId = v.source_url.match(/(?:v=|youtu\.be\/)([^&\s]+)/)?.[1]
+      const videoId = v.source_url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?\s]+)/)?.[1]
+      const isShort = v.source_url.includes('/shorts/')
       if (videoId) {
         return (
           <iframe
             src={`https://www.youtube-nocookie.com/embed/${videoId}`}
             className={styles.video}
             allowFullScreen
-            style={{ border: 'none', width: '100%', aspectRatio: '16/9', height: 'auto' }}
+            allow="autoplay; fullscreen"
+            style={{
+              border: 'none',
+              width: '100%',
+              aspectRatio: isShort ? '9/16' : '16/9',
+              height: 'auto'
+            }}
           />
         )
       }
