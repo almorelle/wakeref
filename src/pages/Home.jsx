@@ -71,12 +71,12 @@ export default function Home() {
         titleFr="WakeRef"
         titleEn="WakeRef"
         descriptionFr="Référentiel complet des figures de wakeboard et wakeskate."
-        descriptionEn="Complete wakeboard and wakeskate trick reference."
+        descriptionEn="Complete wakeboard and wakeskate tricks reference."
         path="/"
       />
       <div className={styles.hero}>
         <div className={styles.heroText}>
-          <h1 className="sr-only">WakeRef — Référentiel wakeboard et wakeskate</h1>
+          <h1 className="sr-only">WakeRef — Référentiel complet des figures de wakeboard et wakeskate</h1>
           <p className={styles.sub}>{tr.appSubtitle}</p>
         </div>
         <div className={styles.searchWrap}>

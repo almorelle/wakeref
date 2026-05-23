@@ -104,7 +104,7 @@ export const t = {
     quiz:    'Quiz',
 
     // Home
-    appSubtitle:       'Wakeboard & wakeskate trick reference',
+    appSubtitle:       'Complete wakeboard and wakeskate tricks reference',
     searchPlaceholder: 'Search a trick…',
     categories:        'Categories',
     recentFigures:     'Recent tricks',
