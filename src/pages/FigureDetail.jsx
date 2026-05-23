@@ -67,9 +67,8 @@ export default function FigureDetail() {
       if (videoId) {
         return (
           <iframe
-            src={`https://www.youtube.com/embed/${videoId}`}
+            src={`https://www.youtube-nocookie.com/embed/${videoId}`}
             className={styles.video}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
             style={{ border: 'none', width: '100%', aspectRatio: '16/9', height: 'auto' }}
           />
