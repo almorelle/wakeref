@@ -18,7 +18,8 @@ export default function AdminLayout() {
     { to: '/admin',         icon: 'ti-layout-dashboard', label: 'Dashboard',  end: true },
     { to: '/admin/figures', icon: 'ti-list',              label: 'Figures'             },
     { to: '/admin/videos',  icon: 'ti-video',             label: 'Vidéos'              },
-    { to: '/admin/takedowns',icon: 'ti-flag',             label: 'Retraits'            },
+    { to: '/admin/takedowns',  icon: 'ti-flag',           label: 'Retraits'            },
+    { to: '/admin/no-videos',  icon: 'ti-video-off',      label: 'Sans vidéo'          },
   ]
 
   return (

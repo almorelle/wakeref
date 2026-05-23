@@ -12,6 +12,7 @@ import AdminFigures from './pages/admin/AdminFigures'
 import FigureForm from './pages/admin/FigureForm'
 import AdminVideos from './pages/admin/AdminVideos'
 import AdminTakedowns from './pages/admin/AdminTakedowns'
+import AdminNoVideos from './pages/admin/AdminNoVideos'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="figures/:id/edit" element={<FigureForm />} />
           <Route path="videos" element={<AdminVideos />} />
           <Route path="takedowns" element={<AdminTakedowns />} />
+          <Route path="no-videos" element={<AdminNoVideos />} />
         </Route>
       </Routes>
       <SpeedInsights />

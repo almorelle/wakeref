@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import styles from './AdminVideos.module.css'
+import { useLocation } from 'react-router-dom'
 
 export default function AdminVideos() {
   const [searchParams] = useSearchParams()
@@ -15,6 +16,9 @@ export default function AdminVideos() {
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+
+  const location = useLocation()
+  const prefill = location.state?.prefill
 
   const [form, setForm] = useState({
     figure_id: prefigureId || '',
