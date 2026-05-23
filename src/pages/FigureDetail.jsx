@@ -89,11 +89,27 @@ export default function FigureDetail() {
 
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
   if (!figure) return (
-    <div className="page-container" style={{ paddingTop: '2rem' }}>
-      <p style={{ color: 'var(--c-muted)' }}>{tr.notFound}</p>
-      <button className="btn btn-ghost btn-sm" onClick={() => navigate(-1)} style={{ marginTop: '1rem' }}>
-        ← {tr.back}
-      </button>
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <button className={styles.backBtn} onClick={() => navigate(-1)}>
+          <i className="ti ti-arrow-left" /> {tr.back}
+        </button>
+      </div>
+      <div className="page-container">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '4rem 0', textAlign: 'center' }}>
+          <span style={{ fontSize: 48 }}>🤷</span>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800 }}>{tr.notFound}</h2>
+          <p style={{ fontSize: 14, color: 'var(--c-muted)' }}>{tr.notFoundSub}</p>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button className="btn btn-primary" onClick={() => navigate('/figures')}>
+              <i className="ti ti-list" /> {tr.figures}
+            </button>
+            <button className="btn btn-ghost" onClick={() => navigate(-1)}>
+              <i className="ti ti-arrow-left" /> {tr.back}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 

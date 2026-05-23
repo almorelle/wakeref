@@ -84,6 +84,11 @@ export const t = {
     difficulty: 'Difficulté',
     contact: 'Contact',
 
+    // Not Found
+    notFoundTitle: 'Page introuvable',
+    notFoundSub:   `Cette page n'existe pas ou a été déplacée.`,
+    notFoundHome:  `Retour à l'accueil`,
+
     // Contact
     contactTitle:     'Contact',
     contactSub:       'Une question, une suggestion, un signalement ? Envoie-moi un message.',
@@ -182,6 +187,11 @@ export const t = {
     // Difficulty
     difficulty: 'Difficulty',
     contact: 'Contact',
+
+    // Not Found
+    notFoundTitle: 'Page not found',
+    notFoundSub:   'This page does not exist or has been moved.',
+    notFoundHome:  'Back to home',
 
     // Contact
     contactTitle:     'Contact',

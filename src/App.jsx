@@ -5,6 +5,7 @@ import Figures from './pages/Figures'
 import FigureDetail from './pages/FigureDetail'
 import Quiz from './pages/Quiz'
 import Contact from './pages/Contact'
+import NotFound from './pages/NotFound'
 import Login from './pages/admin/Login'
 import AdminLayout from './pages/admin/AdminLayout'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="takedowns" element={<AdminTakedowns />} />
           <Route path="no-videos" element={<AdminNoVideos />} />
         </Route>
+        <Route path='*' element={<NotFound />} />
       </Routes>
       <SpeedInsights />
     </>
