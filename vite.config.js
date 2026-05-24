@@ -7,6 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: 'script-defer',
       manifest: {
         name: 'WakeRef',
         short_name: 'WakeRef',
