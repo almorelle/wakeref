@@ -138,14 +138,14 @@ array['Solid TS FS 720','Exceptional height required','Very compact rotation','S
 'Trois rotations frontside complètes (1080°) depuis le wake toeside. Figure de compétition au plus haut niveau mondial.',
 'Three full frontside rotations (1080°) off the toeside wake. Competition trick at the highest world level.',
 array['TS FS 900 maîtrisé','Hauteur et vitesse maximales','Rotation wrapped ou double handle pass','Conditions parfaites requises'],
-array['Mastered TS FS 900','Maximum height and speed','Wrapped or double handle pass rotation','Perfect conditions required']);
+array['Mastered TS FS 900','Maximum height and speed','Wrapped or double handle pass rotation','Perfect conditions required']),
 
 ('ts-fs-720','TS FS 720',
 (select id from categories where slug='spin'),'wakeboard',5,
 'Deux rotations frontside complètes (720°) depuis le wake toeside. Figure de compétition au plus haut niveau mondial.',
 'Two full frontside rotations (720°) off the toeside wake. Competition trick at the highest world level.',
 array['TS FS 540 solide','Hauteur maximale au décollage','Double handle pass rapide','Anticiper l''atterrissage'],
-array['Solid TS FS 540','Maximum height at takeoff','Fast double handle pass','Anticipate landing']);
+array['Solid TS FS 540','Maximum height at takeoff','Fast double handle pass','Anticipate landing']),
 
 ('ts-bs-1080','TS BS 1080',
 (select id from categories where slug='spin'),'wakeboard',5,

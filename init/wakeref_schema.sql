@@ -40,8 +40,8 @@ insert into categories (name, slug, color, sort_order) values
   ('Slides',       'slides',       '#10b981', 9),
   ('Shove-it',     'shoveit',      '#f97316', 10),
   ('Flip Tricks',  'fliptricks',   '#ec4899', 11),
-  ('Specials',     'specials',     '#a855f7', 12);
-  ('Whip',         'Whip',         '#f43f5e', 13);
+  ('Specials',     'specials',     '#a855f7', 12),
+  ('Whip',         'whip',         '#f43f5e', 13);
 
 -- ────────────────────────────────────────────────────────────
 -- 3. FIGURES
@@ -63,7 +63,8 @@ create table figures (
   switch_of      int references figures(id) on delete set null,
   published      boolean not null default true,
   created_at     timestamptz default now(),
-  updated_at     timestamptz default now()
+  updated_at     timestamptz default now(),
+  contexts       text[]
 );
 
 create index figures_search_idx on figures
@@ -163,6 +164,7 @@ select
   f.description, f.description_en,
   f.tips, f.tips_en,
   f.is_switch, f.switch_of,
+  f.contexts,
   f.published, f.created_at, f.updated_at,
   c.name  as category_name,
   c.slug  as category_slug,
@@ -256,4 +258,3 @@ grant insert, update, delete on public.figures to authenticated;
 grant insert, update, delete on public.prerequisites to authenticated;
 grant insert, update, delete on public.takedown_requests to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
-alter table figures add column contexts text[];
