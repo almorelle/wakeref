@@ -35,6 +35,7 @@ import {
   IconLogout,
   IconMail,
   IconMinus,
+  IconMoon,
   IconPencil,
   IconPlayerPlay,
   IconPlus,
@@ -45,16 +46,16 @@ import {
   IconRotateClockwise2,
   IconSearch,
   IconSend,
+  IconShare3,
   IconStar,
+  IconSun,
   IconTrash,
   IconUpload,
   IconVideo,
   IconVideoOff,
+  IconVideoPlus,
   IconWaveSine,
   IconX,
-  IconVideoPlus,
-  IconSun,
-  IconMoon,
 } from '@tabler/icons-react'
 
 const ICONS = {
@@ -93,6 +94,7 @@ const ICONS = {
   'logout':                 IconLogout,
   'mail':                   IconMail,
   'minus':                  IconMinus,
+  'moon':                   IconMoon,
   'pencil':                 IconPencil,
   'player-play':            IconPlayerPlay,
   'plus':                   IconPlus,
@@ -103,7 +105,9 @@ const ICONS = {
   'rotate-clockwise-2':     IconRotateClockwise2,
   'search':                 IconSearch,
   'send':                   IconSend,
+  'share-3':                IconShare3,
   'star':                   IconStar,
+  'sun':                    IconSun,
   'trash':                  IconTrash,
   'upload':                 IconUpload,
   'video':                  IconVideo,
@@ -111,8 +115,6 @@ const ICONS = {
   'video-plus':             IconVideoPlus,
   'wave-sine':              IconWaveSine,
   'x':                      IconX,
-  'sun':                    IconSun,
-  'moon':                   IconMoon,
 }
 
 export default function Icon({ name, size = 18, style, className }) {

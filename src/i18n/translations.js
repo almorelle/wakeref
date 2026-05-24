@@ -44,6 +44,8 @@ export const t = {
     takedownSuccessMsg: 'Votre demande a bien été envoyée. Nous traiterons votre demande dans les plus brefs délais.',
     cancel: 'Annuler',
     close:  'Fermer',
+    share:  'Partage ce trick !',
+    copied: 'Lien copié !',
 
     // Quiz
     quizQuestion:  'Quelle est cette figure ?',
@@ -148,6 +150,8 @@ export const t = {
     takedownSuccessMsg: 'Your request has been submitted. We will process it as soon as possible.',
     cancel: 'Cancel',
     close:  'Close',
+    share:  'Share this trick!',
+    copied: 'Link copied!',
 
     // Quiz
     quizQuestion:  'What trick is this?',

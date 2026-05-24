@@ -20,6 +20,7 @@ export default function FigureDetail() {
   const [takedownVideo, setTakedownVideo] = useState(null)
   const [takedownForm, setTakedownForm] = useState({ name: '', email: '', message: '' })
   const [takedownSent, setTakedownSent] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -28,6 +29,18 @@ export default function FigureDetail() {
       setLoading(false)
     })
   }, [slug])
+
+  const shareTrick = async () => {
+    const url = window.location.href
+    const text = figure.name
+    if (navigator.share) {
+      await navigator.share({ title: text, url })
+    } else {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
 
   const submitTakedown = async (e) => {
     e.preventDefault()
@@ -140,7 +153,13 @@ export default function FigureDetail() {
           <Icon name="chevron-right" className={styles.breadcrumbSep} />
           <span className={styles.breadcrumbCurrent}>{figure.name}</span>
         </nav>
-        <h1 className={styles.title}>{figure.name}</h1>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>{figure.name}</h1>
+          <button className={styles.shareBtn} onClick={shareTrick} title={tr.share}>
+            <Icon name={copied ? 'check' : 'share-3'} />
+            <span>{copied ? tr.copied : tr.share}</span>
+          </button>
+        </div>
         <div className={styles.meta}>
           <CategoryBadge slug={figure.category_slug} name={figure.category_name} />
           <SportBadge sport={figure.sport} />
