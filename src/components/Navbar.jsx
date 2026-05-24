@@ -10,15 +10,16 @@ export default function Navbar() {
   const { theme, toggleTheme } = useTheme()
 
   const links = [
-    { to: '/',        icon: 'home',    label: tr.home    },
-    { to: '/figures', icon: 'list',    label: tr.figures },
-    { to: '/quiz',    icon: 'help',    label: tr.quiz    },
-    { to: '/compo', icon: 'calculator', label: tr.compo },
-    { to: '/contact', icon: 'mail',    label: tr.contact  },
+    { to: '/',        icon: 'home',        label: tr.home    },
+    { to: '/figures', icon: 'list',        label: tr.figures },
+    { to: '/quiz',    icon: 'help',        label: tr.quiz    },
+    { to: '/compo',   icon: 'calculator',  label: tr.compo   },
+    { to: '/contact', icon: 'mail',        label: tr.contact },
   ]
 
   return (
     <>
+      {/* Desktop topbar */}
       <header className={styles.topbar}>
         <NavLink to="/" className={styles.logo}>
           <img src={theme === 'dark' ? '/logo-line-white.png' : '/logo-line-black.png'} alt="WakeRef" height={36} />
@@ -35,17 +36,13 @@ export default function Navbar() {
             </NavLink>
           ))}
         </nav>
-        <button
-          className={`btn-icon ${styles.themeBtn}`}
-          onClick={toggleTheme}
-          aria-label="Toggle theme"
-        >
+        <button className={`btn-icon ${styles.themeBtn}`} onClick={toggleTheme} aria-label="Toggle theme">
           <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
         </button>
         <LangSwitcher />
       </header>
 
-      {/* Top bar mobile — logo uniquement */}
+      {/* Mobile topbar — logo + thème + langue */}
       <header className={styles.topbarMobile}>
         <NavLink to="/" className={styles.logo}>
           <img
@@ -54,9 +51,15 @@ export default function Navbar() {
             height={36}
           />
         </NavLink>
-        <LangSwitcher />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button className={`btn-icon ${styles.themeBtn}`} onClick={toggleTheme} aria-label="Toggle theme">
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
+          </button>
+          <LangSwitcher />
+        </div>
       </header>
 
+      {/* Mobile bottombar — navigation uniquement */}
       <nav className={styles.bottombar}>
         {links.map(l => (
           <NavLink
@@ -69,16 +72,6 @@ export default function Navbar() {
             <span>{l.label}</span>
           </NavLink>
         ))}
-        <div className={styles.bottomLang}>
-          <button
-            className={`btn-icon ${styles.themeBtn}`}
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-          >
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
-          </button>
-          <LangSwitcher />
-        </div>
       </nav>
     </>
   )
