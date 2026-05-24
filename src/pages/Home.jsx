@@ -4,24 +4,9 @@ import { supabase } from '../lib/supabase'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
 import { CATEGORIES } from '../data/categories'
+import { CONTEXTS } from '../data/contexts'
 import styles from './Home.module.css'
 import SEO from '../components/SEO'
-
-const CAT_ICONS = {
-  spin:         'ti-rotate-clockwise',
-  railey:       'ti-arrow-up',
-  's-bend':     'ti-arrow-zig-zag',
-  hinterberger: 'ti-arrow-loop-right',
-  backroll:     'ti-rotate-2',
-  front:        'ti-rotate-clockwise-2',
-  tantrum:      'ti-arrow-back-up',
-  grabs:        'ti-hand-grab',
-  slides:       'ti-minus',
-  shoveit:      'ti-flip-horizontal',
-  fliptricks:   'ti-rotate-clockwise-2',
-  specials:     'ti-star',
-  whip:         'ti-arrow-down-from-arc',
-}
 
 export default function Home() {
   const [query, setQuery] = useState('')
@@ -117,20 +102,15 @@ export default function Home() {
                   onClick={() => navigate(`/figures?cat=${c.slug}`)}
                   style={{ '--cat-color': c.color }}
                 >
-                  <i className={`ti ${CAT_ICONS[c.slug] || 'ti-star'}`} />
+                  <i className={`ti ${c.icon}`} />
                   <span className={styles.catName}>{tr.catNames[c.slug] || c.name}</span>
                 </button>
               ))}
-              {[
-                { value: 'kicker',    label: 'Kicker',    icon: 'ti-escalator-up', color: '#f59e0b' },
-                { value: 'jib',       label: 'Jib',       icon: 'ti-escalator',    color: '#10b981' },
-                { value: 'flat',      label: 'Flat',      icon: 'ti-ripple',       color: '#06b6d4' },
-                { value: 'air_trick', label: 'Air Trick', icon: 'ti-arrows-up',    color: '#ec4899' },
-              ].map(ctx => (
+              {CONTEXTS.map(ctx => (
                 <button
-                  key={ctx.value}
+                  key={ctx.slug}
                   className={styles.catCard}
-                  onClick={() => navigate(`/figures?ctx=${ctx.value}`)}
+                  onClick={() => navigate(`/figures?ctx=${ctx.slug}`)}
                   style={{ '--cat-color': ctx.color }}
                 >
                   <i className={`ti ${ctx.icon}`} />
