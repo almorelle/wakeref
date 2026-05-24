@@ -23,6 +23,10 @@ export default function FigureForm() {
     name: '', slug: '', category_id: '', sport: 'wakeboard',
     difficulty: 2, published: true,
     contexts: [],
+    approach: [],
+    rotation: [],
+    inverted: false,
+    rewind: false,
     description: '', tips: ['', '', '', ''],
     description_en: '', tips_en: ['', '', '', ''],
   })
@@ -35,7 +39,6 @@ export default function FigureForm() {
   const nextId = figureIds[currentIndex + 1]
 
   useEffect(() => {
-    // Charger catégories + liste figures toujours
     const baseQueries = Promise.all([
       supabase.from('categories').select('*').order('sort_order'),
       supabase.from('figures').select('id, name, slug').order('name'),
@@ -49,7 +52,6 @@ export default function FigureForm() {
       return
     }
 
-    // En mode édition : tout charger en parallèle puis setState une seule fois
     Promise.all([
       supabase.from('categories').select('*').order('sort_order'),
       supabase.from('figures').select('id, name, slug').order('name'),
@@ -72,6 +74,10 @@ export default function FigureForm() {
           difficulty: fig.difficulty,
           published: fig.published,
           contexts: fig.contexts || [],
+          approach: fig.approach || [],
+          rotation: fig.rotation || [],
+          inverted: fig.inverted || false,
+          rewind: fig.rewind || false,
           description: fig.description || '',
           tips: [...(fig.tips || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips || []).length + 1)),
           description_en: fig.description_en || '',
@@ -96,6 +102,14 @@ export default function FigureForm() {
     return { ...f, [key]: tips }
   })
 
+  const toggleArray = (key, value) => {
+    setForm(f => {
+      const arr = f[key] || []
+      const next = arr.includes(value) ? arr.filter(x => x !== value) : [...arr, value]
+      return { ...f, [key]: next }
+    })
+  }
+
   const togglePrereq = (figId) => {
     setPrereqIds(prev => prev.includes(figId) ? prev.filter(x => x !== figId) : [...prev, figId])
   }
@@ -109,6 +123,10 @@ export default function FigureForm() {
       category_id: form.category_id ? parseInt(form.category_id) : null,
       difficulty: parseInt(form.difficulty),
       contexts: form.contexts,
+      approach: form.approach,
+      rotation: form.rotation,
+      inverted: form.inverted,
+      rewind: form.rewind,
       tips: form.tips.filter(t => t.trim()),
       tips_en: form.tips_en.filter(t => t.trim()),
     }
@@ -138,6 +156,24 @@ export default function FigureForm() {
     { id: 'fr', label: '🇫🇷 Français' },
     { id: 'en', label: '🇬🇧 English' },
   ]
+
+  const CheckGroup = ({ label, fieldKey, options }) => (
+    <div className="field">
+      <label>{label}</label>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        {options.map(opt => (
+          <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
+            <input
+              type="checkbox"
+              checked={(form[fieldKey] || []).includes(opt.value)}
+              onChange={() => toggleArray(fieldKey, opt.value)}
+            />
+            {opt.label}
+          </label>
+        ))}
+      </div>
+    </div>
+  )
 
   return (
     <div className={styles.page}>
@@ -255,33 +291,55 @@ export default function FigureForm() {
           </div>
         </div>
 
-        <div className="field">
-          <label>Contextes</label>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            {[
+        {/* ── Métadonnées ── */}
+        <div style={{ borderTop: '1px solid var(--c-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          <CheckGroup
+            label="Contextes"
+            fieldKey="contexts"
+            options={[
               { value: 'kicker',    label: 'Kicker'    },
               { value: 'jib',       label: 'Jib'       },
-              { value: 'flat',      label: 'Flat'       },
+              { value: 'flat',      label: 'Flat'      },
               { value: 'air_trick', label: 'Air Trick' },
-            ].map(ctx => (
-              <label key={ctx.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
-                <input
-                  type="checkbox"
-                  checked={form.contexts.includes(ctx.value)}
-                  onChange={e => {
-                    const next = e.target.checked
-                      ? [...form.contexts, ctx.value]
-                      : form.contexts.filter(c => c !== ctx.value)
-                    set('contexts', next)
-                  }}
-                />
-                {ctx.label}
+            ]}
+          />
+
+          <CheckGroup
+            label="Approche"
+            fieldKey="approach"
+            options={[
+              { value: 'hs', label: 'Heelside' },
+              { value: 'ts', label: 'Toeside'  },
+            ]}
+          />
+
+          <CheckGroup
+            label="Rotation"
+            fieldKey="rotation"
+            options={[
+              { value: 'fs', label: 'Frontside' },
+              { value: 'bs', label: 'Backside'  },
+            ]}
+          />
+
+          <div className="field">
+            <label>Qualificatifs</label>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
+                <input type="checkbox" checked={form.inverted} onChange={e => set('inverted', e.target.checked)} />
+                Inversé (tête en bas)
               </label>
-            ))}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
+                <input type="checkbox" checked={form.rewind} onChange={e => set('rewind', e.target.checked)} />
+                Rewind
+              </label>
+            </div>
           </div>
+
         </div>
 
-        <div className="field">
+        <div className="field" style={{ marginTop: 8 }}>
           <label style={{ flexDirection: 'row', display: 'flex', alignItems: 'center', gap: 8 }}>
             <input type="checkbox" checked={form.published} onChange={e => set('published', e.target.checked)} />
             Publié (visible sur le site)

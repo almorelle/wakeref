@@ -64,7 +64,11 @@ create table figures (
   published      boolean not null default true,
   created_at     timestamptz default now(),
   updated_at     timestamptz default now(),
-  contexts       text[]
+  contexts       text[],
+  approach       text[],
+  rotation       text[],
+  inverted       boolean not null default false
+  rewind         boolean not null default false
 );
 
 create index figures_search_idx on figures
