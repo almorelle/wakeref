@@ -103,8 +103,8 @@ function computeScore(entries, jibPasses) {
 
 const SCORE_KEYS = [
   { section: 'compo_sectionAir',     items: ['railey_air','backroll_air','front_sbend_air','ts_air','sw_ts_air','whip'] },
-  { section: 'compo_sectionGlisse',  items: ['flip','spin','fslip_bsboard','fsboard_bslip'] },
-  { section: 'compo_sectionEntries', items: ['ts_entry','sw_ts_entry','hs_entry','sw_hs_entry','5050','press'] },
+  { section: 'compo_sectionGlisse',  items: ['flip','spin','fslip_bsboard','fsboard_bslip','5050','press'] },
+  { section: 'compo_sectionEntries', items: ['ts_entry','sw_ts_entry','hs_entry','sw_hs_entry'] },
   { section: 'compo_sectionRota',    items: ['fs_rotation','sw_fs_rotation','bs_rotation','sw_bs_rotation'] },
 ]
 
