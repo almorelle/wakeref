@@ -5,6 +5,7 @@ import Figures from './pages/Figures'
 import FigureDetail from './pages/FigureDetail'
 import Quiz from './pages/Quiz'
 import Contact from './pages/Contact'
+import Compo from './pages/Compo'
 import NotFound from './pages/NotFound'
 import Login from './pages/admin/Login'
 import AdminLayout from './pages/admin/AdminLayout'
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/figures" element={<Figures />} />
           <Route path="/figures/:slug" element={<FigureDetail />} />
           <Route path="/quiz" element={<Quiz />} />
+          <Route path="/compo" element={<Compo />} />
           <Route path="/contact" element={<Contact />} />
         </Route>
 

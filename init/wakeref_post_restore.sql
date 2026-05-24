@@ -63,7 +63,8 @@ create trigger figures_updated_at
 -- ────────────────────────────────────────────────────────────
 -- 5. VUE figures_full
 -- ────────────────────────────────────────────────────────────
-drop view if exists figures_full;
+drop view if exists figures_full cascade;
+
 create view figures_full as
 select
   f.id, f.slug, f.name, f.sport, f.difficulty,
@@ -71,6 +72,10 @@ select
   f.tips, f.tips_en,
   f.is_switch, f.switch_of,
   f.contexts,
+  f.approach,
+  f.rotation,
+  f.inverted,
+  f.rewind,
   f.published, f.created_at, f.updated_at,
   c.name  as category_name,
   c.slug  as category_slug,
