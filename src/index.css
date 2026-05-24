@@ -129,6 +129,7 @@ input, textarea, select {
   color: #fff;
 }
 .btn-primary:hover { background: var(--c-accent2); }
+.btn-primary:disabled { background: var(--c-border2); color: var(--c-faint); cursor: not-allowed; }
 .btn-ghost {
   border: 1px solid var(--c-border2);
   color: var(--c-muted);

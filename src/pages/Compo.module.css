@@ -277,3 +277,36 @@
   }
   .scoreTotal { font-size: 42px; }
 }
+
+/* Boutons d'ajout */
+.addBtns {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.addBtn {
+  border-style: dashed;
+}
+
+.searchSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.entryRowJib {
+  border-color: var(--c-border2);
+  background: var(--c-surface2);
+}
+
+.tagJib {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestionHighlight {
+  background: var(--c-surface3);
+}
