@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
+import { CATEGORIES } from '../data/categories'
 import styles from './Home.module.css'
 import SEO from '../components/SEO'
 
@@ -26,16 +27,12 @@ export default function Home() {
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState(null)
   const [searching, setSearching] = useState(false)
-  const [categories, setCategories] = useState([])
   const [recent, setRecent] = useState([])
   const [videos, setVideos] = useState([])
   const navigate = useNavigate()
   const tr = useT()
 
   useEffect(() => {
-    supabase.from('categories').select('*').order('sort_order').then(({ data }) => {
-      if (data) setCategories(data)
-    })
     supabase.from('figures_full').select('*').order('created_at', { ascending: false }).limit(5).then(({ data }) => {
       if (data) setRecent(data)
     })
@@ -113,7 +110,7 @@ export default function Home() {
           <>
             <p className="section-title" style={{ marginTop: '1.5rem' }}>{tr.categories}</p>
             <div className={styles.catGrid}>
-              {categories.map(c => (
+              {CATEGORIES.map(c => (
                 <button
                   key={c.id}
                   className={styles.catCard}

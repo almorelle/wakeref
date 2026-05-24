@@ -3,24 +3,18 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
+import { CATEGORIES } from '../data/categories'
 import styles from './Figures.module.css'
 import SEO from '../components/SEO'
 
 export default function Figures() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [figures, setFigures] = useState([])
-  const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const activeFilter  = searchParams.get('cat')   || 'tous'
   const activeContext = searchParams.get('ctx')   || ''
   const activeSport   = searchParams.get('sport') || ''
   const tr = useT()
-
-  useEffect(() => {
-    supabase.from('categories').select('*').order('sort_order').then(({ data }) => {
-      if (data) setCategories(data)
-    })
-  }, [])
 
   useEffect(() => {
     setLoading(true)
@@ -31,30 +25,30 @@ export default function Figures() {
     q.then(({ data }) => { setFigures(data || []); setLoading(false) })
   }, [activeFilter, activeContext, activeSport])
 
-  const buildParams = (overrides) => {
+  const buildParams = () => {
     const base = {}
     if (activeFilter !== 'tous') base.cat = activeFilter
     if (activeContext) base.ctx = activeContext
     if (activeSport)  base.sport = activeSport
-    return { ...base, ...overrides }
+    return base
   }
 
   const setFilter = (slug) => {
-    const p = buildParams({ cat: slug !== 'tous' ? slug : undefined })
+    const p = buildParams()
     delete p.cat
     if (slug !== 'tous') p.cat = slug
     setSearchParams(p)
   }
 
   const setContext = (ctx) => {
-    const p = buildParams({})
+    const p = buildParams()
     if (ctx) p.ctx = ctx
     else delete p.ctx
     setSearchParams(p)
   }
 
   const setSport = (sport) => {
-    const p = buildParams({})
+    const p = buildParams()
     if (sport) p.sport = sport
     else delete p.sport
     setSearchParams(p)
@@ -75,7 +69,7 @@ export default function Figures() {
           className={`${styles.chip} ${activeFilter === 'tous' ? styles.active : ''}`}
           onClick={() => setFilter('tous')}
         >{tr.all}</button>
-        {categories.map(c => (
+        {CATEGORIES.map(c => (
           <button
             key={c.id}
             className={`${styles.chip} ${activeFilter === c.slug ? styles.active : ''}`}

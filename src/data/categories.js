@@ -1,0 +1,15 @@
+export const CATEGORIES = [
+  { id: 1,  name: 'Spin',         slug: 'spin',         color: '#6366f1' },
+  { id: 2,  name: 'Railey',       slug: 'railey',       color: '#0ea5e9' },
+  { id: 3,  name: 'S-Bend',       slug: 's-bend',       color: '#06b6d4' },
+  { id: 4,  name: 'Hinterberger', slug: 'hinterberger', color: '#8b5cf6' },
+  { id: 5,  name: 'Backroll',     slug: 'backroll',     color: '#f59e0b' },
+  { id: 6,  name: 'Front',        slug: 'front',        color: '#22c55e' },
+  { id: 7,  name: 'Tantrum',      slug: 'tantrum',      color: '#ef4444' },
+  { id: 8,  name: 'Grabs',        slug: 'grabs',        color: '#3b82f6' },
+  { id: 9,  name: 'Slides',       slug: 'slides',       color: '#10b981' },
+  { id: 10, name: 'Shove-it',     slug: 'shoveit',      color: '#f97316' },
+  { id: 11, name: 'Flip Tricks',  slug: 'fliptricks',   color: '#ec4899' },
+  { id: 12, name: 'Specials',     slug: 'specials',     color: '#a855f7' },
+  { id: 13, name: 'Whip',         slug: 'whip',         color: '#f43f5e' },
+]
