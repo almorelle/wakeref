@@ -277,7 +277,7 @@ select.input { appearance: none; }
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 300;
-  src: url('../fonts/dm-sans-v17-latin-300.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/dm-sans-v17-latin-300.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
 /* dm-sans-regular - latin */
@@ -286,7 +286,7 @@ select.input { appearance: none; }
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 400;
-  src: url('../fonts/dm-sans-v17-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/dm-sans-v17-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
 /* dm-sans-500 - latin */
@@ -295,7 +295,7 @@ select.input { appearance: none; }
   font-family: 'DM Sans';
   font-style: normal;
   font-weight: 500;
-  src: url('../fonts/dm-sans-v17-latin-500.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/dm-sans-v17-latin-500.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
 /* syne-regular - latin */
@@ -304,7 +304,7 @@ select.input { appearance: none; }
   font-family: 'Syne';
   font-style: normal;
   font-weight: 400;
-  src: url('../fonts/syne-v24-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/syne-v24-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
 /* syne-700 - latin */
@@ -313,7 +313,7 @@ select.input { appearance: none; }
   font-family: 'Syne';
   font-style: normal;
   font-weight: 700;
-  src: url('../fonts/syne-v24-latin-700.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/syne-v24-latin-700.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
 
 /* syne-800 - latin */
@@ -322,5 +322,5 @@ select.input { appearance: none; }
   font-family: 'Syne';
   font-style: normal;
   font-weight: 800;
-  src: url('../fonts/syne-v24-latin-800.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/syne-v24-latin-800.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
 }
