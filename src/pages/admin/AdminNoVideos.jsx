@@ -11,25 +11,12 @@ export default function AdminNoVideos() {
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    supabase.rpc('figures_without_videos').then(({ data, error }) => {
-      if (error) {
-        // Fallback : requête manuelle
-        supabase.from('figures_full').select('*').then(({ data: all }) => {
-          if (!all) return
-          const withoutVideos = all.filter(f => {
-            const vids = typeof f.videos === 'string' ? JSON.parse(f.videos) : f.videos || []
-            return vids.length === 0
-          })
-          setFigures(withoutVideos)
-          setLoading(false)
-        })
-      } else {
-        setFigures(data || [])
-        setLoading(false)
-      }
-    })
-  }, [])
+useEffect(() => {
+  supabase.rpc('figures_without_videos').then(({ data }) => {
+    setFigures(data || [])
+    setLoading(false)
+  })
+}, [])
 
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
 

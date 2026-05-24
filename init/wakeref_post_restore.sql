@@ -36,6 +36,14 @@ set search_path = public as $$
   order by case when lower(name) = lower(query) then 0 else 1 end, name;
 $$;
 
+create or replace function public.figures_without_videos()
+returns setof figures_full language sql stable
+set search_path = public as $$
+  select * from figures_full
+  where json_array_length(videos) = 0
+  order by name;
+$$;
+
 -- ────────────────────────────────────────────────────────────
 -- 3. INDEX FULL-TEXT
 -- ────────────────────────────────────────────────────────────
@@ -171,4 +179,5 @@ grant insert, update, delete on public.prerequisites   to authenticated;
 grant insert, update, delete on public.takedown_requests to authenticated;
 grant usage, select on all sequences in schema public  to authenticated;
 grant execute on function public.search_figures(text)      to anon, authenticated;
+grant execute on function public.figures_without_videos() to authenticated;
 grant execute on function public.immutable_unaccent(text)  to anon, authenticated;
