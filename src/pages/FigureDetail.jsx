@@ -124,9 +124,21 @@ export default function FigureDetail() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate(-1)}>
-          <i className="ti ti-arrow-left" /> {tr.back}
-        </button>
+        <nav className={styles.breadcrumb}>
+          <button onClick={() => navigate('/')} className={styles.breadcrumbLink}>
+            <i className="ti ti-home" />
+          </button>
+          <i className={`ti ti-chevron-right ${styles.breadcrumbSep}`} />
+          <button onClick={() => navigate('/figures')} className={styles.breadcrumbLink}>
+            {tr.figures}
+          </button>
+          <i className={`ti ti-chevron-right ${styles.breadcrumbSep}`} />
+          <button onClick={() => navigate(`/figures?cat=${figure.category_slug}`)} className={styles.breadcrumbLink}>
+            {tr.catNames[figure.category_slug] || figure.category_name}
+          </button>
+          <i className={`ti ti-chevron-right ${styles.breadcrumbSep}`} />
+          <span className={styles.breadcrumbCurrent}>{figure.name}</span>
+        </nav>
         <h1 className={styles.title}>{figure.name}</h1>
         <div className={styles.meta}>
           <CategoryBadge slug={figure.category_slug} name={figure.category_name} />

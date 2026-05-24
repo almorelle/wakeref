@@ -232,3 +232,29 @@
   font-weight: 600;
   color: var(--c-text);
 }
+
+/* Breadcrumb */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.breadcrumbLink {
+  font-size: 12px;
+  color: var(--c-muted);
+  padding: 2px 4px;
+  border-radius: var(--r-sm);
+  transition: color var(--t-fast);
+}
+.breadcrumbLink:hover { color: var(--c-text); }
+.breadcrumbSep {
+  font-size: 10px;
+  color: var(--c-faint);
+}
+.breadcrumbCurrent {
+  font-size: 12px;
+  color: var(--c-text);
+  font-weight: 600;
+}
