@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useT } from '../i18n/useT'
 import styles from './Contact.module.css'
 import SEO from '../components/SEO'
+import Icon from '../components/Icon'
 
 const FORMSPREE_ID = 'xykvggzg'
 
@@ -49,7 +50,7 @@ export default function Contact() {
 
         {status === 'success' ? (
           <div className={styles.success}>
-            <i className="ti ti-check" style={{ fontSize: 36, color: 'var(--c-success)' }} />
+            <Icon name="check" style={{ fontSize: 36, color: 'var(--c-success)' }} />
             <p>{tr.contactSuccess}</p>
           </div>
         ) : (
@@ -97,8 +98,8 @@ export default function Contact() {
               style={{ alignSelf: 'flex-end' }}
             >
               {status === 'sending'
-                ? <><i className="ti ti-loader-2 spin" /> {tr.contactSending}</>
-                : <><i className="ti ti-send" /> {tr.contactSend}</>
+                ? <><Icon name="loader-2" className="spin" /> {tr.contactSending}</>
+                : <><Icon name="send" /> {tr.contactSend}</>
               }
             </button>
           </form>

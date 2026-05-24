@@ -3,16 +3,17 @@ import LangSwitcher from './LangSwitcher'
 import { useT } from '../i18n/useT'
 import { useTheme } from '../contexts/ThemeContext'
 import styles from './Navbar.module.css'
+import Icon from './Icon'
 
 export default function Navbar() {
   const tr = useT()
   const { theme, toggleTheme } = useTheme()
 
   const links = [
-    { to: '/',        icon: 'ti-home',    label: tr.home    },
-    { to: '/figures', icon: 'ti-list',    label: tr.figures },
-    { to: '/quiz',    icon: 'ti-help',    label: tr.quiz    },
-    { to: '/contact', icon: 'ti-mail',    label: tr.contact  },
+    { to: '/',        icon: 'home',    label: tr.home    },
+    { to: '/figures', icon: 'list',    label: tr.figures },
+    { to: '/quiz',    icon: 'help',    label: tr.quiz    },
+    { to: '/contact', icon: 'mail',    label: tr.contact  },
   ]
 
   return (
@@ -38,7 +39,7 @@ export default function Navbar() {
           onClick={toggleTheme}
           aria-label="Toggle theme"
         >
-          <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon'}`} />
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
         </button>
         <LangSwitcher />
       </header>
@@ -63,7 +64,7 @@ export default function Navbar() {
             end={l.to === '/'}
             className={({ isActive }) => `${styles.bottomlink} ${isActive ? styles.active : ''}`}
           >
-            <i className={`ti ${l.icon}`} />
+            <Icon name={l.icon} />
             <span>{l.label}</span>
           </NavLink>
         ))}
@@ -73,7 +74,7 @@ export default function Navbar() {
             onClick={toggleTheme}
             aria-label="Toggle theme"
           >
-            <i className={`ti ${theme === 'dark' ? 'ti-sun' : 'ti-moon'}`} />
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
           </button>
           <LangSwitcher />
         </div>

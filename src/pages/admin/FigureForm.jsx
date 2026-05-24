@@ -5,6 +5,7 @@ import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import styles from './FigureForm.module.css'
 import { useLocation } from 'react-router-dom'
+import Icon from '../../components/Icon'
 
 export default function FigureForm() {
   const { id } = useParams()
@@ -143,16 +144,16 @@ export default function FigureForm() {
       <ToastContainer toasts={toasts} />
       <div className={styles.header}>
         <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/figures')}>
-          <i className="ti ti-arrow-left" /> Retour
+          <Icon name="arrow-left" /> Retour
         </button>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-ghost btn-sm" disabled={!prevId}
             onClick={() => navigate(`/admin/figures/${prevId}/edit`, { state: location.state })}>
-            <i className="ti ti-arrow-left" /> Précédent
+            <Icon name="arrow-left" /> Précédent
           </button>
           <button className="btn btn-ghost btn-sm" disabled={!nextId}
             onClick={() => navigate(`/admin/figures/${nextId}/edit`, { state: location.state })}>
-            Suivant <i className="ti ti-arrow-right" />
+            Suivant <Icon name="arrow-right" />
           </button>
         </div>
         <h1 className={styles.title}>{isEdit ? 'Modifier la figure' : 'Nouvelle figure'}</h1>

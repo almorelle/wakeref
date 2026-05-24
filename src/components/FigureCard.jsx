@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import DifficultyDots from './DifficultyDots'
 import { SportBadge, CategoryBadge, ContextBadge } from './Badges'
 import styles from './FigureCard.module.css'
+import Icon from './Icon'
 
 export default function FigureCard({ figure }) {
   const navigate = useNavigate()
@@ -24,7 +25,7 @@ export default function FigureCard({ figure }) {
           <DifficultyDots value={figure.difficulty} />
         </div>
       </div>
-      <i className="ti ti-chevron-right" style={{ color: 'var(--c-faint)', fontSize: 16 }} />
+      <Icon name="chevron-right" style={{ color: 'var(--c-faint)', fontSize: 16 }} />
     </div>
   )
 }

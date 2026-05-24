@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import styles from './AdminFigures.module.css'
 import { ContextBadge } from '../../components/Badges'
+import Icon from '../../components/Icon'
 
 export default function AdminFigures() {
   const [figures, setFigures] = useState([])
@@ -40,7 +41,7 @@ export default function AdminFigures() {
           <p className={styles.sub}>{figures.length} figures au total</p>
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/admin/figures/new')}>
-          <i className="ti ti-plus" /> Nouvelle figure
+          <Icon name="plus" /> Nouvelle figure
         </button>
       </div>
 
@@ -73,13 +74,13 @@ export default function AdminFigures() {
             </div>
             <div className={styles.rowActions}>
               <button className="btn btn-ghost btn-sm btn-icon" title="Vidéos" onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
-                <i className="ti ti-video" />
+                <Icon name="video" />
               </button>
               <button className="btn btn-ghost btn-sm btn-icon" title="Modifier" onClick={() => navigate(`/admin/figures/${f.id}/edit`, {state: { figureIds: filtered.map(f => f.id) }})}>
-                <i className="ti ti-pencil" />
+                <Icon name="pencil" />
               </button>
               <button className="btn btn-ghost btn-sm btn-icon" title="Supprimer" style={{ color: 'var(--c-danger)' }} onClick={() => deleteFigure(f.id, f.name)}>
-                <i className="ti ti-trash" />
+                <Icon name="trash" />
               </button>
             </div>
           </div>

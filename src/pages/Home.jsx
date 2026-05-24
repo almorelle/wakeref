@@ -7,6 +7,7 @@ import { CATEGORIES } from '../data/categories'
 import { CONTEXTS } from '../data/contexts'
 import styles from './Home.module.css'
 import SEO from '../components/SEO'
+import Icon from '../components/Icon'
 
 export default function Home() {
   const [query, setQuery] = useState('')
@@ -63,7 +64,7 @@ export default function Home() {
           <p className={styles.sub}>{tr.appSubtitle}</p>
         </div>
         <div className={styles.searchWrap}>
-          <i className="ti ti-search" />
+          <Icon name="search" />
           <input
             className={styles.searchInput}
             type="text"
@@ -74,7 +75,7 @@ export default function Home() {
           />
           {query && (
             <button onClick={() => setQuery('')} className={styles.clearBtn}>
-              <i className="ti ti-x" />
+              <Icon name="x" />
             </button>
           )}
         </div>
@@ -102,7 +103,7 @@ export default function Home() {
                   onClick={() => navigate(`/figures?cat=${c.slug}`)}
                   style={{ '--cat-color': c.color }}
                 >
-                  <i className={`ti ${c.icon}`} />
+                  <Icon name={c.icon} style={{ color: c.color }} />
                   <span className={styles.catName}>{tr.catNames[c.slug] || c.name}</span>
                 </button>
               ))}
@@ -113,7 +114,7 @@ export default function Home() {
                   onClick={() => navigate(`/figures?ctx=${ctx.slug}`)}
                   style={{ '--cat-color': ctx.color }}
                 >
-                  <i className={`ti ${ctx.icon}`} />
+                  <Icon name={ctx.icon} style={{ color: ctx.color }} />
                   <span className={styles.catName}>{ctx.label}</span>
                 </button>
               ))}

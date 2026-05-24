@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import styles from './Login.module.css'
+import Icon from '../../components/Icon'
 
 export default function Login() {
   const { signIn } = useAuth()
@@ -25,7 +26,7 @@ export default function Login() {
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.logo}>
-          <i className="ti ti-wave-sine" />
+          <Icon name="wave-sine" />
           WakeRef Admin
         </div>
         <form onSubmit={submit} className={styles.form}>

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import styles from './AdminLayout.module.css'
+import Icon from '../../components/Icon'
 
 export default function AdminLayout() {
   const { session, loading, signOut } = useAuth()
@@ -15,18 +16,18 @@ export default function AdminLayout() {
   if (!session) return null
 
   const links = [
-    { to: '/admin',         icon: 'ti-layout-dashboard', label: 'Dashboard',  end: true },
-    { to: '/admin/figures', icon: 'ti-list',              label: 'Figures'             },
-    { to: '/admin/videos',  icon: 'ti-video',             label: 'Vidéos'              },
-    { to: '/admin/takedowns',  icon: 'ti-flag',           label: 'Retraits'            },
-    { to: '/admin/no-videos',  icon: 'ti-video-off',      label: 'Sans vidéo'          },
+    { to: '/admin',         icon: 'layout-dashboard', label: 'Dashboard',  end: true },
+    { to: '/admin/figures', icon: 'list',              label: 'Figures'             },
+    { to: '/admin/videos',  icon: 'video',             label: 'Vidéos'              },
+    { to: '/admin/takedowns',  icon: 'flag',           label: 'Retraits'            },
+    { to: '/admin/no-videos',  icon: 'video-off',      label: 'Sans vidéo'          },
   ]
 
   return (
     <div className={styles.layout}>
       <aside className={styles.sidebar}>
         <NavLink to="/" className={styles.logo}>
-          <i className="ti ti-wave-sine" />
+          <Icon name="wave-sine" />
           <span>WakeRef</span>
         </NavLink>
         <span className={styles.adminLabel}>Admin</span>
@@ -38,13 +39,13 @@ export default function AdminLayout() {
               end={l.end}
               className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ''}`}
             >
-              <i className={`ti ${l.icon}`} />
+              <Icon name={l.icon} />
               {l.label}
             </NavLink>
           ))}
         </nav>
         <button className={styles.signout} onClick={() => { signOut(); navigate('/') }}>
-          <i className="ti ti-logout" /> Déconnexion
+          <Icon name="logout" /> Déconnexion
         </button>
       </aside>
       <main className={styles.main}>

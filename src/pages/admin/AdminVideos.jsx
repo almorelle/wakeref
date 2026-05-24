@@ -5,6 +5,7 @@ import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import styles from './AdminVideos.module.css'
 import { useLocation } from 'react-router-dom'
+import Icon from '../../components/Icon'
 
 export default function AdminVideos() {
   const [searchParams] = useSearchParams()
@@ -162,7 +163,7 @@ export default function AdminVideos() {
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button type="submit" className="btn btn-primary" disabled={uploading}>
-              {uploading ? 'Upload en cours…' : <><i className="ti ti-upload" /> Ajouter la vidéo</>}
+              {uploading ? 'Upload en cours…' : <><Icon name="upload" /> Ajouter la vidéo</>}
             </button>
           </div>
         </form>
@@ -176,8 +177,8 @@ export default function AdminVideos() {
           <div key={v.id} className={styles.videoRow}>
             <div className={styles.videoThumb}>
               {v.file_path
-                ? <i className="ti ti-video" />
-                : <i className="ti ti-link" />
+                ? <Icon name="video" />
+                : <Icon name="link" />
               }
             </div>
             <div className={styles.videoMeta}>
@@ -187,7 +188,7 @@ export default function AdminVideos() {
               {v.takedown_requested && <span className="badge" style={{ background: '#ef444420', color: 'var(--c-danger)' }}>Retrait demandé</span>}
             </div>
             <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--c-danger)' }} onClick={() => deleteVideo(v)}>
-              <i className="ti ti-trash" />
+              <Icon name="trash" />
             </button>
           </div>
         ))}

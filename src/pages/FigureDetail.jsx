@@ -7,6 +7,7 @@ import { useT } from '../i18n/useT'
 import { useLocalizedField } from '../contexts/LanguageContext'
 import SEO from '../components/SEO'
 import styles from './FigureDetail.module.css'
+import Icon from '../components/Icon'
 
 export default function FigureDetail() {
   const { slug } = useParams()
@@ -55,7 +56,7 @@ export default function FigureDetail() {
     if (v.source_type === 'instagram' && v.source_url) {
       return (
         <a href={v.source_url} target="_blank" rel="noopener noreferrer" className={styles.platformThumb}>
-          <i className="ti ti-brand-instagram" style={{ color: '#E1306C' }} />
+          <Icon name="brand-instagram" style={{ color: '#E1306C' }} />
           <span>Voir sur Instagram</span>
         </a>
       )
@@ -84,7 +85,7 @@ export default function FigureDetail() {
     }
 
     // Fallback
-    return <div className={styles.videoPlaceholder}><i className="ti ti-player-play" /></div>
+    return <div className={styles.videoPlaceholder}><Icon name="player-play" /></div>
   }
 
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
@@ -92,7 +93,7 @@ export default function FigureDetail() {
     <div className={styles.page}>
       <div className={styles.header}>
         <button className={styles.backBtn} onClick={() => navigate(-1)}>
-          <i className="ti ti-arrow-left" /> {tr.back}
+          <Icon name="arrow-left" /> {tr.back}
         </button>
       </div>
       <div className="page-container">
@@ -102,10 +103,10 @@ export default function FigureDetail() {
           <p style={{ fontSize: 14, color: 'var(--c-muted)' }}>{tr.notFoundSub}</p>
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button className="btn btn-primary" onClick={() => navigate('/figures')}>
-              <i className="ti ti-list" /> {tr.figures}
+              <Icon name="list" /> {tr.figures}
             </button>
             <button className="btn btn-ghost" onClick={() => navigate(-1)}>
-              <i className="ti ti-arrow-left" /> {tr.back}
+              <Icon name="arrow-left" /> {tr.back}
             </button>
           </div>
         </div>
@@ -113,30 +114,30 @@ export default function FigureDetail() {
     </div>
   )
 
-  const prereqs       = typeof figure.prerequisites === 'string' ? JSON.parse(figure.prerequisites) : figure.prerequisites || []
-  const switchOf       = figure.switch_of_figure ? (typeof figure.switch_of_figure === 'string' ? JSON.parse(figure.switch_of_figure) : figure.switch_of_figure) : null
-  const switchVersions = typeof figure.switch_versions === 'string' ? JSON.parse(figure.switch_versions) : figure.switch_versions || []
-  const videos  = typeof figure.videos === 'string'       ? JSON.parse(figure.videos)       : figure.videos  || []
+  const prereqs         = typeof figure.prerequisites === 'string' ? JSON.parse(figure.prerequisites) : figure.prerequisites || []
+  const switchOf        = figure.switch_of_figure ? (typeof figure.switch_of_figure === 'string' ? JSON.parse(figure.switch_of_figure) : figure.switch_of_figure) : null
+  const switchVersions  = typeof figure.switch_versions === 'string' ? JSON.parse(figure.switch_versions) : figure.switch_versions || []
+  const videos          = typeof figure.videos === 'string'       ? JSON.parse(figure.videos)       : figure.videos  || []
 
-  const desc = localize(figure, 'description')
-  const tips = localize(figure, 'tips') || []
+  const desc            = localize(figure, 'description')
+  const tips            = localize(figure, 'tips') || []
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <nav className={styles.breadcrumb}>
           <button onClick={() => navigate('/')} className={styles.breadcrumbLink}>
-            <i className="ti ti-home" />
+            <Icon name="home" />
           </button>
-          <i className={`ti ti-chevron-right ${styles.breadcrumbSep}`} />
+          <Icon name="chevron-right" className={styles.breadcrumbSep} />
           <button onClick={() => navigate('/figures')} className={styles.breadcrumbLink}>
             {tr.figures}
           </button>
-          <i className={`ti ti-chevron-right ${styles.breadcrumbSep}`} />
+          <Icon name="chevron-right" className={styles.breadcrumbSep} />
           <button onClick={() => navigate(`/figures?cat=${figure.category_slug}`)} className={styles.breadcrumbLink}>
             {tr.catNames[figure.category_slug] || figure.category_name}
           </button>
-          <i className={`ti ti-chevron-right ${styles.breadcrumbSep}`} />
+          <Icon name="chevron-right" className={styles.breadcrumbSep} />
           <span className={styles.breadcrumbCurrent}>{figure.name}</span>
         </nav>
         <h1 className={styles.title}>{figure.name}</h1>
@@ -157,13 +158,13 @@ export default function FigureDetail() {
       />
       <div className="page-container">
         <section className={styles.section}>
-          <p className="section-title"><i className="ti ti-file-description" /> {tr.description}</p>
+          <p className="section-title"><Icon name="file-description" /> {tr.description}</p>
           <p className={styles.desc}>{desc}</p>
         </section>
 
         {tips.length > 0 && (
           <section className={styles.section}>
-            <p className="section-title"><i className="ti ti-bulb" /> {tr.tips}</p>
+            <p className="section-title"><Icon name="bulb" /> {tr.tips}</p>
             <ul className={styles.tips}>
               {tips.map((tip, i) => <li key={i}>{tip}</li>)}
             </ul>
@@ -171,7 +172,7 @@ export default function FigureDetail() {
         )}
 
         <section className={styles.section}>
-          <p className="section-title"><i className="ti ti-lock" /> {tr.prerequisites}</p>
+          <p className="section-title"><Icon name="lock" /> {tr.prerequisites}</p>
           {prereqs.length === 0
             ? <p className={styles.empty}>{tr.noPrereqs}</p>
             : (
@@ -186,7 +187,7 @@ export default function FigureDetail() {
 
         {(switchOf || switchVersions.length > 0) && (
           <section className={styles.section}>
-            <p className="section-title"><i className="ti ti-arrows-exchange" /> {switchOf ? tr.switchOf : tr.switchVersions}</p>
+            <p className="section-title"><Icon name="arrows-exchange" /> {switchOf ? tr.switchOf : tr.switchVersions}</p>
             <div className={styles.prereqs}>
               {switchOf && (
                 <Link to={'/figures/' + switchOf.slug} className={styles.prereqChip}>
@@ -203,7 +204,7 @@ export default function FigureDetail() {
         )}
 
         <section className={styles.section}>
-          <p className="section-title"><i className="ti ti-video" /> {tr.videos}</p>
+          <p className="section-title"><Icon name="video" /> {tr.videos}</p>
           {videos.length === 0
             ? <p className={styles.empty}>{tr.noVideos}</p>
             : (
@@ -215,18 +216,18 @@ export default function FigureDetail() {
                       {v.title && <p className={styles.videoTitle}>{v.title}</p>}
                       {v.creator_name && (
                         <a href={v.creator_url || '#'} target="_blank" rel="noopener noreferrer" className={styles.creator}>
-                          <i className={`ti ${v.source_type === 'instagram' ? 'ti-brand-instagram' : v.source_type === 'youtube' ? 'ti-brand-youtube' : 'ti-video'}`} />
+                          <Icon name={v.source_type === 'instagram' ? 'brand-instagram' : v.source_type === 'youtube' ? 'brand-youtube' : 'video'} />
                           {v.creator_name}
                         </a>
                       )}
                       {v.source_type === 'upload' && v.source_url && (
                         <a href={v.source_url} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
-                          {tr.originalSource} <i className="ti ti-external-link" />
+                          {tr.originalSource} <Icon name="external-link" />
                         </a>
                       )}
                       {v.caption && <p className={styles.caption}>{v.caption}</p>}
                       <div className={styles.creditNote}>
-                        <i className="ti ti-info-circle" />
+                        <Icon name="info-circle" />
                         {tr.pedagogicNote}{' '}
                         <button className={styles.takedownBtn} onClick={() => { setTakedownVideo(v); setTakedownSent(false) }}>
                           {tr.takedownCta}
@@ -246,12 +247,12 @@ export default function FigureDetail() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{tr.takedownTitle}</h2>
-              <button onClick={() => setTakedownVideo(null)} className="btn-icon"><i className="ti ti-x" /></button>
+              <button onClick={() => setTakedownVideo(null)} className="btn-icon"><Icon name="x" /></button>
             </div>
             {takedownSent
               ? (
                 <div className={styles.takedownSuccess}>
-                  <i className="ti ti-check" style={{ fontSize: 32, color: 'var(--c-success)' }} />
+                  <Icon name="check" style={{ fontSize: 32, color: 'var(--c-success)' }} />
                   <p>{tr.takedownSuccessMsg}</p>
                   <button className="btn btn-ghost" onClick={() => setTakedownVideo(null)}>{tr.close}</button>
                 </div>

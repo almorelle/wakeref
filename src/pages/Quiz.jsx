@@ -4,6 +4,7 @@ import { CategoryBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
 import styles from './Quiz.module.css'
 import SEO from '../components/SEO'
+import Icon from '../components/Icon'
 
 function shuffle(arr) { return [...arr].sort(() => Math.random() - .5) }
 
@@ -81,7 +82,7 @@ export default function Quiz() {
     <div className="page-container">
       <div className={styles.emptyState}>
         <div className={styles.emptyIcon}>
-          <i className="ti ti-video-off" aria-hidden="true" />
+          <Icon name="video-off" aria-hidden="true" />
         </div>
         <h2 className={styles.emptyTitle}>{tr.quizNoVideosTitle}</h2>
         <p className={styles.emptyText}>{tr.quizNoVideos}</p>
@@ -109,7 +110,7 @@ export default function Quiz() {
             ))}
           </div>
           <button className="btn btn-primary" onClick={buildQuiz}>
-            <i className="ti ti-refresh" /> {tr.quizReplay}
+            <Icon name="refresh" /> {tr.quizReplay}
           </button>
         </div>
       </div>
@@ -143,14 +144,14 @@ export default function Quiz() {
             ? <video src={videoUrl} autoPlay loop muted playsInline className={styles.video} />
             : (
               <div className={styles.videoPlaceholder}>
-                <i className="ti ti-player-play" />
+                <Icon name="player-play" />
                 <span>{q.correct.category_name}</span>
               </div>
             )
           }
           {answered && (
             <div className={`${styles.videoOverlay} ${answered === 'correct' ? styles.correct : styles.wrong}`}>
-              <i className={`ti ${answered === 'correct' ? 'ti-check' : 'ti-x'}`} />
+              <Icon name={answered === 'correct' ? 'check' : 'x'} />
             </div>
           )}
         </div>
@@ -174,8 +175,8 @@ export default function Quiz() {
         {answered && (
           <div className={`${styles.feedback} ${answered === 'correct' ? styles.feedbackOk : styles.feedbackKo}`}>
             {answered === 'correct'
-              ? <><i className="ti ti-check" /> {tr.quizCorrect(q.correct.name)}</>
-              : <><i className="ti ti-x" /> {tr.quizWrong(q.correct.name)} — {q.correct.description?.substring(0, 80)}…</>
+              ? <><Icon name="check" /> {tr.quizCorrect(q.correct.name)}</>
+              : <><Icon name="x" /> {tr.quizWrong(q.correct.name)} — {q.correct.description?.substring(0, 80)}…</>
             }
           </div>
         )}

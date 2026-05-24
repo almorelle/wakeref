@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import styles from './AdminTakedowns.module.css'
+import Icon from '../../components/Icon'
 
 export default function AdminTakedowns() {
   const [requests, setRequests] = useState([])
@@ -41,7 +42,7 @@ export default function AdminTakedowns() {
 
       {!loading && pending.length === 0 && (
         <div className={styles.empty}>
-          <i className="ti ti-check" style={{ fontSize: 32, color: 'var(--c-success)' }} />
+          <Icon name="check" style={{ fontSize: 32, color: 'var(--c-success)' }} />
           <p>Aucune demande en attente.</p>
         </div>
       )}
@@ -62,7 +63,7 @@ export default function AdminTakedowns() {
                   Rejeter
                 </button>
                 <button className="btn btn-danger btn-sm" onClick={() => handle(r, true)}>
-                  <i className="ti ti-eye-off" /> Masquer la vidéo
+                  <Icon name="eye-off" /> Masquer la vidéo
                 </button>
               </div>
             </div>

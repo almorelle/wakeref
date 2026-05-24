@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { CategoryBadge, SportBadge } from '../../components/Badges'
 import DifficultyDots from '../../components/DifficultyDots'
 import styles from '../admin/AdminFigures.module.css'
+import Icon from '../../components/Icon'
 
 export default function AdminNoVideos() {
   const [figures, setFigures] = useState([])
@@ -47,7 +48,7 @@ export default function AdminNoVideos() {
 
       {figures.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--c-muted)' }}>
-          <i className="ti ti-confetti" style={{ fontSize: 36, display: 'block', marginBottom: 12 }} />
+          <Icon name="confetti" style={{ fontSize: 36, display: 'block', marginBottom: 12 }} />
           <p>Toutes les figures ont au moins une vidéo 🎉</p>
         </div>
       ) : (
@@ -67,7 +68,7 @@ export default function AdminNoVideos() {
                   className="btn btn-ghost btn-sm"
                   onClick={() => navigate(`/admin/videos?figure=${f.id}`)}
                 >
-                  <i className="ti ti-video-plus" /> Ajouter une vidéo
+                  <Icon name="upload" /> Uploader une vidéo
                 </button>
               </div>
             </div>
