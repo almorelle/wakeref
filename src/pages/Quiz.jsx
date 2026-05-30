@@ -44,7 +44,9 @@ export default function Quiz() {
     const selected = shuffle(pool).slice(0, TOTAL)
 
     const qs = selected.map(correct => {
-      const wrongs = shuffle(allFigures.filter(f => f.id !== correct.id)).slice(0, 3)
+      const sameCat = allFigures.filter(f => f.id !== correct.id && f.category_slug === correct.category_slug)
+      const wrongPool = sameCat.length >= 3 ? sameCat : allFigures.filter(f => f.id !== correct.id)
+      const wrongs = shuffle(wrongPool).slice(0, 3)
       return { correct, options: shuffle([correct, ...wrongs]) }
     })
     setQuestions(qs); setIdx(0); setScore(0); setAnswered(null); setChosen(null); setDone(false)
