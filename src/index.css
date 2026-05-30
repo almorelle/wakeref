@@ -137,6 +137,8 @@ input, textarea, select {
 .btn-ghost:hover { border-color: var(--c-accent); color: var(--c-text); }
 .btn-danger { background: var(--c-danger); color: #fff; }
 .btn-danger:hover { opacity: .85; }
+.btn-submit { background: #7c3aed; color: #fff; }
+.btn-submit:hover { background: #6d28d9; }
 .btn-sm { padding: 6px 12px; font-size: 12px; }
 .btn-icon {
   padding: 8px;

@@ -223,7 +223,12 @@ export default function FigureDetail() {
         )}
 
         <section className={styles.section}>
-          <p className="section-title"><Icon name="video" /> {tr.videos}</p>
+          <div className={styles.sectionHeader}>
+            <p className="section-title" style={{ margin: 0 }}><Icon name="video" /> {tr.videos}</p>
+            <Link to={`/submit?figure=${figure.slug}`} className="btn btn-submit btn-sm">
+              <Icon name="upload" /> {tr.submitCta}
+            </Link>
+          </div>
           {videos.length === 0
             ? <p className={styles.empty}>{tr.noVideos}</p>
             : (

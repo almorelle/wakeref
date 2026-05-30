@@ -15,6 +15,7 @@ export default function Navbar() {
     { to: '/quiz',    icon: 'help',        label: tr.quiz    },
     { to: '/compo',   icon: 'calculator',  label: tr.compo   },
     { to: '/contact', icon: 'mail',        label: tr.contact },
+    { to: '/submit',  icon: 'upload',      label: tr.submit  },
   ]
 
   return (

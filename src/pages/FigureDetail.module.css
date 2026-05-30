@@ -54,6 +54,12 @@
   border-bottom: 1px solid var(--c-border);
 }
 .section:last-child { border-bottom: none; }
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
 
 .desc {
   font-size: 15px;

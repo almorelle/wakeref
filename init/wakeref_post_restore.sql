@@ -121,6 +121,7 @@ alter table figures           enable row level security;
 alter table prerequisites     enable row level security;
 alter table videos            enable row level security;
 alter table takedown_requests enable row level security;
+alter table video_submissions enable row level security;
 
 -- Supprime les policies existantes avant de les recréer
 drop policy if exists "Lecture publique categories"    on categories;
@@ -133,6 +134,9 @@ drop policy if exists "Ecriture admin prerequisites"   on prerequisites;
 drop policy if exists "Ecriture admin videos"          on videos;
 drop policy if exists "Insertion publique takedown"    on takedown_requests;
 drop policy if exists "Lecture admin takedown"         on takedown_requests;
+drop policy if exists "Soumission publique"            on video_submissions;
+drop policy if exists "Lecture admin soumissions"      on video_submissions;
+drop policy if exists "Mise à jour admin soumissions"  on video_submissions;
 
 create policy "Lecture publique categories"    on categories    for select using (true);
 create policy "Lecture publique figures"       on figures       for select using (published = true);
@@ -144,6 +148,10 @@ create policy "Ecriture admin prerequisites"   on prerequisites for all using (a
 create policy "Ecriture admin videos"          on videos        for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
 create policy "Insertion publique takedown"    on takedown_requests for insert with check (true);
 create policy "Lecture admin takedown"         on takedown_requests for select using (auth.role() = 'authenticated');
+create policy "Soumission publique"            on video_submissions for insert with check (true);
+create policy "Lecture admin soumissions"      on video_submissions for select using (auth.role() = 'authenticated');
+create policy "Mise à jour admin soumissions"  on video_submissions for update using (auth.role() = 'authenticated');
+
 
 -- ────────────────────────────────────────────────────────────
 -- 7. STORAGE BUCKET
@@ -186,3 +194,6 @@ grant usage, select on all sequences in schema public  to authenticated;
 grant execute on function public.search_figures(text)      to anon, authenticated;
 grant execute on function public.figures_without_videos() to authenticated;
 grant execute on function public.immutable_unaccent(text)  to anon, authenticated;
+grant insert on public.video_submissions to anon, authenticated;
+grant select, update on public.video_submissions to authenticated;
+grant usage, select on sequence video_submissions_id_seq to anon, authenticated;

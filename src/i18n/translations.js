@@ -159,6 +159,26 @@ export const t = {
     contactSending:   'Envoi en cours…',
     contactSuccess:   'Message envoyé ! Je te répondrai dès que possible.',
     contactError:     'Une erreur est survenue. Réessaie ou contacte-moi directement.',
+
+    // Submit video
+    submit:            'Soumettre',
+    submitTitle:       'Soumettre une vidéo',
+    submitSub:         'Tu as une vidéo de wakeboard ou wakeskate qui illustre bien une figure ? Partage le lien ici, je l\'examinerai et l\'ajouterai si elle convient.',
+    submitCta:         'Soumettre une vidéo',
+    submitFigure:      'Figure',
+    submitFigurePh:    'Choisir une figure…',
+    submitUrl:         'Lien de la vidéo',
+    submitVideoTitle:  'Titre (optionnel)',
+    submitVideoTitlePh:'Ex. : Backroll grab - session lac 2024',
+    submitCreator:     'Auteur·ice (optionnel)',
+    submitCreatorPh:   'Nom ou pseudo',
+    submitCreatorUrl:  'Profil (optionnel)',
+    submitCaption:     'Description (optionnel)',
+    submitCaptionPh:   'Contexte, remarques…',
+    submitSend:        'Envoyer',
+    submitSending:     'Envoi en cours…',
+    submitSuccess:     'Merci ! Ta soumission a bien été reçue. Je l\'examinerai dès que possible.',
+    submitError:       'Une erreur est survenue. Réessaie dans quelques instants.',
   },
 
   en: {
@@ -321,6 +341,26 @@ export const t = {
     contactSending:   'Sending…',
     contactSuccess:   'Message sent! I will get back to you as soon as possible.',
     contactError:     'Something went wrong. Please try again.',
+
+    // Submit video
+    submit:            'Submit',
+    submitTitle:       'Submit a video',
+    submitSub:         'Have a wakeboard or wakeskate video that showcases a trick well? Share the link here and I\'ll review it.',
+    submitCta:         'Submit a video',
+    submitFigure:      'Trick',
+    submitFigurePh:    'Choose a trick…',
+    submitUrl:         'Video link',
+    submitVideoTitle:  'Title (optional)',
+    submitVideoTitlePh:'e.g. Backroll grab - lake session 2024',
+    submitCreator:     'Author (optional)',
+    submitCreatorPh:   'Name or handle',
+    submitCreatorUrl:  'Profile (optional)',
+    submitCaption:     'Description (optional)',
+    submitCaptionPh:   'Context, notes…',
+    submitSend:        'Send',
+    submitSending:     'Sending…',
+    submitSuccess:     'Thank you! Your submission has been received. I\'ll review it as soon as possible.',
+    submitError:       'Something went wrong. Please try again in a moment.',
   },
 }
 
