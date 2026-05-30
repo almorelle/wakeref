@@ -138,7 +138,10 @@ export default function Quiz() {
             <div key={i} className={`${styles.progBar} ${i < idx ? styles.done : i === idx ? styles.current : ''}`} />
           ))}
         </div>
-        <p className={styles.counter}>{idx + 1} / {questions.length}</p>
+        <div className={styles.counterRow}>
+          <p className={styles.counter}>{idx + 1} / {questions.length}</p>
+          <CategoryBadge slug={q.correct.category_slug} name={q.correct.category_name} />
+        </div>
 
         <div className={styles.videoWrap}>
           {videoUrl
@@ -183,7 +186,7 @@ export default function Quiz() {
         )}
 
         {answered && (
-          <button className="btn btn-primary" style={{ alignSelf: 'flex-end' }} onClick={next}>
+          <button className={`btn btn-primary ${styles.nextBtn}`} onClick={next}>
             {idx + 1 < questions.length ? tr.quizNext : tr.quizResult}
           </button>
         )}

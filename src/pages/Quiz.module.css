@@ -16,6 +16,11 @@
 .progBar.done    { background: var(--c-accent); }
 .progBar.current { background: #3b82f660; }
 
+.counterRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
 .counter {
   font-family: var(--font-display);
   font-size: 12px;
@@ -123,8 +128,19 @@
 .feedbackKo { background: #ef444415; border-color: #ef444440; color: var(--c-text); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-@media (max-width: 600px) {
+.nextBtn { align-self: flex-end; }
+
+@media (max-width: 700px) {
+  .quiz { padding-bottom: 84px; }
   .video { max-height: 320px; }
+  .nextBtn {
+    position: fixed;
+    bottom: calc(60px + 12px);
+    left: 1rem;
+    right: 1rem;
+    align-self: unset;
+    z-index: 50;
+  }
 }
 
 /* Score */
