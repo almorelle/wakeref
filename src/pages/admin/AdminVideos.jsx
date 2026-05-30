@@ -185,6 +185,7 @@ export default function AdminVideos() {
               <span className={styles.videoFigure}>{v.figures?.name}</span>
               <span className={styles.videoTitle}>{v.title || 'Sans titre'}</span>
               {v.creator_name && <span className={styles.videoCreator}>{v.creator_name}</span>}
+              {v.creator_url && <span className={styles.videoCreator}>{v.creator_url}</span>}
               {v.takedown_requested && <span className="badge" style={{ background: '#ef444420', color: 'var(--c-danger)' }}>Retrait demandé</span>}
             </div>
             <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--c-danger)' }} onClick={() => deleteVideo(v)}>
