@@ -124,7 +124,7 @@
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 @media (max-width: 600px) {
-  .video { max-height: 240px; }
+  .video { max-height: 320px; }
 }
 
 /* Score */
