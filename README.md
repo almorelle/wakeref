@@ -86,14 +86,15 @@ supabase/
 └── functions/           # Fonctions Supabase
 ```
 
-## Notifications email (soumissions vidéo)
+## Notifications email
 
-Une Edge Function Supabase envoie un email à chaque nouvelle soumission de vidéo.
+Une Edge Function Supabase envoie un email à chaque nouvelle soumission de vidéo ou via le contact form.
 
-### 1. Déployer la fonction
+### 1. Déployer les fonctions
 
 ```bash
 npx supabase functions deploy notify-video-submission --project-ref <project-ref>
+npx supabase functions deploy send-contact --project-ref <project-ref>
 ```
 
 ### 2. Configurer les secrets
@@ -102,7 +103,7 @@ npx supabase functions deploy notify-video-submission --project-ref <project-ref
 npx supabase secrets set RESEND_API_KEY=re_... NOTIFY_EMAIL=ton@email.com --project-ref <project-ref>
 ```
 
-### 3. Créer le webhook
+### 3. Créer le webhook pour la soumission vidéo
 
 Dans Supabase Dashboard → **Database → Webhooks → Create a new hook** :
 - Table : `video_submissions`

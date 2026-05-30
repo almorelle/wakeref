@@ -3,8 +3,7 @@ import { useT } from '../i18n/useT'
 import styles from './Contact.module.css'
 import SEO from '../components/SEO'
 import Icon from '../components/Icon'
-
-const FORMSPREE_ID = 'xykvggzg'
+import { supabase } from '../lib/supabase'
 
 export default function Contact() {
   const tr = useT()
@@ -17,12 +16,8 @@ export default function Contact() {
     e.preventDefault()
     setStatus('sending')
     try {
-      const res = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      if (res.ok) {
+      const { error } = await supabase.functions.invoke('send-contact', { body: form })
+      if (!error) {
         setStatus('success')
         setForm({ name: '', email: '', message: '' })
       } else {
