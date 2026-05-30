@@ -6,19 +6,27 @@ import DifficultyDots from '../../components/DifficultyDots'
 import styles from '../admin/AdminFigures.module.css'
 import Icon from '../../components/Icon'
 
+const FILTERS = [
+  { key: 'none', label: 'Sans vidéo', rpc: 'figures_without_videos', description: 'sans vidéo associée' },
+  { key: 'no_upload', label: 'Sans vidéo uploadée', rpc: 'figures_without_uploaded_videos', description: 'sans vidéo uploadée directement' },
+]
+
 export default function AdminNoVideos() {
   const [figures, setFigures] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('none')
   const navigate = useNavigate()
 
-useEffect(() => {
-  supabase.rpc('figures_without_videos').then(({ data }) => {
-    setFigures(data || [])
-    setLoading(false)
-  })
-}, [])
+  useEffect(() => {
+    setLoading(true)
+    const rpc = FILTERS.find(f => f.key === filter).rpc
+    supabase.rpc(rpc).then(({ data }) => {
+      setFigures(data || [])
+      setLoading(false)
+    })
+  }, [filter])
 
-  if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
+  const activeFilter = FILTERS.find(f => f.key === filter)
 
   return (
     <div>
@@ -27,23 +35,39 @@ useEffect(() => {
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800 }}>
             Figures sans vidéo
           </h1>
-          <p style={{ fontSize: 13, color: 'var(--c-muted)', marginTop: 4 }}>
-            {figures.length} figure{figures.length > 1 ? 's' : ''} sans vidéo associée
-          </p>
+          {!loading && (
+            <p style={{ fontSize: 13, color: 'var(--c-muted)', marginTop: 4 }}>
+              {figures.length} figure{figures.length > 1 ? 's' : ''} {activeFilter.description}
+            </p>
+          )}
         </div>
       </div>
 
-      {figures.length === 0 ? (
+      <div className={styles.filters}>
+        {FILTERS.map(f => (
+          <button
+            key={f.key}
+            className={`${styles.chip}${filter === f.key ? ` ${styles.active}` : ''}`}
+            onClick={() => setFilter(f.key)}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <span className="spinner" style={{ marginTop: '3rem' }} />
+      ) : figures.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--c-muted)' }}>
           <Icon name="confetti" style={{ fontSize: 36, display: 'block', marginBottom: 12 }} />
           <p>Toutes les figures ont au moins une vidéo 🎉</p>
         </div>
       ) : (
-        <div className={styles.list}>
+        <div className={styles.table}>
           {figures.map(f => (
             <div key={f.id} className={styles.row}>
-              <div className={styles.rowMain}>
-                <span className={styles.rowName}>{f.name}</span>
+              <div className={styles.rowBody}>
+                <div className={styles.rowName}>{f.name}</div>
                 <div className={styles.rowMeta}>
                   <CategoryBadge slug={f.category_slug} name={f.category_name} />
                   <SportBadge sport={f.sport} />

@@ -228,6 +228,17 @@ set search_path = public as $$
   order by name;
 $$;
 
+create or replace function public.figures_without_uploaded_videos()
+returns setof figures_full language sql stable
+set search_path = public as $$
+  select * from figures_full
+  where not exists (
+    select 1 from json_array_elements(videos) as v
+    where v->>'source_type' = 'upload'
+  )
+  order by name;
+$$;
+
 -- ────────────────────────────────────────────────────────────
 -- 10. DEMANDES DE RETRAIT
 -- ────────────────────────────────────────────────────────────
@@ -255,6 +266,7 @@ grant select on categories, figures, prerequisites, videos, figures_full to anon
 grant select on takedown_requests to authenticated;
 grant execute on function public.search_figures(text)     to anon, authenticated;
 grant execute on function public.figures_without_videos() to authenticated;
+grant execute on function public.figures_without_uploaded_videos() to authenticated;
 grant execute on function public.immutable_unaccent(text) to anon, authenticated;
 grant insert, update, delete on public.videos to authenticated;
 grant insert, update, delete on public.categories to authenticated;
