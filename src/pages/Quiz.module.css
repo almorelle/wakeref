@@ -33,11 +33,13 @@
   overflow: hidden;
 }
 .video {
-  width: 100%;
-  height: auto;
+  display: block;
+  max-height: 600px;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
   object-fit: contain;
   background: var(--c-surface3);
-  display: block;
 }
 .videoPlaceholder {
   width: 100%; height: 100%;
@@ -120,6 +122,10 @@
 .feedbackOk { background: #22c55e15; border-color: #22c55e40; color: var(--c-success); }
 .feedbackKo { background: #ef444415; border-color: #ef444440; color: var(--c-text); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 600px) {
+  .video { max-height: 240px; }
+}
 
 /* Score */
 .scorePage {
