@@ -70,43 +70,47 @@ Le dossier `dist/` est prêt à déployer sur **Vercel**, **Netlify**, ou tout h
 ## Structure du projet
 
 ```
-src/
+assets/                  # logos
+init/                    # SQL schema et restauration
+public/                  # ressources publiques
+scripts/                 # sitemap
+src/                     # Composants
 ├── components/          # Composants partagés (FigureCard, Navbar, Badges…)
 ├── hooks/               # useAuth, useToast
 ├── lib/                 # supabase.js (client)
-├── pages/
-│   ├── Home.jsx         # Page d'accueil + recherche
-│   ├── Figures.jsx      # Liste filtrée
-│   ├── FigureDetail.jsx # Fiche détaillée + vidéos + takedown
-│   ├── Quiz.jsx         # Mode quiz
-│   └── admin/
-│       ├── Login.jsx
-│       ├── AdminLayout.jsx   # Guard auth + sidebar
-│       ├── AdminDashboard.jsx
-│       ├── AdminFigures.jsx  # Liste + suppression
-│       ├── FigureForm.jsx    # Création / édition
-│       ├── AdminVideos.jsx   # Upload vidéos
-│       └── AdminTakedowns.jsx
+├── pages/               # Page d'accueil + pages admin
 ├── App.jsx              # Router principal
 ├── main.jsx
 └── index.css            # Design system global
+supabase/
+└── functions/           # Fonctions Supabase
 ```
 
-## Routes
+## Notifications email (soumissions vidéo)
 
-| Route | Description |
-|---|---|
-| `/` | Accueil, recherche, catégories |
-| `/figures` | Liste avec filtre par catégorie |
-| `/figures/:slug` | Fiche détaillée |
-| `/quiz` | Mode quiz |
-| `/admin/login` | Connexion admin |
-| `/admin` | Dashboard |
-| `/admin/figures` | Gestion des figures |
-| `/admin/figures/new` | Créer une figure |
-| `/admin/figures/:id/edit` | Modifier une figure |
-| `/admin/videos` | Upload et gestion vidéos |
-| `/admin/takedowns` | Demandes de retrait |
+Une Edge Function Supabase envoie un email à chaque nouvelle soumission de vidéo.
+
+### 1. Déployer la fonction
+
+```bash
+npx supabase functions deploy notify-video-submission --project-ref <project-ref>
+```
+
+### 2. Configurer les secrets
+
+```bash
+npx supabase secrets set RESEND_API_KEY=re_... NOTIFY_EMAIL=ton@email.com --project-ref <project-ref>
+```
+
+### 3. Créer le webhook
+
+Dans Supabase Dashboard → **Database → Webhooks → Create a new hook** :
+- Table : `video_submissions`
+- Événement : `INSERT`
+- Type : **Supabase Edge Functions**
+- Fonction : `notify-video-submission`
+
+---
 
 ## Déploiement Vercel
 
