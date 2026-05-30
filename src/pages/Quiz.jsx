@@ -19,7 +19,7 @@ export default function Quiz() {
   const [loading, setLoading] = useState(true)
   const [noVideos, setNoVideos] = useState(false)
   const tr = useT()
-  const TOTAL = 5
+  const TOTAL = 10
 
   useEffect(() => {
     supabase.from('figures_full').select('*').then(({ data }) => {
@@ -40,12 +40,12 @@ export default function Quiz() {
     }
     setNoVideos(false)
 
-    const pool = withVideos
-    const selected = shuffle(pool).slice(0, TOTAL)
+    const selected = shuffle(withVideos).slice(0, Math.min(TOTAL, withVideos.length))
+    const selectedIds = new Set(selected.map(f => f.id))
 
     const qs = selected.map(correct => {
-      const sameCat = allFigures.filter(f => f.id !== correct.id && f.category_slug === correct.category_slug)
-      const wrongPool = sameCat.length >= 3 ? sameCat : allFigures.filter(f => f.id !== correct.id)
+      const sameCat = allFigures.filter(f => !selectedIds.has(f.id) && f.category_slug === correct.category_slug)
+      const wrongPool = sameCat.length >= 3 ? sameCat : allFigures.filter(f => !selectedIds.has(f.id))
       const wrongs = shuffle(wrongPool).slice(0, 3)
       return { correct, options: shuffle([correct, ...wrongs]) }
     })
@@ -63,7 +63,7 @@ export default function Quiz() {
   }
 
   const next = () => {
-    if (idx + 1 >= TOTAL) { setDone(true); return }
+    if (idx + 1 >= questions.length) { setDone(true); return }
     setIdx(i => i + 1); setAnswered(null); setChosen(null)
   }
 
@@ -93,16 +93,15 @@ export default function Quiz() {
   )
 
   if (done) {
-    const pct = score / TOTAL
     const msgs = tr.quizScoreMsgs
     return (
       <div className="page-container">
         <div className={styles.scorePage}>
           <div className={styles.scoreCircle}>
             <span className={styles.scoreNum}>{score}</span>
-            <span className={styles.scoreTotal}>/ {TOTAL}</span>
+            <span className={styles.scoreTotal}>/ {questions.length}</span>
           </div>
-          <p className={styles.scoreMsg}>{msgs[Math.min(Math.floor(pct * 4.99), 4)]}</p>
+          <p className={styles.scoreMsg}>{msgs[score]}</p>
           <div className={styles.scoreBreakdown}>
             {questions.map((q, i) => (
               <div key={i} className={styles.scoreRow}>
@@ -135,11 +134,11 @@ export default function Quiz() {
       />
       <div className={styles.quiz}>
         <div className={styles.progress}>
-          {Array.from({ length: TOTAL }, (_, i) => (
+          {Array.from({ length: questions.length }, (_, i) => (
             <div key={i} className={`${styles.progBar} ${i < idx ? styles.done : i === idx ? styles.current : ''}`} />
           ))}
         </div>
-        <p className={styles.counter}>{idx + 1} / {TOTAL}</p>
+        <p className={styles.counter}>{idx + 1} / {questions.length}</p>
 
         <div className={styles.videoWrap}>
           {videoUrl
@@ -185,7 +184,7 @@ export default function Quiz() {
 
         {answered && (
           <button className="btn btn-primary" style={{ alignSelf: 'flex-end' }} onClick={next}>
-            {idx + 1 < TOTAL ? tr.quizNext : tr.quizResult}
+            {idx + 1 < questions.length ? tr.quizNext : tr.quizResult}
           </button>
         )}
       </div>
