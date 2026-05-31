@@ -44,6 +44,17 @@ set search_path = public as $$
   order by name;
 $$;
 
+-- Stats publiques de la home : total de figures + nb de figures ayant
+-- au moins une vidéo (hors retraits). Évite de transférer toutes les lignes.
+create or replace function public.home_stats()
+returns table(total_figures bigint, figures_with_video bigint)
+language sql stable
+set search_path = public as $$
+  select
+    (select count(*) from figures),
+    (select count(distinct figure_id) from videos where takedown_requested = false);
+$$;
+
 -- ────────────────────────────────────────────────────────────
 -- 3. INDEX FULL-TEXT
 -- ────────────────────────────────────────────────────────────
@@ -193,6 +204,7 @@ grant insert, update, delete on public.takedown_requests to authenticated;
 grant usage, select on all sequences in schema public  to authenticated;
 grant execute on function public.search_figures(text)      to anon, authenticated;
 grant execute on function public.figures_without_videos() to authenticated;
+grant execute on function public.home_stats()             to anon, authenticated;
 grant execute on function public.immutable_unaccent(text)  to anon, authenticated;
 grant insert on public.video_submissions to anon, authenticated;
 grant select, update on public.video_submissions to authenticated;

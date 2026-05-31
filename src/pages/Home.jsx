@@ -15,10 +15,19 @@ export default function Home() {
   const [searching, setSearching] = useState(false)
   const [recent, setRecent] = useState([])
   const [videos, setVideos] = useState([])
+  const [stats, setStats] = useState(null)
   const navigate = useNavigate()
   const tr = useT()
 
   useEffect(() => {
+    supabase.rpc('home_stats').then(({ data }) => {
+      const row = data?.[0]
+      if (!row) return
+      const total = row.total_figures
+      const pct = total > 0 ? Math.round((row.figures_with_video / total) * 100) : 0
+      setStats({ total, pct })
+    })
+
     supabase.from('figures_full').select('*').order('created_at', { ascending: false }).limit(5).then(({ data }) => {
       if (data) setRecent(data)
     })
@@ -94,7 +103,29 @@ export default function Home() {
 
         {!query.trim() && (
           <>
-            <p className="section-title" style={{ marginTop: '1.5rem' }}>{tr.categories}</p>
+            <div className={styles.cta}>
+              {stats && (
+                <div className={styles.ctaStats}>
+                  <div className={styles.ctaStat}>
+                    <span className={styles.ctaNum}>{stats.total}</span>
+                    <span className={styles.ctaLabel}>{tr.ctaFiguresLabel}</span>
+                  </div>
+                  <div className={styles.ctaStat}>
+                    <span className={styles.ctaNum}>{stats.pct}%</span>
+                    <span className={styles.ctaLabel}>{tr.ctaVideosLabel}</span>
+                  </div>
+                </div>
+              )}
+              <div className={styles.ctaBody}>
+                <h2 className={styles.ctaTitle}>{tr.ctaTitle}</h2>
+                <p className={styles.ctaText}>{tr.ctaText}</p>
+                <button className={`btn btn-submit ${styles.ctaBtn}`} onClick={() => navigate('/submit')}>
+                  <Icon name="upload" /> {tr.ctaButton}
+                </button>
+              </div>
+            </div>
+
+            <p className="section-title" style={{ marginTop: '2rem' }}>{tr.categories}</p>
             <div className={styles.catGrid}>
               {CATEGORIES.map(c => (
                 <button

@@ -12,6 +12,11 @@ export const t = {
     recentFigures: 'Figures récentes',
     recentVideos:  'Dernières vidéos ajoutées',
     noResults:     (q) => `Aucune figure trouvée pour « ${q} »`,
+    ctaFiguresLabel: 'figures référencées',
+    ctaVideosLabel:  'ont déjà une vidéo',
+    ctaTitle:        'Envie d\'être mis·e en avant sur WakeRef ?',
+    ctaText:         'Il manque encore des vidéos sur de nombreuses figures. Partage les tiennes avec la  commu et deviens la réf !',
+    ctaButton:       'Soumettre ma vidéo',
 
     // Figures list
     all:     'Tous',
@@ -195,6 +200,11 @@ export const t = {
     categories:        'Categories',
     recentFigures:     'Recent tricks',
     recentVideos:      'Last added videos',
+    ctaFiguresLabel:   'tricks documented',
+    ctaVideosLabel:    'already have a video',
+    ctaTitle:          'Wanna be featured on WakeRef?',
+    ctaText:           'Many tricks are still missing a video. Share yours and become the reference!',
+    ctaButton:         'Submit my video',
     noResults:         (q) => `No trick found for "${q}"`,
 
     // Figures list
