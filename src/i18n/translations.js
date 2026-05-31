@@ -136,6 +136,7 @@ export const t = {
       fliptricks:   'Fliptricks',
       specials:     'Specials',
       whip:         'Whip',
+      variations:   'Variations',
     },
 
     // Difficulty
@@ -318,6 +319,7 @@ export const t = {
       fliptricks:   'Fliptricks',
       specials:     'Specials',
       whip:         'Whip',
+      variations:   'Variations',
     },
 
     // Difficulty

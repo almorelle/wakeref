@@ -12,4 +12,5 @@ export const CATEGORIES = [
   { id: 11, name: 'Flip Tricks',  slug: 'fliptricks',   icon: 'rotate-clockwise-2',  color: '#ec4899' },
   { id: 12, name: 'Specials',     slug: 'specials',     icon: 'star',                color: '#a855f7' },
   { id: 13, name: 'Whip',         slug: 'whip',         icon: 'arrow-down-from-arc', color: '#f43f5e' },
+  { id: 14, name: 'Variations',   slug: 'variations',   icon: 'variable',            color: '#94a3b8' },
 ]

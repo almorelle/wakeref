@@ -42,6 +42,7 @@ insert into categories (name, slug, color, sort_order) values
   ('Flip Tricks',  'fliptricks',   '#ec4899', 11),
   ('Specials',     'specials',     '#a855f7', 12),
   ('Whip',         'whip',         '#f43f5e', 13);
+  ('Variations',   'variations',   '#94a3b8', 14);
 
 -- ────────────────────────────────────────────────────────────
 -- 3. FIGURES
