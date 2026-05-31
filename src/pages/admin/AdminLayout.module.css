@@ -21,14 +21,18 @@
   margin-bottom: 4px;
 }
 .adminLabel {
-  font-size: 10px;
+  font-size: 11px;
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: .1em;
+  font-weight: 800;
+  letter-spacing: .15em;
   text-transform: uppercase;
-  color: var(--c-faint);
+  color: var(--c-wake);
+  background: #06b6d418;
+  border-radius: var(--r-sm);
+  padding: 3px 8px;
   margin-bottom: 1.5rem;
-  padding-left: 27px;
+  align-self: flex-start;
+  margin-left: 4px;
 }
 .nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
 .link {
