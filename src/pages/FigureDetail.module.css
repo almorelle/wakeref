@@ -235,6 +235,99 @@
   .videosGrid { columns: 1; }
 }
 
+/* Carte Instagram : thumbnail uploadé si dispo, sinon tuile dégradé brandée */
+.instaCard {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  overflow: hidden;
+  transition: filter var(--t-fast);
+}
+.instaCard:hover { filter: brightness(1.08); }
+.instaCard:hover .instaPlay { transform: scale(1.06); }
+
+/* Variante avec thumbnail */
+.instaImg {
+  width: 100%;
+  height: auto;
+  max-height: 460px;
+  object-fit: cover;
+  display: block;
+}
+.instaScrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.55));
+}
+
+/* Variante sans thumbnail (fallback dégradé) */
+.instaFallback {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+}
+.instaPlay {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2.5px solid #fff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--t-fast);
+}
+.instaPlay svg {
+  width: 26px;
+  height: 26px;
+  margin-left: 3px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+.instaInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  padding: 0 12px;
+  max-width: 100%;
+}
+.instaAuthor {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.instaCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.5);
+}
+.instaCta i { font-size: 14px; }
+
 /* Thumbnail plateforme (Instagram / YouTube) */
 .platformThumb {
   width: 100%;

@@ -10,6 +10,49 @@ import SEO from '../components/SEO'
 import styles from './FigureDetail.module.css'
 import Icon from '../components/Icon'
 
+// Carte Instagram : affiche le thumbnail `thumbnails/<shortcode>.jpg` du bucket
+// s'il existe, sinon retombe sur la tuile dégradée brandée.
+function InstagramCard({ v, label }) {
+  const [errored, setErrored] = useState(false)
+  const shortcode = v.source_url?.match(/instagram\.com\/(?:p|reel|tv)\/([^/?#]+)/)?.[1]
+  const thumbUrl = shortcode
+    ? supabase.storage.from('videos').getPublicUrl(`thumbnails/${shortcode}.jpg`).data.publicUrl
+    : null
+  const showImg = thumbUrl && !errored
+
+  const info = (
+    <div className={styles.instaInfo}>
+      {v.creator_name && <span className={styles.instaAuthor}>{v.creator_name}</span>}
+      <span className={styles.instaCta}><Icon name="brand-instagram" /> {label}</span>
+    </div>
+  )
+
+  return (
+    <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener" className={styles.instaCard}>
+      {showImg ? (
+        <>
+          <img
+            src={thumbUrl}
+            alt={v.title || v.creator_name || ''}
+            className={styles.instaImg}
+            loading="lazy"
+            onError={() => setErrored(true)}
+          />
+          <div className={styles.instaScrim}>
+            <div className={styles.instaPlay}><Icon name="player-play" /></div>
+            {info}
+          </div>
+        </>
+      ) : (
+        <div className={styles.instaFallback}>
+          <div className={styles.instaPlay}><Icon name="player-play" /></div>
+          {info}
+        </div>
+      )}
+    </a>
+  )
+}
+
 export default function FigureDetail() {
   const { slug } = useParams()
   const navigate = useNavigate()
@@ -68,12 +111,7 @@ export default function FigureDetail() {
 
     // Instagram
     if (v.source_type === 'instagram' && v.source_url) {
-      return (
-        <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener" className={styles.platformThumb}>
-          <Icon name="brand-instagram" style={{ color: '#E1306C' }} />
-          <span>Voir sur Instagram</span>
-        </a>
-      )
+      return <InstagramCard v={v} label={tr.viewOnInstagram} />
     }
 
     // YouTube
