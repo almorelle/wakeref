@@ -37,9 +37,15 @@ Ces valeurs se trouvent dans ton dashboard Supabase → **Settings → API Keys*
 
 ### 3. Initialiser la base de données
 
-Dans l'**SQL Editor** de Supabase, exécute dans l'ordre :
-1. `init/wakeref_schema.sql` — crée les tables, vues, fonctions, policies
-2. `init/dataset_01..à..12_category.sql` — rempli la base de données avec le jeu de données de base.
+**Option A — Restaurer depuis un backup** (recommandé) :
+```bash
+psql "$SUPABASE_DB_URL" < backup_YYYY-MM-DD.sql
+psql "$SUPABASE_DB_URL" < scripts/wakeref_post_restore.sql
+```
+
+**Option B — Partir de zéro** :
+
+Dans l'**SQL Editor** de Supabase, exécute `scripts/wakeref_post_restore.sql` — crée les tables, vues, fonctions, policies, bucket. Puis recrée le compte admin manuellement (voir étape 4).
 
 ### 4. Créer ton compte admin
 
@@ -72,7 +78,7 @@ Le dossier `dist/` est prêt à déployer sur **Vercel**, **Netlify**, ou tout h
 ```
 assets/                  # logos
 public/                  # ressources publiques
-scripts/                 # sitemap and SQL restore
+scripts/                 # génération sitemap, wakeref_post_restore.sql, wakeref_schema.sql
 src/                     # Composants
 ├── components/          # Composants partagés (FigureCard, Navbar, Badges…)
 ├── hooks/               # useAuth, useToast

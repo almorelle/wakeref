@@ -60,6 +60,12 @@ Two layout groups in `App.jsx`:
 
 ### Database setup
 
-Run once against a blank Supabase project, in order:
-1. `init/wakeref_schema.sql` — tables, views, RLS policies, triggers
-2. `init/dataset_01_*.sql` … `dataset_12_*.sql` — seed data per category
+**Restore from backup:**
+1. `psql "$SUPABASE_DB_URL" < backup_YYYY-MM-DD.sql`
+2. `scripts/wakeref_post_restore.sql` — recreates extensions, functions, view, RLS policies, grants, storage bucket
+
+**From scratch:**
+1. `scripts/wakeref_post_restore.sql` — full schema (tables, views, RLS policies, triggers, bucket)
+2. Recreate admin account manually via Supabase Dashboard → Authentication → Users
+
+**Schema reference:** `scripts/wakeref_schema.sql` — current DB schema exported from Supabase (context only, not meant to be executed). Keep this file up to date when making schema changes.

@@ -1,0 +1,85 @@
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.categories (
+  id integer NOT NULL DEFAULT nextval('categories_id_seq'::regclass),
+  name text NOT NULL UNIQUE,
+  slug text NOT NULL UNIQUE,
+  color text,
+  sort_order integer DEFAULT 0,
+  CONSTRAINT categories_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.figures (
+  id integer NOT NULL DEFAULT nextval('figures_id_seq'::regclass),
+  slug text NOT NULL UNIQUE,
+  name text NOT NULL,
+  category_id integer,
+  sport USER-DEFINED NOT NULL DEFAULT 'wakeboard'::sport_type,
+  difficulty smallint NOT NULL DEFAULT 1 CHECK (difficulty >= 1 AND difficulty <= 5),
+  description text,
+  description_en text,
+  tips ARRAY,
+  tips_en ARRAY,
+  is_switch boolean NOT NULL DEFAULT false,
+  switch_of integer,
+  published boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  contexts ARRAY,
+  approach ARRAY,
+  rotation ARRAY,
+  inverted boolean NOT NULL DEFAULT false,
+  rewind boolean NOT NULL DEFAULT false,
+  CONSTRAINT figures_pkey PRIMARY KEY (id),
+  CONSTRAINT figures_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id),
+  CONSTRAINT figures_switch_of_fkey FOREIGN KEY (switch_of) REFERENCES public.figures(id)
+);
+CREATE TABLE public.prerequisites (
+  figure_id integer NOT NULL,
+  requires_id integer NOT NULL,
+  CONSTRAINT prerequisites_pkey PRIMARY KEY (figure_id, requires_id),
+  CONSTRAINT prerequisites_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id),
+  CONSTRAINT prerequisites_requires_id_fkey FOREIGN KEY (requires_id) REFERENCES public.figures(id)
+);
+CREATE TABLE public.takedown_requests (
+  id integer NOT NULL DEFAULT nextval('takedown_requests_id_seq'::regclass),
+  video_id integer,
+  name text,
+  email text NOT NULL,
+  message text,
+  handled boolean NOT NULL DEFAULT false,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT takedown_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT takedown_requests_video_id_fkey FOREIGN KEY (video_id) REFERENCES public.videos(id)
+);
+CREATE TABLE public.video_submissions (
+  id integer NOT NULL DEFAULT nextval('video_submissions_id_seq'::regclass),
+  figure_id integer NOT NULL,
+  source_url text NOT NULL,
+  title text,
+  creator_name text,
+  creator_url text,
+  caption text,
+  status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+  submitted_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT video_submissions_pkey PRIMARY KEY (id),
+  CONSTRAINT video_submissions_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id)
+);
+CREATE TABLE public.videos (
+  id integer NOT NULL DEFAULT nextval('videos_id_seq'::regclass),
+  figure_id integer NOT NULL,
+  title text,
+  file_path text,
+  source_type USER-DEFINED NOT NULL DEFAULT 'upload'::video_source,
+  source_url text,
+  creator_name text,
+  creator_url text,
+  caption text,
+  takedown_requested boolean NOT NULL DEFAULT false,
+  takedown_email text,
+  takedown_at timestamp with time zone,
+  sort_order integer DEFAULT 0,
+  uploaded_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT videos_pkey PRIMARY KEY (id),
+  CONSTRAINT videos_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id)
+);
