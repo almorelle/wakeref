@@ -71,9 +71,8 @@ Le dossier `dist/` est prêt à déployer sur **Vercel**, **Netlify**, ou tout h
 
 ```
 assets/                  # logos
-init/                    # SQL schema et restauration
 public/                  # ressources publiques
-scripts/                 # sitemap
+scripts/                 # sitemap and SQL restore
 src/                     # Composants
 ├── components/          # Composants partagés (FigureCard, Navbar, Badges…)
 ├── hooks/               # useAuth, useToast
