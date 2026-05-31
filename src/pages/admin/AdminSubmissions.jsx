@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { externalUrl } from '../../lib/url'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import styles from './AdminSubmissions.module.css'
@@ -59,7 +60,7 @@ export default function AdminSubmissions() {
           {reviewed.map(s => (
             <div key={s.id} className={`${styles.card} ${styles.cardDone}`}>
               <span className={styles.figure}>{s.figures?.name || '—'}</span>
-              <a href={s.source_url} target="_blank" rel="noopener noreferrer" className={styles.url}>
+              <a href={externalUrl(s.source_url)} target="_blank" rel="noopener noreferrer" className={styles.url}>
                 {s.source_url}
               </a>
               <span
@@ -84,7 +85,7 @@ function SubmissionCard({ sub, onReview }) {
     <div className={styles.card}>
       <div className={styles.cardMeta}>
         <span className={styles.figure}>{sub.figures?.name || 'Figure inconnue'}</span>
-        <a href={sub.source_url} target="_blank" rel="noopener noreferrer" className={styles.url}>
+        <a href={externalUrl(sub.source_url)} target="_blank" rel="noopener noreferrer" className={styles.url}>
           <Icon name="external-link" /> {sub.source_url}
         </a>
         {sub.title && <span className={styles.detail}><strong>Titre :</strong> {sub.title}</span>}
@@ -92,7 +93,7 @@ function SubmissionCard({ sub, onReview }) {
           <span className={styles.detail}>
             <strong>Auteur·ice :</strong>{' '}
             {sub.creator_url
-              ? <a href={sub.creator_url} target="_blank" rel="noopener noreferrer">{sub.creator_name}</a>
+              ? <a href={externalUrl(sub.creator_url)} target="_blank" rel="noopener noreferrer">{sub.creator_name}</a>
               : sub.creator_name
             }
           </span>
