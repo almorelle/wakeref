@@ -69,7 +69,7 @@ export default function FigureDetail() {
     // Instagram
     if (v.source_type === 'instagram' && v.source_url) {
       return (
-        <a href={externalUrl(v.source_url)} target="_blank" rel="noopener noreferrer" className={styles.platformThumb}>
+        <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener" className={styles.platformThumb}>
           <Icon name="brand-instagram" style={{ color: '#E1306C' }} />
           <span>Voir sur Instagram</span>
         </a>
@@ -240,13 +240,13 @@ export default function FigureDetail() {
                     <div className={styles.videoMeta}>
                       {v.title && <p className={styles.videoTitle}>{v.title}</p>}
                       {v.creator_name && (
-                        <a href={externalUrl(v.creator_url) || '#'} target="_blank" rel="noopener noreferrer" className={styles.creator}>
+                        <a href={externalUrl(v.creator_url, { ref: true }) || '#'} target="_blank" rel="noopener" className={styles.creator}>
                           <Icon name={v.source_type === 'instagram' ? 'brand-instagram' : v.source_type === 'youtube' ? 'brand-youtube' : 'video'} />
                           {v.creator_name}
                         </a>
                       )}
                       {v.source_type === 'upload' && v.source_url && (
-                        <a href={externalUrl(v.source_url)} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
+                        <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener" className={styles.sourceLink}>
                           {tr.originalSource} <Icon name="external-link" />
                         </a>
                       )}
