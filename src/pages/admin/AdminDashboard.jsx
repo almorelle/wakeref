@@ -6,21 +6,23 @@ import Icon from '../../components/Icon'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ figures: 0, videos: 0, takedowns: 0 })
+  const [stats, setStats] = useState({ figures: 0, videosUploaded: 0, videosLinks: 0, takedowns: 0 })
 
   useEffect(() => {
     Promise.all([
       supabase.from('figures').select('id', { count: 'exact', head: true }),
-      supabase.from('videos').select('id', { count: 'exact', head: true }),
+      supabase.from('videos').select('id', { count: 'exact', head: true }).eq('source_type', 'upload'),
+      supabase.from('videos').select('id', { count: 'exact', head: true }).neq('source_type', 'upload'),
       supabase.from('takedown_requests').select('id', { count: 'exact', head: true }).eq('handled', false),
-    ]).then(([f, v, t]) => {
-      setStats({ figures: f.count || 0, videos: v.count || 0, takedowns: t.count || 0 })
+    ]).then(([f, vu, vl, t]) => {
+      setStats({ figures: f.count || 0, videosUploaded: vu.count || 0, videosLinks: vl.count || 0, takedowns: t.count || 0 })
     })
   }, [])
 
   const tiles = [
     { label: 'Figures', value: stats.figures, icon: 'list', action: () => navigate('/admin/figures'), color: 'var(--c-accent)' },
-    { label: 'Vidéos', value: stats.videos, icon: 'video', action: () => navigate('/admin/videos'), color: 'var(--c-wake)' },
+    { label: 'Vidéos uploadées', value: stats.videosUploaded, icon: 'upload', action: () => navigate('/admin/videos'), color: 'var(--c-wake)' },
+    { label: 'Liens vidéo', value: stats.videosLinks, icon: 'link', action: () => navigate('/admin/videos'), color: 'var(--c-wake)' },
     { label: 'Retraits en attente', value: stats.takedowns, icon: 'flag', action: () => navigate('/admin/takedowns'), color: stats.takedowns > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
   ]
 

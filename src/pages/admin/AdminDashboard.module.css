@@ -1,6 +1,6 @@
 .page { max-width: 700px; display: flex; flex-direction: column; gap: 2rem; }
 .title { font-family: var(--font-display); font-size: 22px; font-weight: 800; }
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .tile {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
@@ -20,6 +20,6 @@
 .tileLabel { font-size: 12px; color: var(--c-muted); }
 .shortcuts { display: flex; gap: 8px; flex-wrap: wrap; }
 
-@media (max-width: 500px) {
+@media (max-width: 700px) {
   .grid { grid-template-columns: 1fr 1fr; }
 }
