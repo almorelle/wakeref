@@ -1,91 +1,122 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { externalUrl } from '../../lib/url'
 import { CategoryBadge, SportBadge } from '../../components/Badges'
 import DifficultyDots from '../../components/DifficultyDots'
-import styles from '../admin/AdminFigures.module.css'
+import styles from './AdminNoVideos.module.css'
 import Icon from '../../components/Icon'
 
-const FILTERS = [
-  { key: 'none', label: 'Sans vidéo', rpc: 'figures_without_videos', description: 'sans vidéo associée' },
-  { key: 'no_upload', label: 'Sans vidéo uploadée', rpc: 'figures_without_uploaded_videos', description: 'sans vidéo uploadée directement' },
-]
-
 export default function AdminNoVideos() {
-  const [figures, setFigures] = useState([])
+  const [noVideo, setNoVideo] = useState([])
+  const [noUpload, setNoUpload] = useState([])
+  const [noThumb, setNoThumb] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('none')
+  const [copiedId, setCopiedId] = useState(null)
   const navigate = useNavigate()
 
+  const copyLink = async (v) => {
+    try {
+      await navigator.clipboard.writeText(externalUrl(v.source_url))
+      setCopiedId(v.id)
+      setTimeout(() => setCopiedId(c => (c === v.id ? null : c)), 1500)
+    } catch { /* clipboard unavailable */ }
+  }
+
   useEffect(() => {
-    setLoading(true)
-    const rpc = FILTERS.find(f => f.key === filter).rpc
-    supabase.rpc(rpc).then(({ data }) => {
-      setFigures(data || [])
+    Promise.all([
+      supabase.rpc('figures_without_videos'),
+      supabase.rpc('figures_without_uploaded_videos'),
+      supabase.from('videos').select('*, figures(name)').eq('source_type', 'instagram'),
+      supabase.storage.from('videos').list('thumbnails', { limit: 1000 }),
+    ]).then(([nv, nu, insta, thumbs]) => {
+      setNoVideo(nv.data || [])
+      setNoUpload(nu.data || [])
+      const thumbSet = new Set((thumbs.data || []).map(o => o.name))
+      setNoThumb(
+        (insta.data || [])
+          .map(v => ({ ...v, shortcode: v.source_url?.match(/instagram\.com\/(?:p|reels?|tv)\/([^/?#]+)/)?.[1] }))
+          .filter(v => !v.shortcode || !thumbSet.has(`${v.shortcode}.jpg`))
+      )
       setLoading(false)
     })
-  }, [filter])
+  }, [])
 
-  const activeFilter = FILTERS.find(f => f.key === filter)
-
-  return (
-    <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-        <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800 }}>
-            Figures sans vidéo
-          </h1>
-          {!loading && (
-            <p style={{ fontSize: 13, color: 'var(--c-muted)', marginTop: 4 }}>
-              {figures.length} figure{figures.length > 1 ? 's' : ''} {activeFilter.description}
-            </p>
-          )}
-        </div>
+  const FigurePanel = ({ icon, title, desc, figures }) => (
+    <div className={styles.panel}>
+      <div className={styles.panelHead}>
+        <Icon name={icon} />
+        <span className={styles.panelTitle}>{title}</span>
+        <span className={styles.panelDesc}>{desc}</span>
+        <span className={styles.count}>{figures.length}</span>
       </div>
-
-      <div className={styles.filters}>
-        {FILTERS.map(f => (
-          <button
-            key={f.key}
-            className={`${styles.chip}${filter === f.key ? ` ${styles.active}` : ''}`}
-            onClick={() => setFilter(f.key)}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <span className="spinner" style={{ marginTop: '3rem' }} />
-      ) : figures.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--c-muted)' }}>
-          <Icon name="confetti" style={{ fontSize: 36, display: 'block', marginBottom: 12 }} />
-          <p>Toutes les figures ont au moins une vidéo 🎉</p>
-        </div>
+      {figures.length === 0 ? (
+        <div className={styles.empty}><Icon name="confetti" />Rien à compléter 🎉</div>
       ) : (
-        <div className={styles.table}>
+        <div className={styles.list}>
           {figures.map(f => (
-            <div key={f.id} className={styles.row}>
-              <div className={styles.rowBody}>
-                <div className={styles.rowName}>{f.name}</div>
-                <div className={styles.rowMeta}>
-                  <CategoryBadge slug={f.category_slug} name={f.category_name} />
-                  <SportBadge sport={f.sport} />
-                  <DifficultyDots value={f.difficulty} />
-                </div>
-              </div>
-              <div className={styles.rowActions}>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => navigate(`/admin/videos?figure=${f.id}`)}
-                >
-                  <Icon name="upload" /> Uploader une vidéo
-                </button>
-              </div>
-            </div>
+            <button key={f.id} className={styles.item} onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
+              <span className={styles.itemName}>{f.name}</span>
+              <span className={styles.itemMeta}>
+                <CategoryBadge slug={f.category_slug} name={f.category_name} />
+                <SportBadge sport={f.sport} />
+                <DifficultyDots value={f.difficulty} />
+              </span>
+            </button>
           ))}
         </div>
       )}
+    </div>
+  )
+
+  if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
+
+  return (
+    <div className={styles.page}>
+      <h1 className={styles.title}>À compléter</h1>
+
+      <FigurePanel
+        icon="video-off"
+        title="Figures sans vidéo"
+        desc="aucune vidéo associée"
+        figures={noVideo}
+      />
+
+      <FigurePanel
+        icon="upload"
+        title="Figures sans vidéo uploadée"
+        desc="aucune vidéo uploadée directement"
+        figures={noUpload}
+      />
+
+      <div className={styles.panel}>
+        <div className={styles.panelHead}>
+          <Icon name="brand-instagram" />
+          <span className={styles.panelTitle}>Liens Instagram sans miniature</span>
+          <span className={styles.panelDesc}>miniature non uploadée</span>
+          <span className={styles.count}>{noThumb.length}</span>
+        </div>
+        {noThumb.length === 0 ? (
+          <div className={styles.empty}><Icon name="confetti" />Toutes les miniatures sont là 🎉</div>
+        ) : (
+          <div className={styles.list}>
+            {noThumb.map(v => (
+              <button
+                key={v.id}
+                className={styles.item}
+                onClick={() => copyLink(v)}
+              >
+                <span className={styles.itemName}>{v.figures?.name || `Figure #${v.figure_id}`}</span>
+                <span className={styles.itemMeta}>
+                  {v.creator_name && <span className={styles.mono}>{v.creator_name}</span>}
+                  <span className={styles.mono}>{v.shortcode || 'lien invalide'}</span>
+                  <Icon name={copiedId === v.id ? 'check' : 'copy'} />
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

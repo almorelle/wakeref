@@ -14,7 +14,7 @@ import Icon from '../components/Icon'
 // s'il existe, sinon retombe sur la tuile dégradée brandée.
 function InstagramCard({ v, label }) {
   const [errored, setErrored] = useState(false)
-  const shortcode = v.source_url?.match(/instagram\.com\/(?:p|reel|tv)\/([^/?#]+)/)?.[1]
+  const shortcode = v.source_url?.match(/instagram\.com\/(?:p|reels?|tv)\/([^/?#]+)/)?.[1]
   const thumbUrl = shortcode
     ? supabase.storage.from('videos').getPublicUrl(`thumbnails/${shortcode}.jpg`).data.publicUrl
     : null

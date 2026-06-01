@@ -28,7 +28,7 @@ export default function AdminLayout() {
     { to: '/admin/videos',        icon: 'video',             label: 'Vidéos'                },
     { to: '/admin/takedowns',     icon: 'flag',              label: 'Retraits'              },
     { to: '/admin/submissions',   icon: 'inbox',             label: 'Soumissions'           },
-    { to: '/admin/no-videos',     icon: 'video-off',         label: 'Sans vidéo'            },
+    { to: '/admin/no-videos',     icon: 'video-off',         label: 'À compléter'           },
   ]
 
   const sidebarContent = (
