@@ -44,15 +44,38 @@ set search_path = public as $$
   order by name;
 $$;
 
+-- Figures sans vidéo de type « upload direct ». Lit videos depuis figures_full,
+-- donc partagé sur le groupe switch (une version switch compte comme pourvue si
+-- sa figure de base a un upload).
+create or replace function public.figures_without_uploaded_videos()
+returns setof figures_full language sql stable
+set search_path = public as $$
+  select * from figures_full
+  where not exists (
+    select 1 from json_array_elements(videos) as v
+    where v->>'source_type' = 'upload'
+  )
+  order by name;
+$$;
+
 -- Stats publiques de la home : total de figures + nb de figures ayant
 -- au moins une vidéo (hors retraits). Évite de transférer toutes les lignes.
 create or replace function public.home_stats()
 returns table(total_figures bigint, figures_with_video bigint)
 language sql stable
 set search_path = public as $$
+  -- Une figure compte comme « avec vidéo » si une vidéo existe dans son
+  -- groupe switch (la figure de base et sa version switch partagent les vidéos).
+  -- Clé de groupe : coalesce(switch_of, id).
   select
     (select count(*) from figures),
-    (select count(distinct figure_id) from videos where takedown_requested = false);
+    (select count(*) from figures f
+     where exists (
+       select 1 from videos v
+       join figures b on b.id = v.figure_id
+       where v.takedown_requested = false
+         and coalesce(b.switch_of, b.id) = coalesce(f.switch_of, f.id)
+     ));
 $$;
 
 -- ────────────────────────────────────────────────────────────
@@ -116,7 +139,13 @@ select
           'caption', v.caption
         ) order by v.sort_order)
      from videos v
-     where v.figure_id = f.id and v.takedown_requested = false),
+     where v.takedown_requested = false
+       and v.figure_id in (
+         -- figure courante + sa base/version switch (relation 1-à-1) :
+         -- les vidéos sont partagées sur tout le groupe switch.
+         select g.id from figures g
+         where coalesce(g.switch_of, g.id) = coalesce(f.switch_of, f.id)
+       )),
     '[]'
   ) as videos
 from figures f
@@ -204,6 +233,7 @@ grant insert, update, delete on public.takedown_requests to authenticated;
 grant usage, select on all sequences in schema public  to authenticated;
 grant execute on function public.search_figures(text)      to anon, authenticated;
 grant execute on function public.figures_without_videos() to authenticated;
+grant execute on function public.figures_without_uploaded_videos() to authenticated;
 grant execute on function public.home_stats()             to anon, authenticated;
 grant execute on function public.immutable_unaccent(text)  to anon, authenticated;
 grant insert on public.video_submissions to anon, authenticated;
