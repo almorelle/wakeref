@@ -29,7 +29,7 @@ export default function Quiz() {
   const TOTAL = 10
 
   useEffect(() => {
-    supabase.from('figures_full').select('*').then(({ data }) => {
+    supabase.from('figures_full').select('*').eq('is_switch', false).then(({ data }) => {
       if (data) setAllFigures(data)
       setLoading(false)
     })
