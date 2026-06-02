@@ -19,3 +19,19 @@ export function externalUrl(url, { ref = false } = {}) {
     return full
   }
 }
+
+// Extract a social-media handle from a creator profile URL, e.g.
+// "https://instagram.com/julia_rick" → "julia_rick". Returns null when no
+// handle can be derived. Strips a leading "@" and any query/hash fragment.
+export function creatorHandle(url) {
+  if (!url) return null
+  const full = url.includes('://') ? url : `https://${url}`
+  try {
+    const { pathname } = new URL(full)
+    const seg = pathname.split('/').filter(Boolean)[0]
+    if (!seg) return null
+    return seg.replace(/^@/, '') || null
+  } catch {
+    return null
+  }
+}

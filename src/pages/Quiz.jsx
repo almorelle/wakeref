@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { CategoryBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
+import { creatorHandle, externalUrl } from '../lib/url'
 import styles from './Quiz.module.css'
 import SEO from '../components/SEO'
 import Icon from '../components/Icon'
@@ -85,6 +86,14 @@ export default function Quiz() {
     return null
   }
 
+  const getCreator = (figure) => {
+    const vids = typeof figure.videos === 'string' ? JSON.parse(figure.videos) : figure.videos || []
+    const v = vids.find(v => v.file_path)
+    if (!v) return null
+    const handle = creatorHandle(v.creator_url)
+    return handle ? { handle, url: v.creator_url } : null
+  }
+
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
 
   if (noVideos) return (
@@ -129,6 +138,7 @@ export default function Quiz() {
 
   const q = questions[idx]
   const videoUrl = getVideoUrl(q.correct)
+  const creator = getCreator(q.correct)
 
   return (
     <div className="page-container">
@@ -152,7 +162,21 @@ export default function Quiz() {
 
         <div className={styles.videoWrap}>
           {videoUrl
-            ? <video src={videoUrl} autoPlay loop muted playsInline className={styles.video} />
+            ? (
+              <div className={styles.videoInner}>
+                <video src={videoUrl} autoPlay loop muted playsInline className={styles.video} />
+                {creator && (
+                  <a
+                    href={externalUrl(creator.url, { ref: true })}
+                    target="_blank"
+                    rel="noopener"
+                    className={styles.watermark}
+                  >
+                    @{creator.handle}
+                  </a>
+                )}
+              </div>
+            )
             : (
               <div className={styles.videoPlaceholder}>
                 <Icon name="player-play" />

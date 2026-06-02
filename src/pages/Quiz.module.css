@@ -57,6 +57,37 @@
 .videoPlaceholder i { font-size: 36px; color: var(--c-wake); }
 .videoPlaceholder span { font-size: 12px; color: var(--c-muted); }
 
+/* Hugs the actual rendered video so the watermark sits on the footage,
+   not the letterbox bands left/right of portrait clips. */
+.videoInner {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.watermark {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  z-index: 4;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: .02em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .45);
+  backdrop-filter: blur(2px);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+  transition: background var(--t-mid);
+}
+.watermark:hover {
+  background: rgba(0, 0, 0, .7);
+  text-decoration: underline;
+}
+
 .videoOverlay {
   position: absolute;
   inset: 0;
