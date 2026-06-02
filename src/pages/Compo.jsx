@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useT } from '../i18n/useT'
 import styles from './Compo.module.css'
@@ -213,6 +213,41 @@ function JibForm({ tr, onConfirm, onCancel }) {
   )
 }
 
+// ── Formulaire Autre figure (texte libre) ────────────────────
+function OtherForm({ tr, onConfirm, onCancel }) {
+  const [name, setName] = useState('')
+  const valid = name.trim().length > 0
+  const confirm = () => { if (valid) onConfirm(name.trim()) }
+
+  return (
+    <div className={styles.pending}>
+      <p className={styles.pendingTitle}>{tr.compoOther}</p>
+      <div className={styles.questionRow}>
+        <span className={styles.questionLabel}>{tr.compoOtherLabel}</span>
+        <input
+          className="input"
+          type="text"
+          placeholder={tr.compoOtherPlaceholder}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          autoComplete="off"
+          autoFocus
+          onKeyDown={e => {
+            if (e.key === 'Enter') { e.preventDefault(); confirm() }
+            else if (e.key === 'Escape') onCancel()
+          }}
+        />
+      </div>
+      <div className={styles.pendingActions}>
+        <button className="btn btn-ghost btn-sm" onClick={onCancel}>{tr.cancel}</button>
+        <button className="btn btn-primary btn-sm" disabled={!valid} onClick={confirm}>
+          {tr.compoConfirm}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ── Main ─────────────────────────────────────────────────────
 export default function Compo() {
   const tr = useT()
@@ -222,9 +257,12 @@ export default function Compo() {
   const [highlightIdx, setHighlightIdx] = useState(-1)
   const [entries, setEntries]         = useState([])
   const [jibPasses, setJibPasses]     = useState([])
+  const [otherEntries, setOtherEntries] = useState([])
   const [pendingFigure, setPendingFigure]   = useState(null)
   const [pendingAnswers, setPendingAnswers] = useState({})
-  const [addMode, setAddMode]         = useState(null) // null | 'jib' | 'kicker' | 'air_trick'
+  const [addMode, setAddMode]         = useState(null) // null | 'jib' | 'kicker' | 'air_trick' | 'other'
+  const seqRef = useRef(0)
+  const nextSeq = () => ++seqRef.current
 
   const search = async (q) => {
     setHighlightIdx(-1)
@@ -287,6 +325,7 @@ export default function Compo() {
       approach: resolvedApproach,
       side,
       _key: `${fig.id}-${Date.now()}`,
+      _seq: nextSeq(),
     }])
     setPendingFigure(null)
     setPendingAnswers({})
@@ -294,7 +333,12 @@ export default function Compo() {
   }
 
   const confirmJib = (pass) => {
-    setJibPasses(prev => [...prev, { ...pass, _key: `jib-${Date.now()}` }])
+    setJibPasses(prev => [...prev, { ...pass, _key: `jib-${Date.now()}`, _seq: nextSeq() }])
+    setAddMode(null)
+  }
+
+  const confirmOther = (name) => {
+    setOtherEntries(prev => [...prev, { name, _key: `other-${Date.now()}`, _seq: nextSeq() }])
     setAddMode(null)
   }
 
@@ -322,7 +366,8 @@ export default function Compo() {
   const allItems = [
     ...entries.map(e => ({ type: 'figure', data: e })),
     ...jibPasses.map(p => ({ type: 'jib', data: p })),
-  ]
+    ...otherEntries.map(o => ({ type: 'other', data: o })),
+  ].sort((a, b) => (a.data._seq ?? 0) - (b.data._seq ?? 0))
 
   return (
     <div className={styles.page}>
@@ -342,6 +387,9 @@ export default function Compo() {
               </button>
               <button className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode('air_trick')}>
                 {tr.compoAddAir}
+              </button>
+              <button className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode('other')}>
+                {tr.compoAddOther}
               </button>
             </div>
           )}
@@ -396,6 +444,15 @@ export default function Compo() {
             />
           )}
 
+          {/* Formulaire autre figure */}
+          {addMode === 'other' && (
+            <OtherForm
+              tr={tr}
+              onConfirm={confirmOther}
+              onCancel={() => setAddMode(null)}
+            />
+          )}
+
           {/* Questions figure en attente */}
           {pendingFigure && (
             <div className={styles.pending}>
@@ -428,32 +485,52 @@ export default function Compo() {
             ? <p className={styles.empty}>{tr.compoEmpty}</p>
             : (
               <div className={styles.entryList}>
-                {entries.map(e => (
-                  <div key={e._key} className={styles.entryRow}>
-                    <div className={styles.entryInfo}>
-                      <span className={styles.entryName}>{e.name}</span>
-                      <div className={styles.entryTags}>
-                        <span className={styles.tag}>{sideLabel(e.side)}</span>
-                        {e.contexts.map(c => <span key={c} className={styles.tag}>{ctxLabel(c)}</span>)}
-                        {e.approach.map(a => <span key={a} className={styles.tag}>{appLabel(a)}</span>)}
+                {allItems.map(({ type, data }) => {
+                  if (type === 'figure') {
+                    const e = data
+                    return (
+                      <div key={e._key} className={styles.entryRow}>
+                        <div className={styles.entryInfo}>
+                          <span className={styles.entryName}>{e.name}</span>
+                          <div className={styles.entryTags}>
+                            <span className={styles.tag}>{sideLabel(e.side)}</span>
+                            {e.contexts.map(c => <span key={c} className={styles.tag}>{ctxLabel(c)}</span>)}
+                            {e.approach.map(a => <span key={a} className={styles.tag}>{appLabel(a)}</span>)}
+                          </div>
+                        </div>
+                        <button className={styles.removeBtn} onClick={() => setEntries(prev => prev.filter(x => x._key !== e._key))}>✕</button>
                       </div>
-                    </div>
-                    <button className={styles.removeBtn} onClick={() => setEntries(prev => prev.filter(x => x._key !== e._key))}>✕</button>
-                  </div>
-                ))}
-                {jibPasses.map(p => (
-                  <div key={p._key} className={`${styles.entryRow} ${styles.entryRowJib}`}>
-                    <div className={styles.entryInfo}>
-                      <span className={styles.entryName}>{tr.compoJibPass}</span>
-                      <div className={styles.entryTags}>
-                        <span className={styles.tag}>{sideLabel(p.side)}</span>
-                        <span className={styles.tag}>{appLabel(p.approach)}</span>
-                        <span className={`${styles.tag} ${styles.tagJib}`}>{jibSummary(p)}</span>
+                    )
+                  }
+                  if (type === 'jib') {
+                    const p = data
+                    return (
+                      <div key={p._key} className={`${styles.entryRow} ${styles.entryRowJib}`}>
+                        <div className={styles.entryInfo}>
+                          <span className={styles.entryName}>{tr.compoJibPass}</span>
+                          <div className={styles.entryTags}>
+                            <span className={styles.tag}>{sideLabel(p.side)}</span>
+                            <span className={styles.tag}>{appLabel(p.approach)}</span>
+                            <span className={`${styles.tag} ${styles.tagJib}`}>{jibSummary(p)}</span>
+                          </div>
+                        </div>
+                        <button className={styles.removeBtn} onClick={() => setJibPasses(prev => prev.filter(x => x._key !== p._key))}>✕</button>
                       </div>
+                    )
+                  }
+                  const o = data
+                  return (
+                    <div key={o._key} className={styles.entryRow}>
+                      <div className={styles.entryInfo}>
+                        <span className={styles.entryName}>{o.name}</span>
+                        <div className={styles.entryTags}>
+                          <span className={styles.tag}>{tr.compoOther}</span>
+                        </div>
+                      </div>
+                      <button className={styles.removeBtn} onClick={() => setOtherEntries(prev => prev.filter(x => x._key !== o._key))}>✕</button>
                     </div>
-                    <button className={styles.removeBtn} onClick={() => setJibPasses(prev => prev.filter(x => x._key !== p._key))}>✕</button>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )
           }
