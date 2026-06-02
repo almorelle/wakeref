@@ -1,7 +1,24 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useT } from '../i18n/useT'
 import styles from './Compo.module.css'
+
+const STORAGE_KEY = 'wakeref_compo'
+
+const loadStored = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    return {
+      entries: data.entries || [],
+      jibPasses: data.jibPasses || [],
+      otherEntries: data.otherEntries || [],
+    }
+  } catch {
+    return null
+  }
+}
 
 const parseArr = (v) => typeof v === 'string' ? JSON.parse(v) : v || []
 const parseFigure = (f) => ({
@@ -255,14 +272,35 @@ export default function Compo() {
   const [suggestions, setSuggestions] = useState([])
   const [searching, setSearching]     = useState(false)
   const [highlightIdx, setHighlightIdx] = useState(-1)
-  const [entries, setEntries]         = useState([])
-  const [jibPasses, setJibPasses]     = useState([])
-  const [otherEntries, setOtherEntries] = useState([])
+  const stored = useRef(loadStored()).current
+  const [entries, setEntries]         = useState(stored?.entries || [])
+  const [jibPasses, setJibPasses]     = useState(stored?.jibPasses || [])
+  const [otherEntries, setOtherEntries] = useState(stored?.otherEntries || [])
   const [pendingFigure, setPendingFigure]   = useState(null)
   const [pendingAnswers, setPendingAnswers] = useState({})
   const [addMode, setAddMode]         = useState(null) // null | 'jib' | 'kicker' | 'air_trick' | 'other'
-  const seqRef = useRef(0)
+
+  // Resume the sequence counter past any restored items so ordering stays correct
+  const maxStoredSeq = [...(stored?.entries || []), ...(stored?.jibPasses || []), ...(stored?.otherEntries || [])]
+    .reduce((m, x) => Math.max(m, x._seq || 0), 0)
+  const seqRef = useRef(maxStoredSeq)
   const nextSeq = () => ++seqRef.current
+
+  // Persist the composition so an accidental refresh doesn't lose it
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ entries, jibPasses, otherEntries }))
+  }, [entries, jibPasses, otherEntries])
+
+  const resetCompo = () => {
+    setEntries([])
+    setJibPasses([])
+    setOtherEntries([])
+    setPendingFigure(null)
+    setPendingAnswers({})
+    setAddMode(null)
+    setQuery('')
+    setSuggestions([])
+  }
 
   const search = async (q) => {
     setHighlightIdx(-1)
@@ -374,7 +412,17 @@ export default function Compo() {
       <div className={styles.layout}>
 
         <div className={styles.left}>
-          <h2 className={styles.sectionTitle}>{tr.compoTitle}</h2>
+          <div className={styles.headerRow}>
+            <h2 className={styles.sectionTitle}>{tr.compoTitle}</h2>
+            {allItems.length > 0 && (
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={resetCompo}
+              >
+                {tr.compoReset}
+              </button>
+            )}
+          </div>
 
           {/* Boutons d'ajout */}
           {!addMode && !pendingFigure && (

@@ -78,7 +78,7 @@ export const t = {
 
     // Compo
     compo: 'Compo',
-    compoTitle:      'Calculatrice de composition',
+    compoTitle:      'Composition de run',
     compoAdd:        'Ajouter une figure…',
     compoEmpty:      'Aucune figure saisie',
     compoConfirm:    'Ajouter',
@@ -98,6 +98,7 @@ export const t = {
     compoAddKicker:  '+ Kicker',
     compoAddAir:     '+ Blocage',
     compoAddOther:   '+ Autre',
+    compoReset:      'Effacer',
     compoOther:      'Autre figure',
     compoOtherLabel: 'Nom de la figure',
     compoOtherPlaceholder: 'ex. Grab, transfert…',
@@ -271,7 +272,7 @@ export const t = {
 
     // Compo
     compo: 'Compo',
-    compoTitle:      'Composition calculator',
+    compoTitle:      'Run composition',
     compoAdd:        'Add a trick…',
     compoEmpty:      'No tricks added yet',
     compoConfirm:    'Add',
@@ -291,6 +292,7 @@ export const t = {
     compoAddKicker:  '+ Kicker',
     compoAddAir:     '+ Air Trick',
     compoAddOther:   '+ Other',
+    compoReset:      'Clear',
     compoOther:      'Other trick',
     compoOtherLabel: 'Trick name',
     compoOtherPlaceholder: 'e.g. Grab, transfer…',
