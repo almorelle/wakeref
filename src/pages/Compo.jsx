@@ -5,6 +5,7 @@ import { useT } from '../i18n/useT'
 import { useToast } from '../hooks/useToast'
 import ToastContainer from '../components/Toast'
 import Icon from '../components/Icon'
+import SEO from '../components/SEO'
 import styles from './Compo.module.css'
 
 const STORAGE_KEY = 'wakeref_compo'
@@ -532,6 +533,13 @@ export default function Compo() {
 
   return (
     <div className={styles.page}>
+      <SEO
+        titleFr="Composition de run"
+        titleEn="Run composition"
+        descriptionFr="Compose ton run de wakeboard et calcule ton score."
+        descriptionEn="Build your wakeboard run and compute your score."
+        path="/compo"
+      />
       <ToastContainer toasts={toasts} />
       <div className={styles.layout}>
 
