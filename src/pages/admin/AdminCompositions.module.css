@@ -1,0 +1,26 @@
+.page { max-width: 760px; display: flex; flex-direction: column; gap: 1.5rem; }
+.title { font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: .5rem; }
+.empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 3rem; color: var(--c-muted); font-size: 14px; }
+.section { display: flex; flex-direction: column; gap: 8px; }
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.meta { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.name { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
+.unnamed { color: var(--c-muted); font-style: italic; font-weight: 500; }
+.sub { font-size: 12px; color: var(--c-faint); display: flex; gap: 10px; flex-wrap: wrap; }
+.score {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--c-accent);
+  white-space: nowrap;
+}
+.actions { display: flex; gap: 6px; align-items: center; }

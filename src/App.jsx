@@ -16,6 +16,7 @@ import AdminVideos from './pages/admin/AdminVideos'
 import AdminTakedowns from './pages/admin/AdminTakedowns'
 import AdminNoVideos from './pages/admin/AdminNoVideos'
 import AdminSubmissions from './pages/admin/AdminSubmissions'
+import AdminCompositions from './pages/admin/AdminCompositions'
 import SubmitVideo from './pages/SubmitVideo'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
@@ -30,6 +31,7 @@ export default function App() {
           <Route path="/figures/:slug" element={<FigureDetail />} />
           <Route path="/quiz" element={<Quiz />} />
           <Route path="/compo" element={<Compo />} />
+          <Route path="/compo/:id" element={<Compo />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/submit" element={<SubmitVideo />} />
         </Route>
@@ -45,6 +47,7 @@ export default function App() {
           <Route path="takedowns" element={<AdminTakedowns />} />
           <Route path="no-videos" element={<AdminNoVideos />} />
           <Route path="submissions" element={<AdminSubmissions />} />
+          <Route path="compositions" element={<AdminCompositions />} />
         </Route>
         <Route path='*' element={<NotFound />} />
       </Routes>

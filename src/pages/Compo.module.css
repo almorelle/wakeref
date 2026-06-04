@@ -23,12 +23,53 @@
   gap: 0.75rem;
 }
 
+.headerActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .sectionTitle {
   font-family: var(--font-display);
   font-size: 18px;
   font-weight: 800;
   color: var(--c-text);
 }
+
+/* ── Save / share ── */
+.savePanel,
+.sharePanel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--r-lg);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.saveLabel,
+.shareTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--c-muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-family: var(--font-display);
+}
+
+.saveActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.shareRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.shareRow .input { flex: 1; min-width: 0; }
 
 .searchWrap { position: relative; }
 

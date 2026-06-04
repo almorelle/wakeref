@@ -34,6 +34,7 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
 - `prerequisites` — many-to-many self-join on figures
 - `videos` — references to video files stored in Supabase Storage
 - `takedown_requests` — copyright removal requests from video authors
+- `compositions` — saved runs from the Compo page (no auth); short text `id` used in the share URL, minimal JSONB snapshot in `data`, denormalized `score`. Public can insert + load one by id via the `get_composition(cid)` function; only admin can list/delete (RLS)
 
 Full-text search on figures uses a GIN index with French `unaccent`.
 

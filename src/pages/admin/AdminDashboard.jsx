@@ -6,7 +6,7 @@ import Icon from '../../components/Icon'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ figures: 0, videos: 0, submissions: 0, takedowns: 0, videoPct: 0, instaNoThumb: 0 })
+  const [stats, setStats] = useState({ figures: 0, videos: 0, submissions: 0, takedowns: 0, videoPct: 0, instaNoThumb: 0, runs: 0 })
 
   useEffect(() => {
     Promise.all([
@@ -17,7 +17,8 @@ export default function AdminDashboard() {
       supabase.rpc('home_stats'),
       supabase.from('videos').select('source_url').eq('source_type', 'instagram'),
       supabase.storage.from('videos').list('thumbnails', { limit: 1000 }),
-    ]).then(([f, v, sub, t, hs, insta, thumbs]) => {
+      supabase.from('compositions').select('id', { count: 'exact', head: true }),
+    ]).then(([f, v, sub, t, hs, insta, thumbs, runs]) => {
       const row = hs.data?.[0]
       const videoPct = row && row.total_figures > 0
         ? Math.round((row.figures_with_video / row.total_figures) * 100)
@@ -36,6 +37,7 @@ export default function AdminDashboard() {
         takedowns: t.count || 0,
         videoPct,
         instaNoThumb,
+        runs: runs.count || 0,
       })
     })
   }, [])
@@ -47,6 +49,7 @@ export default function AdminDashboard() {
     { label: 'Retraits en attente', value: stats.takedowns, icon: 'flag', action: () => navigate('/admin/takedowns'), color: stats.takedowns > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
     { label: 'Soumissions à traiter', value: stats.submissions, icon: 'inbox', action: () => navigate('/admin/submissions'), color: stats.submissions > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
     { label: 'Instagram sans miniature', value: stats.instaNoThumb, icon: 'brand-instagram', action: () => navigate('/admin/no-videos'), color: stats.instaNoThumb > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
+    { label: 'Runs sauvegardés', value: stats.runs, icon: 'list', action: () => navigate('/admin/compositions'), color: 'var(--c-accent)' },
   ]
 
   return (

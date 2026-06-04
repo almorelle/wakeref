@@ -52,6 +52,16 @@ CREATE TABLE public.takedown_requests (
   CONSTRAINT takedown_requests_pkey PRIMARY KEY (id),
   CONSTRAINT takedown_requests_video_id_fkey FOREIGN KEY (video_id) REFERENCES public.videos(id)
 );
+CREATE TABLE public.compositions (
+  id text NOT NULL,
+  name text,
+  data jsonb NOT NULL,
+  score integer,
+  created_at timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT compositions_pkey PRIMARY KEY (id),
+  CONSTRAINT compositions_name_len CHECK (name IS NULL OR char_length(name) <= 80),
+  CONSTRAINT compositions_data_size CHECK (pg_column_size(data) <= 51200)
+);
 CREATE TABLE public.video_submissions (
   id integer NOT NULL DEFAULT nextval('video_submissions_id_seq'::regclass),
   figure_id integer NOT NULL,

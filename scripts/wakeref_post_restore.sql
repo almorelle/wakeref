@@ -58,6 +58,37 @@ set search_path = public as $$
   order by name;
 $$;
 
+-- Lecture publique d'un run sauvegardé par son id (sans exposer un SELECT
+-- global de la table compositions aux visiteurs anonymes).
+create or replace function public.get_composition(cid text)
+returns table(name text, data jsonb)
+language sql stable security definer
+set search_path = public as $$
+  select name, data from compositions where id = cid;
+$$;
+
+-- Anti-spam : plafond global d'insertions de runs par minute. security definer
+-- pour compter les lignes récentes malgré l'absence de policy SELECT pour anon.
+create or replace function public.compositions_rate_limit()
+returns trigger
+language plpgsql security definer
+set search_path = public as $$
+declare
+  recent_count integer;
+begin
+  select count(*) into recent_count
+  from compositions
+  where created_at > now() - interval '1 minute';
+
+  if recent_count >= 20 then
+    raise exception 'Trop de runs créés récemment. Réessaie dans une minute.'
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
 -- Stats publiques de la home : total de figures + nb de figures ayant
 -- au moins une vidéo (hors retraits). Évite de transférer toutes les lignes.
 create or replace function public.home_stats()
@@ -93,6 +124,11 @@ drop trigger if exists figures_updated_at on figures;
 create trigger figures_updated_at
   before update on figures
   for each row execute procedure set_updated_at();
+
+drop trigger if exists compositions_rate_limit on compositions;
+create trigger compositions_rate_limit
+  before insert on compositions
+  for each row execute function compositions_rate_limit();
 
 -- ────────────────────────────────────────────────────────────
 -- 5. VUE figures_full
@@ -162,6 +198,7 @@ alter table prerequisites     enable row level security;
 alter table videos            enable row level security;
 alter table takedown_requests enable row level security;
 alter table video_submissions enable row level security;
+alter table compositions      enable row level security;
 
 -- Supprime les policies existantes avant de les recréer
 drop policy if exists "Lecture publique categories"    on categories;
@@ -177,6 +214,9 @@ drop policy if exists "Lecture admin takedown"         on takedown_requests;
 drop policy if exists "Soumission publique"            on video_submissions;
 drop policy if exists "Lecture admin soumissions"      on video_submissions;
 drop policy if exists "Mise à jour admin soumissions"  on video_submissions;
+drop policy if exists "Insertion publique compositions" on compositions;
+drop policy if exists "Lecture admin compositions"      on compositions;
+drop policy if exists "Suppression admin compositions"  on compositions;
 
 create policy "Lecture publique categories"    on categories    for select using (true);
 create policy "Lecture publique figures"       on figures       for select using (published = true);
@@ -191,6 +231,9 @@ create policy "Lecture admin takedown"         on takedown_requests for select u
 create policy "Soumission publique"            on video_submissions for insert with check (true);
 create policy "Lecture admin soumissions"      on video_submissions for select using (auth.role() = 'authenticated');
 create policy "Mise à jour admin soumissions"  on video_submissions for update using (auth.role() = 'authenticated');
+create policy "Insertion publique compositions" on compositions for insert with check (true);
+create policy "Lecture admin compositions"      on compositions for select using (auth.role() = 'authenticated');
+create policy "Suppression admin compositions"  on compositions for delete using (auth.role() = 'authenticated');
 
 
 -- ────────────────────────────────────────────────────────────
@@ -235,7 +278,10 @@ grant execute on function public.search_figures(text)      to anon, authenticate
 grant execute on function public.figures_without_videos() to authenticated;
 grant execute on function public.figures_without_uploaded_videos() to authenticated;
 grant execute on function public.home_stats()             to anon, authenticated;
+grant execute on function public.get_composition(text)    to anon, authenticated;
 grant execute on function public.immutable_unaccent(text)  to anon, authenticated;
 grant insert on public.video_submissions to anon, authenticated;
 grant select, update on public.video_submissions to authenticated;
 grant usage, select on sequence video_submissions_id_seq to anon, authenticated;
+grant insert on public.compositions to anon, authenticated;
+grant select, delete on public.compositions to authenticated;

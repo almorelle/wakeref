@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useT } from '../i18n/useT'
+import { useToast } from '../hooks/useToast'
+import ToastContainer from '../components/Toast'
 import styles from './Compo.module.css'
 
 const STORAGE_KEY = 'wakeref_compo'
@@ -11,6 +14,7 @@ const loadStored = () => {
     if (!raw) return null
     const data = JSON.parse(raw)
     return {
+      name: data.name || '',
       entries: data.entries || [],
       jibPasses: data.jibPasses || [],
       otherEntries: data.otherEntries || [],
@@ -19,6 +23,20 @@ const loadStored = () => {
     return null
   }
 }
+
+// Short id for shareable run links (8 chars, base36).
+const shortId = () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(8))
+  return Array.from(bytes, b => (b % 36).toString(36)).join('')
+}
+
+// Keep only the fields needed to score and display a run — drops the heavy
+// figure rows so the stored snapshot stays tiny.
+const serializeEntry = (e) => ({
+  slug: e.slug, name: e.name, category_slug: e.category_slug,
+  side: e.side, contexts: e.contexts, approach: e.approach,
+  rotation: e.rotation, inverted: e.inverted, _seq: e._seq, _key: e._key,
+})
 
 const parseArr = (v) => typeof v === 'string' ? JSON.parse(v) : v || []
 const parseFigure = (f) => ({
@@ -268,17 +286,23 @@ function OtherForm({ tr, onConfirm, onCancel }) {
 // ── Main ─────────────────────────────────────────────────────
 export default function Compo() {
   const tr = useT()
+  const { id } = useParams()
+  const { toasts, toast } = useToast()
   const [query, setQuery]             = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [searching, setSearching]     = useState(false)
   const [highlightIdx, setHighlightIdx] = useState(-1)
   const stored = useRef(loadStored()).current
+  const [name, setName]               = useState(stored?.name || '')
   const [entries, setEntries]         = useState(stored?.entries || [])
   const [jibPasses, setJibPasses]     = useState(stored?.jibPasses || [])
   const [otherEntries, setOtherEntries] = useState(stored?.otherEntries || [])
   const [pendingFigure, setPendingFigure]   = useState(null)
   const [pendingAnswers, setPendingAnswers] = useState({})
   const [addMode, setAddMode]         = useState(null) // null | 'jib' | 'kicker' | 'air_trick' | 'other'
+  const [saving, setSaving]           = useState(false)
+  const [savedId, setSavedId]         = useState(null) // id of the run once saved → share link
+  const [showSave, setShowSave]       = useState(false)
 
   // Resume the sequence counter past any restored items so ordering stays correct
   const maxStoredSeq = [...(stored?.entries || []), ...(stored?.jibPasses || []), ...(stored?.otherEntries || [])]
@@ -288,16 +312,43 @@ export default function Compo() {
 
   // Persist the composition so an accidental refresh doesn't lose it
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ entries, jibPasses, otherEntries }))
-  }, [entries, jibPasses, otherEntries])
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name, entries, jibPasses, otherEntries }))
+  }, [name, entries, jibPasses, otherEntries])
+
+  // Any edit makes the previously generated share link stale
+  useEffect(() => { setSavedId(null) }, [name, entries, jibPasses, otherEntries])
+
+  // Load a saved run when the URL carries an id (/compo/:id)
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    ;(async () => {
+      const { data, error } = await supabase
+        .rpc('get_composition', { cid: id })
+        .single()
+      if (cancelled) return
+      if (error || !data) { toast(tr.compoLoadError, 'error'); return }
+      const d = data.data || {}
+      setName(data.name || '')
+      setEntries(d.entries || [])
+      setJibPasses(d.jibPasses || [])
+      setOtherEntries(d.otherEntries || [])
+      seqRef.current = [...(d.entries || []), ...(d.jibPasses || []), ...(d.otherEntries || [])]
+        .reduce((m, x) => Math.max(m, x._seq || 0), 0)
+    })()
+    return () => { cancelled = true }
+  }, [id])
 
   const resetCompo = () => {
+    setName('')
     setEntries([])
     setJibPasses([])
     setOtherEntries([])
     setPendingFigure(null)
     setPendingAnswers({})
     setAddMode(null)
+    setShowSave(false)
+    setSavedId(null)
     setQuery('')
     setSuggestions([])
   }
@@ -386,6 +437,33 @@ export default function Compo() {
 
   const { scored, total } = computeScore(entries, jibPasses)
 
+  const saveRun = async () => {
+    setSaving(true)
+    const newId = shortId()
+    const { error } = await supabase.from('compositions').insert({
+      id: newId,
+      name: name.trim() || null,
+      score: total,
+      data: {
+        entries: entries.map(serializeEntry),
+        jibPasses,
+        otherEntries,
+      },
+    })
+    setSaving(false)
+    if (error) { toast(tr.compoSaveError, 'error'); return }
+    setSavedId(newId)
+    setShowSave(false)
+  }
+
+  const shareUrl = savedId ? `${window.location.origin}/compo/${savedId}` : ''
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      toast(tr.copied, 'success')
+    } catch { /* ignore */ }
+  }
+
   const sideLabel = (s) => s === 'left' ? tr.compoLeft : tr.compoRight
   const ctxLabel  = (c) => ({ air_trick: 'Air Trick', kicker: 'Kicker', jib: 'Jib', flat: 'Flat' })[c] || c
   const appLabel  = (a) => a === 'ts' ? tr.compoToeside : tr.compoHeelside
@@ -409,20 +487,65 @@ export default function Compo() {
 
   return (
     <div className={styles.page}>
+      <ToastContainer toasts={toasts} />
       <div className={styles.layout}>
 
         <div className={styles.left}>
           <div className={styles.headerRow}>
             <h2 className={styles.sectionTitle}>{tr.compoTitle}</h2>
             {allItems.length > 0 && (
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={resetCompo}
-              >
-                {tr.compoReset}
-              </button>
+              <div className={styles.headerActions}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => { setShowSave(true); setSavedId(null) }}
+                >
+                  {tr.compoSave}
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={resetCompo}
+                >
+                  {tr.compoReset}
+                </button>
+              </div>
             )}
           </div>
+
+          {/* Panneau de sauvegarde */}
+          {showSave && (
+            <div className={styles.savePanel}>
+              <label className={styles.saveLabel} htmlFor="compo-name">{tr.compoNameLabel}</label>
+              <input
+                id="compo-name"
+                className="input"
+                type="text"
+                maxLength={80}
+                placeholder={tr.compoNamePlaceholder}
+                value={name}
+                onChange={e => setName(e.target.value)}
+                autoComplete="off"
+                autoFocus
+                onKeyDown={e => { if (e.key === 'Enter' && !saving) saveRun() }}
+              />
+              <div className={styles.saveActions}>
+                <button className="btn btn-ghost btn-sm" onClick={() => setShowSave(false)}>{tr.cancel}</button>
+                <button className="btn btn-primary btn-sm" disabled={saving} onClick={saveRun}>
+                  {saving ? <span className={styles.spinner} /> : tr.compoSaveConfirm}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Lien de partage après sauvegarde */}
+          {savedId && (
+            <div className={styles.sharePanel}>
+              <p className={styles.shareTitle}>{tr.compoSavedTitle}</p>
+              <div className={styles.shareRow}>
+                <input className="input" type="text" value={shareUrl} readOnly onFocus={e => e.target.select()} />
+                <button className="btn btn-primary btn-sm" onClick={copyLink}>{tr.compoCopyLink}</button>
+              </div>
+            </div>
+          )}
 
           {/* Boutons d'ajout */}
           {!addMode && !pendingFigure && (
