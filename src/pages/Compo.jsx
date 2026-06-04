@@ -485,6 +485,31 @@ export default function Compo() {
     ...otherEntries.map(o => ({ type: 'other', data: o })),
   ].sort((a, b) => (a.data._seq ?? 0) - (b.data._seq ?? 0))
 
+  // Swap an item with its neighbour, then renumber _seq 1..N across all three
+  // arrays so the order survives across types (a jib can move above a figure).
+  const moveItem = (index, dir) => {
+    const target = index + dir
+    if (target < 0 || target >= allItems.length) return
+    const reordered = [...allItems]
+    ;[reordered[index], reordered[target]] = [reordered[target], reordered[index]]
+    const seqByKey = new Map(reordered.map((it, i) => [it.data._key, i + 1]))
+    const reseq = (x) => ({ ...x, _seq: seqByKey.get(x._key) ?? x._seq })
+    setEntries(prev => prev.map(reseq))
+    setJibPasses(prev => prev.map(reseq))
+    setOtherEntries(prev => prev.map(reseq))
+    seqRef.current = reordered.length
+  }
+
+  const rowControls = (index, onRemove) => (
+    <div className={styles.rowActions}>
+      <button className={styles.moveBtn} disabled={index === 0}
+        onClick={() => moveItem(index, -1)} aria-label={tr.compoMoveUp}>▲</button>
+      <button className={styles.moveBtn} disabled={index === allItems.length - 1}
+        onClick={() => moveItem(index, 1)} aria-label={tr.compoMoveDown}>▼</button>
+      <button className={styles.removeBtn} onClick={onRemove} aria-label={tr.cancel}>✕</button>
+    </div>
+  )
+
   return (
     <div className={styles.page}>
       <ToastContainer toasts={toasts} />
@@ -656,7 +681,7 @@ export default function Compo() {
             ? <p className={styles.empty}>{tr.compoEmpty}</p>
             : (
               <div className={styles.entryList}>
-                {allItems.map(({ type, data }) => {
+                {allItems.map(({ type, data }, index) => {
                   if (type === 'figure') {
                     const e = data
                     return (
@@ -669,7 +694,7 @@ export default function Compo() {
                             {e.approach.map(a => <span key={a} className={styles.tag}>{appLabel(a)}</span>)}
                           </div>
                         </div>
-                        <button className={styles.removeBtn} onClick={() => setEntries(prev => prev.filter(x => x._key !== e._key))}>✕</button>
+                        {rowControls(index, () => setEntries(prev => prev.filter(x => x._key !== e._key)))}
                       </div>
                     )
                   }
@@ -685,7 +710,7 @@ export default function Compo() {
                             <span className={`${styles.tag} ${styles.tagJib}`}>{jibSummary(p)}</span>
                           </div>
                         </div>
-                        <button className={styles.removeBtn} onClick={() => setJibPasses(prev => prev.filter(x => x._key !== p._key))}>✕</button>
+                        {rowControls(index, () => setJibPasses(prev => prev.filter(x => x._key !== p._key)))}
                       </div>
                     )
                   }
@@ -698,7 +723,7 @@ export default function Compo() {
                           <span className={styles.tag}>{tr.compoOther}</span>
                         </div>
                       </div>
-                      <button className={styles.removeBtn} onClick={() => setOtherEntries(prev => prev.filter(x => x._key !== o._key))}>✕</button>
+                      {rowControls(index, () => setOtherEntries(prev => prev.filter(x => x._key !== o._key)))}
                     </div>
                   )
                 })}

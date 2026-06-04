@@ -217,6 +217,19 @@
   font-family: var(--font-display);
 }
 
+.rowActions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+
+.moveBtn {
+  width: 24px; height: 28px;
+  border-radius: var(--r-sm);
+  color: var(--c-faint);
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--t-fast);
+}
+.moveBtn:hover:not(:disabled) { color: var(--c-accent); background: var(--c-surface3); }
+.moveBtn:disabled { opacity: .25; cursor: default; }
+
 .removeBtn {
   flex-shrink: 0;
   width: 28px; height: 28px;
