@@ -108,7 +108,7 @@ function computeScore(entries, jibPasses) {
   // GLISSE (kicker + jib)
   scored['flip'] = all.some(e => e.inverted && (e.contexts.includes('kicker') || e.contexts.includes('jib')))
   scored['spin'] = all.some(e => e.category_slug === 'spin' && (e.contexts.includes('kicker') || e.contexts.includes('jib')))
-  scored['fslip_bsboard'] = all.some(e => e.slug === 'front-lip' || e.slug === 'bs-boardslide')
+  scored['fslip_bsboard'] = all.some(e => e.slug === 'front-lip' || e.slug === 'back-board')
   scored['fsboard_bslip'] = all.some(e => e.slug === 'front-board' || e.slug === 'back-lip')
 
   // ENTRIES (kicker/jib)
@@ -145,13 +145,14 @@ const SCORE_KEYS = [
 ]
 
 const JIB_FIGURES = [
-  { slug: 'front-lip',     label: 'Front Lip'      },
-  { slug: 'bs-boardslide', label: 'BS Boardslide'  },
-  { slug: 'front-board',   label: 'Front Board'    },
-  { slug: 'back-lip',      label: 'Back Lip'       },
   { slug: '50-50',         label: '50-50'          },
+  { slug: 'front-board',   label: 'Front Board'    },
+  { slug: 'front-lip',     label: 'Front Lip'      },
+  { slug: 'back-board',    label: 'Back Board'     },
+  { slug: 'back-lip',      label: 'Back Lip'       },
   { slug: 'press',         label: 'Press'          },
   { slug: 'transfer',      label: 'Transfer'       },
+  { slug: 'rail-to-rail',  label: 'Rail to Rail'   },
   { slug: 'gap',           label: 'Gap'            },
   { slug: 'fs-180',        labelKey: 'compoRotFS'  },
   { slug: 'bs-180',        labelKey: 'compoRotBS'  },
