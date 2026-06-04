@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useT } from '../i18n/useT'
 import { useToast } from '../hooks/useToast'
 import ToastContainer from '../components/Toast'
+import Icon from '../components/Icon'
 import styles from './Compo.module.css'
 
 const STORAGE_KEY = 'wakeref_compo'
@@ -303,6 +304,7 @@ export default function Compo() {
   const [saving, setSaving]           = useState(false)
   const [savedId, setSavedId]         = useState(null) // id of the run once saved → share link
   const [showSave, setShowSave]       = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false) // score breakdown fold (mobile only)
 
   // Resume the sequence counter past any restored items so ordering stays correct
   const maxStoredSeq = [...(stored?.entries || []), ...(stored?.jibPasses || []), ...(stored?.otherEntries || [])]
@@ -500,13 +502,30 @@ export default function Compo() {
     seqRef.current = reordered.length
   }
 
-  const rowControls = (index, onRemove) => (
+  const setterFor = (type) =>
+    type === 'figure' ? setEntries : type === 'jib' ? setJibPasses : setOtherEntries
+
+  // Remove a trick but keep it restorable via an Undo toast. The removed item
+  // keeps its _seq, so undo drops it back into its original position.
+  const removeItem = (type, item) => {
+    const setter = setterFor(type)
+    setter(prev => prev.filter(x => x._key !== item._key))
+    toast(tr.compoRemoved, 'info', {
+      actionLabel: tr.undo,
+      onAction: () => setter(prev => [...prev, item]),
+      duration: 6000,
+    })
+  }
+
+  const rowControls = (index, type, item) => (
     <div className={styles.rowActions}>
-      <button className={styles.moveBtn} disabled={index === 0}
-        onClick={() => moveItem(index, -1)} aria-label={tr.compoMoveUp}>▲</button>
-      <button className={styles.moveBtn} disabled={index === allItems.length - 1}
-        onClick={() => moveItem(index, 1)} aria-label={tr.compoMoveDown}>▼</button>
-      <button className={styles.removeBtn} onClick={onRemove} aria-label={tr.cancel}>✕</button>
+      <div className={styles.moveGroup}>
+        <button className={styles.moveBtn} disabled={index === 0}
+          onClick={() => moveItem(index, -1)} aria-label={tr.compoMoveUp}>▲</button>
+        <button className={styles.moveBtn} disabled={index === allItems.length - 1}
+          onClick={() => moveItem(index, 1)} aria-label={tr.compoMoveDown}>▼</button>
+      </div>
+      <button className={styles.removeBtn} onClick={() => removeItem(type, item)} aria-label={tr.compoRemove}>✕</button>
     </div>
   )
 
@@ -694,7 +713,7 @@ export default function Compo() {
                             {e.approach.map(a => <span key={a} className={styles.tag}>{appLabel(a)}</span>)}
                           </div>
                         </div>
-                        {rowControls(index, () => setEntries(prev => prev.filter(x => x._key !== e._key)))}
+                        {rowControls(index, 'figure', e)}
                       </div>
                     )
                   }
@@ -710,7 +729,7 @@ export default function Compo() {
                             <span className={`${styles.tag} ${styles.tagJib}`}>{jibSummary(p)}</span>
                           </div>
                         </div>
-                        {rowControls(index, () => setJibPasses(prev => prev.filter(x => x._key !== p._key)))}
+                        {rowControls(index, 'jib', p)}
                       </div>
                     )
                   }
@@ -723,7 +742,7 @@ export default function Compo() {
                           <span className={styles.tag}>{tr.compoOther}</span>
                         </div>
                       </div>
-                      {rowControls(index, () => setOtherEntries(prev => prev.filter(x => x._key !== o._key)))}
+                      {rowControls(index, 'other', o)}
                     </div>
                   )
                 })}
@@ -734,22 +753,32 @@ export default function Compo() {
 
         {/* Score */}
         <div className={styles.right}>
-          <div className={styles.scoreHeader}>
+          <button
+            className={styles.scoreHeader}
+            onClick={() => setDetailsOpen(o => !o)}
+            aria-expanded={detailsOpen}
+          >
             <span className={styles.scoreTotal}>{total}</span>
             <span className={styles.scoreMax}>/20</span>
+            <Icon
+              name="chevron-right"
+              className={`${styles.scoreToggle} ${detailsOpen ? styles.scoreToggleOpen : ''}`}
+            />
+          </button>
+          <div className={`${styles.scoreDetails} ${detailsOpen ? '' : styles.scoreDetailsCollapsed}`}>
+            {SCORE_KEYS.map(({ section, items }) => (
+              <div key={section} className={styles.scoreSection}>
+                <p className={styles.scoreSectionTitle}>{tr[section]}</p>
+                {items.map(key => (
+                  <div key={key} className={`${styles.scoreItem} ${scored[key] ? styles.scoreItemOn : ''}`}>
+                    <span className={styles.scoreItemDot} />
+                    <span className={styles.scoreItemLabel}>{tr.compoItems?.[key] || key}</span>
+                    <span className={styles.scoreItemPt}>{scored[key] ? '1' : '0'}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
           </div>
-          {SCORE_KEYS.map(({ section, items }) => (
-            <div key={section} className={styles.scoreSection}>
-              <p className={styles.scoreSectionTitle}>{tr[section]}</p>
-              {items.map(key => (
-                <div key={key} className={`${styles.scoreItem} ${scored[key] ? styles.scoreItemOn : ''}`}>
-                  <span className={styles.scoreItemDot} />
-                  <span className={styles.scoreItemLabel}>{tr.compoItems?.[key] || key}</span>
-                  <span className={styles.scoreItemPt}>{scored[key] ? '1' : '0'}</span>
-                </div>
-              ))}
-            </div>
-          ))}
         </div>
 
       </div>

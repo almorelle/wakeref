@@ -7,7 +7,10 @@ export default function ToastContainer({ toasts }) {
       {toasts.map(t => (
         <div key={t.id} className={`toast ${t.type}`}>
           <Icon name={t.type === 'success' ? 'check' : t.type === 'error' ? 'x' : 'info-circle'} />
-          {t.message}
+          <span className="toast-msg">{t.message}</span>
+          {t.action && (
+            <button className="toast-action" onClick={t.action.onClick}>{t.action.label}</button>
+          )}
         </div>
       ))}
     </div>

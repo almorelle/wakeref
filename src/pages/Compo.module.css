@@ -217,10 +217,14 @@
   font-family: var(--font-display);
 }
 
-.rowActions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+/* Reorder arrows kept in their own group, clearly separated from the
+   destructive remove button to avoid accidental taps on touch screens. */
+.rowActions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+
+.moveGroup { display: flex; align-items: center; gap: 2px; }
 
 .moveBtn {
-  width: 24px; height: 28px;
+  width: 30px; height: 36px;
   border-radius: var(--r-sm);
   color: var(--c-faint);
   font-size: 11px;
@@ -232,10 +236,10 @@
 
 .removeBtn {
   flex-shrink: 0;
-  width: 28px; height: 28px;
+  width: 36px; height: 36px;
   border-radius: var(--r-sm);
   color: var(--c-faint);
-  font-size: 12px;
+  font-size: 13px;
   display: flex; align-items: center; justify-content: center;
   transition: all var(--t-fast);
 }
@@ -255,12 +259,34 @@
 }
 
 .scoreHeader {
+  position: relative;
+  width: 100%;
+  background: transparent;
   display: flex;
   align-items: baseline;
   gap: 4px;
   justify-content: center;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--c-border);
+  cursor: default; /* not collapsible on desktop */
+}
+
+/* Chevron : visible uniquement en mobile (le détail est repliable) */
+.scoreToggle {
+  display: none;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+  color: var(--c-muted);
+  transition: transform var(--t-fast);
+}
+.scoreToggleOpen { transform: translateY(-50%) rotate(-90deg); }
+
+.scoreDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .scoreTotal {
@@ -337,6 +363,10 @@
     order: -1;
   }
   .scoreTotal { font-size: 42px; }
+  /* Détail du score repliable pour gagner en lisibilité */
+  .scoreHeader { cursor: pointer; }
+  .scoreToggle { display: block; }
+  .scoreDetailsCollapsed { display: none; }
 }
 
 /* Boutons d'ajout */

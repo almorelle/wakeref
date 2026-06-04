@@ -266,6 +266,18 @@ select.input { appearance: none; }
 }
 .toast.success { border-color: var(--c-success); }
 .toast.error   { border-color: var(--c-danger); }
+.toast-msg { flex: 1; }
+.toast-action {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-accent);
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-display);
+  transition: background var(--t-fast);
+}
+.toast-action:hover { background: var(--c-surface3); }
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
