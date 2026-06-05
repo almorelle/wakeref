@@ -61,7 +61,7 @@ export default function Navbar() {
           <span className={styles.logoMark} aria-hidden="true" />
           WakeRef
         </NavLink>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button className={`btn-icon ${styles.themeBtn}`} onClick={toggleTheme} aria-label="Toggle theme">
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
           </button>
