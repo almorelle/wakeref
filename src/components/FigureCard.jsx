@@ -1,19 +1,12 @@
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import DifficultyDots from './DifficultyDots'
 import { SportBadge, CategoryBadge, ContextBadge } from './Badges'
 import styles from './FigureCard.module.css'
 import Icon from './Icon'
 
 export default function FigureCard({ figure }) {
-  const navigate = useNavigate()
   return (
-    <div
-      className={styles.card}
-      onClick={() => navigate(`/figures/${figure.slug}`)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && navigate(`/figures/${figure.slug}`)}
-    >
+    <Link to={`/figures/${figure.slug}`} className={styles.card}>
       <div className={styles.body}>
         <span className={styles.name}>{figure.name}</span>
         <div className={styles.meta}>
@@ -26,6 +19,6 @@ export default function FigureCard({ figure }) {
         </div>
       </div>
       <Icon name="chevron-right" style={{ color: 'var(--c-faint)', fontSize: 16 }} />
-    </div>
+    </Link>
   )
 }

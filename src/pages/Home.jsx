@@ -83,7 +83,7 @@ export default function Home() {
             autoComplete="off"
           />
           {query && (
-            <button onClick={() => setQuery('')} className={styles.clearBtn}>
+            <button onClick={() => setQuery('')} className={styles.clearBtn} aria-label={tr.clearSearch}>
               <Icon name="x" />
             </button>
           )}

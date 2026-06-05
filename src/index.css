@@ -84,6 +84,14 @@ body {
 
 a { color: inherit; text-decoration: none; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+/* Focus clavier visible (WCAG 2.4.7). Uniquement :focus-visible pour ne pas
+   afficher d'anneau sur les clics souris. */
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
 input, textarea, select {
   font-family: inherit;
   font-size: inherit;
@@ -286,6 +294,16 @@ select.input { appearance: none; }
 /* Responsive */
 @media (max-width: 600px) {
   .page-container { padding: 0 1rem 5rem; }
+}
+
+/* Respect du réglage système « réduire les animations » */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* dm-sans-300 - latin */

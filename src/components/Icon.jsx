@@ -127,11 +127,16 @@ const ICONS = {
   'x':                      IconX,
 }
 
-export default function Icon({ name, size = 18, style, className }) {
+export default function Icon({ name, size = 18, style, className, label }) {
   const Component = ICONS[name]
   if (!Component) {
     console.warn(`Icon "${name}" not found`)
     return null
   }
-  return <Component size={size} style={style} className={className} />
+  // Par défaut décoratif (masqué aux lecteurs d'écran). Passer `label` pour
+  // une icône porteuse de sens (ex. icône seule dans un lien).
+  const a11y = label
+    ? { role: 'img', 'aria-label': label }
+    : { 'aria-hidden': true, focusable: false }
+  return <Component size={size} style={style} className={className} {...a11y} />
 }

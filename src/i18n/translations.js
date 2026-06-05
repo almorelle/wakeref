@@ -50,6 +50,8 @@ export const t = {
     takedownSuccessMsg: 'Votre demande a bien été envoyée. Nous traiterons votre demande dans les plus brefs délais.',
     cancel: 'Annuler',
     close:  'Fermer',
+    clearSearch: 'Effacer la recherche',
+    deleteVideo: 'Supprimer la vidéo',
     share:  'Partage ce trick !',
     copied: 'Lien copié !',
 
@@ -257,6 +259,8 @@ export const t = {
     takedownSuccessMsg: 'Your request has been submitted. We will process it as soon as possible.',
     cancel: 'Cancel',
     close:  'Close',
+    clearSearch: 'Clear search',
+    deleteVideo: 'Delete video',
     share:  'Share this trick!',
     copied: 'Link copied!',
 

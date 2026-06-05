@@ -188,7 +188,7 @@ export default function AdminVideos() {
               {v.creator_url && <span className={styles.videoCreator}>{v.creator_url}</span>}
               {v.takedown_requested && <span className="badge" style={{ background: '#ef444420', color: 'var(--c-danger)' }}>Retrait demandé</span>}
             </div>
-            <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--c-danger)' }} onClick={() => deleteVideo(v)}>
+            <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--c-danger)' }} onClick={() => deleteVideo(v)} aria-label="Supprimer la vidéo">
               <Icon name="trash" />
             </button>
           </div>

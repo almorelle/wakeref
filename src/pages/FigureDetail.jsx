@@ -178,7 +178,7 @@ export default function FigureDetail() {
     <div className={styles.page}>
       <div className={styles.header}>
         <nav className={styles.breadcrumb}>
-          <button onClick={() => navigate('/')} className={styles.breadcrumbLink}>
+          <button onClick={() => navigate('/')} className={styles.breadcrumbLink} aria-label={tr.home}>
             <Icon name="home" />
           </button>
           <Icon name="chevron-right" className={styles.breadcrumbSep} />
@@ -310,7 +310,7 @@ export default function FigureDetail() {
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
             <div className={styles.modalHeader}>
               <h2>{tr.takedownTitle}</h2>
-              <button onClick={() => setTakedownVideo(null)} className="btn-icon"><Icon name="x" /></button>
+              <button onClick={() => setTakedownVideo(null)} className="btn-icon" aria-label={tr.close}><Icon name="x" /></button>
             </div>
             {takedownSent
               ? (
