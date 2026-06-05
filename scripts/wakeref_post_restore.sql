@@ -110,12 +110,24 @@ set search_path = public as $$
 $$;
 
 -- ────────────────────────────────────────────────────────────
--- 3. INDEX FULL-TEXT
+-- 3. INDEX
 -- ────────────────────────────────────────────────────────────
+-- Recherche plein-texte français (unaccent).
 create index if not exists figures_search_idx on figures
   using gin(to_tsvector('french', public.immutable_unaccent(
     coalesce(name,'') || ' ' || coalesce(description,'')
   )));
+
+-- Clés étrangères sollicitées par la vue figures_full et le groupe switch.
+-- Agrégation des vidéos (filtre figure_id + takedown_requested).
+create index if not exists videos_figure_id_idx
+  on videos (figure_id) where takedown_requested = false;
+-- Groupe switch : coalesce(switch_of, id) + sous-requête switch_versions.
+create index if not exists figures_switch_of_idx on figures (switch_of);
+-- Jointure figures → categories.
+create index if not exists figures_category_id_idx on figures (category_id);
+-- Sous-requête prerequisites (jointure par requires_id ; la PK couvre figure_id en tête).
+create index if not exists prerequisites_requires_id_idx on prerequisites (requires_id);
 
 -- ────────────────────────────────────────────────────────────
 -- 4. TRIGGER
@@ -222,18 +234,20 @@ create policy "Lecture publique categories"    on categories    for select using
 create policy "Lecture publique figures"       on figures       for select using (published = true);
 create policy "Lecture publique prerequisites" on prerequisites for select using (true);
 create policy "Lecture publique videos"        on videos        for select using (takedown_requested = false);
-create policy "Ecriture admin figures"         on figures       for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
-create policy "Ecriture admin categories"      on categories    for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
-create policy "Ecriture admin prerequisites"   on prerequisites for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
-create policy "Ecriture admin videos"          on videos        for all using (auth.role()='authenticated') with check (auth.role()='authenticated');
+-- auth.role() encapsulé dans un sous-select : évalué une seule fois par
+-- requête (initplan) au lieu d'une fois par ligne.
+create policy "Ecriture admin figures"         on figures       for all using ((select auth.role())='authenticated') with check ((select auth.role())='authenticated');
+create policy "Ecriture admin categories"      on categories    for all using ((select auth.role())='authenticated') with check ((select auth.role())='authenticated');
+create policy "Ecriture admin prerequisites"   on prerequisites for all using ((select auth.role())='authenticated') with check ((select auth.role())='authenticated');
+create policy "Ecriture admin videos"          on videos        for all using ((select auth.role())='authenticated') with check ((select auth.role())='authenticated');
 create policy "Insertion publique takedown"    on takedown_requests for insert with check (true);
-create policy "Lecture admin takedown"         on takedown_requests for select using (auth.role() = 'authenticated');
+create policy "Lecture admin takedown"         on takedown_requests for select using ((select auth.role()) = 'authenticated');
 create policy "Soumission publique"            on video_submissions for insert with check (true);
-create policy "Lecture admin soumissions"      on video_submissions for select using (auth.role() = 'authenticated');
-create policy "Mise à jour admin soumissions"  on video_submissions for update using (auth.role() = 'authenticated');
+create policy "Lecture admin soumissions"      on video_submissions for select using ((select auth.role()) = 'authenticated');
+create policy "Mise à jour admin soumissions"  on video_submissions for update using ((select auth.role()) = 'authenticated');
 create policy "Insertion publique compositions" on compositions for insert with check (true);
-create policy "Lecture admin compositions"      on compositions for select using (auth.role() = 'authenticated');
-create policy "Suppression admin compositions"  on compositions for delete using (auth.role() = 'authenticated');
+create policy "Lecture admin compositions"      on compositions for select using ((select auth.role()) = 'authenticated');
+create policy "Suppression admin compositions"  on compositions for delete using ((select auth.role()) = 'authenticated');
 
 
 -- ────────────────────────────────────────────────────────────
@@ -256,11 +270,11 @@ create policy "Videos publiques"
 
 create policy "Upload admin seulement"
   on storage.objects for insert
-  with check (bucket_id = 'videos' and auth.role() = 'authenticated');
+  with check (bucket_id = 'videos' and (select auth.role()) = 'authenticated');
 
 create policy "Delete admin seulement"
   on storage.objects for delete
-  using (bucket_id = 'videos' and auth.role() = 'authenticated');
+  using (bucket_id = 'videos' and (select auth.role()) = 'authenticated');
 
 -- ────────────────────────────────────────────────────────────
 -- 8. GRANTS

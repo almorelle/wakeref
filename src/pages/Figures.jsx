@@ -18,7 +18,13 @@ export default function Figures() {
 
   useEffect(() => {
     setLoading(true)
-    let q = supabase.from('figures_full').select('*').order('name')
+    // Liste : on ne sélectionne que les colonnes affichées par FigureCard.
+    // Évite que la vue figures_full calcule les sous-requêtes lourdes
+    // (videos, prerequisites, switch_versions) pour chaque figure.
+    let q = supabase
+      .from('figures_full')
+      .select('id,slug,name,sport,difficulty,category_slug,category_name,contexts')
+      .order('name')
     if (activeFilter !== 'tous') q = q.eq('category_slug', activeFilter)
     if (activeContext) q = q.contains('contexts', [activeContext])
     if (activeSport)  q = q.eq('sport', activeSport)
