@@ -125,7 +125,7 @@ export default function Figures() {
           </p>
         )}
         <div className={styles.list}>
-          {figures.map(f => <FigureCard key={f.id} figure={f} />)}
+          {figures.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
         </div>
       </div>
     </div>

@@ -1,22 +1,114 @@
 .page { display: flex; flex-direction: column; }
 
 .hero {
-  background: var(--c-surface);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   border-bottom: 1px solid var(--c-border);
-  padding: 2rem 1.25rem 1.5rem;
+  /* remonte le hero derrière la navbar translucide pour une atmosphère
+     qui démarre tout en haut ; le padding compense la hauteur de nav. */
+  margin-top: calc(-1 * var(--nav-h));
+  padding: calc(2.25rem + var(--nav-h)) 1.25rem 2rem;
+  /* deux halos (cyan « wake » + violet) pour donner de la profondeur */
+  background:
+    radial-gradient(120% 90% at 18% -10%, #06b6d426, transparent 55%),
+    radial-gradient(90% 80% at 95% 0%, #7c3aed1f, transparent 50%),
+    var(--c-surface);
+}
+/* halos plus saturés sur fond clair pour rester visibles */
+:global([data-theme='light']) .hero {
+  background:
+    radial-gradient(120% 90% at 18% -10%, #06b6d433, transparent 55%),
+    radial-gradient(90% 80% at 95% 0%, #7c3aed1a, transparent 50%),
+    var(--c-surface);
+}
+/* filigrane casque, surdimensionné, débordant à droite — couche la plus
+   profonde du hero (derrière sillage + contenu). */
+.heroWatermark {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  right: -4%;
+  height: 230%;
+  transform: translateY(-50%) rotate(-8deg);
+  color: var(--c-text);
+  opacity: .05;
+  pointer-events: none;
+}
+:global([data-theme='light']) .heroWatermark { opacity: .045; }
+
+/* lignes de sillage qui dérivent lentement, en bas du hero */
+.wake {
+  position: absolute;
+  inset: auto -10% -1px -10%;
+  height: 150px;
+  z-index: -1;
+  opacity: .5;
+  mask-image: linear-gradient(transparent, #000 70%);
+  -webkit-mask-image: linear-gradient(transparent, #000 70%);
+}
+:global([data-theme='light']) .wake { opacity: .4; }
+.wake svg { width: 200%; height: 100%; animation: wakeDrift 14s linear infinite; }
+@keyframes wakeDrift { to { transform: translateX(-50%); } }
+/* grain subtil pour casser le banding des dégradés */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: .04;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* colonne centrée alignée sur .page-container (max 900px) */
+.heroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  animation: heroRise .6s ease both;
 }
 .heroText { margin-bottom: 1.25rem; }
+.searchWrap { position: relative; max-width: 460px; }
+@keyframes heroRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  color: var(--c-wake);
+  margin-bottom: 12px;
+}
+.eyebrow::before {
+  content: "";
+  width: 22px;
+  height: 1px;
+  background: var(--c-wake);
+  opacity: .6;
+}
 .title {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: clamp(34px, 7vw, 60px);
   font-weight: 800;
-  letter-spacing: -.02em;
-  background: linear-gradient(135deg, #f0f0f8 30%, var(--c-wake));
+  letter-spacing: -.03em;
+  line-height: .98;
+  max-width: 12ch;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, #f0f0f8 25%, var(--c-wake) 95%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  line-height: 1;
-  margin-bottom: 4px;
+}
+/* sur fond clair, le blanc disparaît : on passe à sombre → teal */
+:global([data-theme='light']) .title {
+  background: linear-gradient(135deg, #0d0d1a 20%, #0891b2 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 .sub { font-size: 14px; color: var(--c-muted); }
 
@@ -68,12 +160,19 @@
   align-items: flex-start;
   gap: 10px;
   cursor: pointer;
-  transition: border-color var(--t-fast), background var(--t-fast);
+  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
   text-align: left;
+  animation: catRise .5s ease both;
+  animation-delay: calc(min(var(--i, 0), 12) * 45ms + .12s);
 }
 .catCard:hover {
   border-color: var(--cat-color, var(--c-accent));
   background: var(--c-surface2);
+  transform: translateY(-2px);
+}
+@keyframes catRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 .catCard i {
   font-size: 22px;
@@ -153,5 +252,4 @@
 
 @media (max-width: 500px) {
   .catGrid { grid-template-columns: repeat(2, 1fr); }
-  .title { font-size: 26px; }
 }

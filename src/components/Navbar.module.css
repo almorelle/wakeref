@@ -1,8 +1,7 @@
 /* ── Top bar (desktop) ── */
 .topbar {
-  height: 52px;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
+  height: var(--nav-h);
+  background: transparent;
   display: flex;
   align-items: center;
   padding: 0 2rem;
@@ -10,7 +9,13 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: background var(--t-mid), backdrop-filter var(--t-mid);
+}
+/* fond frosté seulement après défilement */
+.topbar.scrolled {
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 .logo {
   font-family: var(--font-display);
@@ -23,7 +28,16 @@
   gap: 7px;
   margin-right: auto;
 }
-.logo i { color: var(--c-wake); font-size: 20px; }
+/* Picto vectoriel via mask : net à toute taille, thémable, teinté marque. */
+.logoMark {
+  display: inline-block;
+  height: 22px;
+  aspect-ratio: 1250.314 / 1319.483;
+  background: var(--c-wake);
+  -webkit-mask: url(/picto.svg) no-repeat center / contain;
+  mask: url(/picto.svg) no-repeat center / contain;
+  flex-shrink: 0;
+}
 .topnav { display: flex; gap: 4px; }
 .toplink {
   font-family: var(--font-display);
@@ -40,16 +54,20 @@
 /* ── Bottom bar (mobile) ── */
 .topbarMobile {
   display: none;
-  height: 48px;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
+  height: var(--nav-h);
+  background: transparent;
   padding: 0 1.25rem;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 100;
+  transition: background var(--t-mid), backdrop-filter var(--t-mid);
+}
+.topbarMobile.scrolled {
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 @media (max-width: 700px) {
   .topbar { display: none; }

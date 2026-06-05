@@ -10,7 +10,7 @@ export default function NotFound() {
   return (
     <div className={styles.page}>
       <div className={styles.content}>
-        <p className={styles.code}>{'🤷'}</p>
+        <span className={`picto-mark ${styles.mark}`} aria-hidden="true" />
         <p className={styles.code}>404</p>
         <h1 className={styles.title}>{tr.notFoundTitle}</h1>
         <p className={styles.sub}>{tr.notFoundSub}</p>

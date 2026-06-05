@@ -68,25 +68,36 @@ export default function Home() {
         path="/"
       />
       <div className={styles.hero}>
-        <div className={styles.heroText}>
-          <h1 className="sr-only">WakeRef — Référentiel complet des figures de wakeboard et wakeskate</h1>
-          <p className={styles.sub}>{tr.appSubtitle}</p>
+        <span className={`picto-mark ${styles.heroWatermark}`} aria-hidden="true" />
+        <div className={styles.wake} aria-hidden="true">
+          <svg viewBox="0 0 1200 160" preserveAspectRatio="none" fill="none">
+            <path d="M0 100 Q150 60 300 100 T600 100 T900 100 T1200 100 T1500 100 T1800 100 T2100 100 T2400 100" stroke="var(--c-wake)" strokeWidth="1.5" opacity=".55" />
+            <path d="M0 120 Q150 90 300 120 T600 120 T900 120 T1200 120 T1500 120 T1800 120 T2100 120 T2400 120" stroke="var(--c-wake)" strokeWidth="1" opacity=".3" />
+            <path d="M0 80 Q150 50 300 80 T600 80 T900 80 T1200 80 T1500 80 T1800 80 T2100 80 T2400 80" stroke="#7c3aed" strokeWidth="1" opacity=".25" />
+          </svg>
         </div>
-        <div className={styles.searchWrap}>
-          <Icon name="search" />
-          <input
-            className={styles.searchInput}
-            type="text"
-            placeholder={tr.searchPlaceholder}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            autoComplete="off"
-          />
-          {query && (
-            <button onClick={() => setQuery('')} className={styles.clearBtn} aria-label={tr.clearSearch}>
-              <Icon name="x" />
-            </button>
-          )}
+        <div className={styles.heroInner}>
+          <div className={styles.heroText}>
+            <span className={styles.eyebrow}>{tr.heroEyebrow}</span>
+            <h1 className={styles.title}>{tr.heroTitle}</h1>
+            <p className={styles.sub}>{tr.appSubtitle}</p>
+          </div>
+          <div className={styles.searchWrap}>
+            <Icon name="search" />
+            <input
+              className={styles.searchInput}
+              type="text"
+              placeholder={tr.searchPlaceholder}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              autoComplete="off"
+            />
+            {query && (
+              <button onClick={() => setQuery('')} className={styles.clearBtn} aria-label={tr.clearSearch}>
+                <Icon name="x" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -97,7 +108,7 @@ export default function Home() {
             {!searching && searchResults?.length === 0 && (
               <p className={styles.empty}>{tr.noResults(query)}</p>
             )}
-            {!searching && searchResults?.map(f => <FigureCard key={f.id} figure={f} />)}
+            {!searching && searchResults?.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
           </div>
         )}
 
@@ -127,23 +138,23 @@ export default function Home() {
 
             <p className="section-title" style={{ marginTop: '2rem' }}>{tr.categories}</p>
             <div className={styles.catGrid}>
-              {CATEGORIES.map(c => (
+              {CATEGORIES.map((c, i) => (
                 <button
                   key={c.id}
                   className={styles.catCard}
                   onClick={() => navigate(`/figures?cat=${c.slug}`)}
-                  style={{ '--cat-color': c.color }}
+                  style={{ '--cat-color': c.color, '--i': i }}
                 >
                   <Icon name={c.icon} style={{ color: c.color }} />
                   <span className={styles.catName}>{tr.catNames[c.slug] || c.name}</span>
                 </button>
               ))}
-              {CONTEXTS.map(ctx => (
+              {CONTEXTS.map((ctx, i) => (
                 <button
                   key={ctx.slug}
                   className={styles.catCard}
                   onClick={() => navigate(`/figures?ctx=${ctx.slug}`)}
-                  style={{ '--cat-color': ctx.color }}
+                  style={{ '--cat-color': ctx.color, '--i': CATEGORIES.length + i }}
                 >
                   <Icon name={ctx.icon} style={{ color: ctx.color }} />
                   <span className={styles.catName}>{ctx.label}</span>
@@ -155,7 +166,7 @@ export default function Home() {
               <>
                 <p className="section-title" style={{ marginTop: '2rem' }}>{tr.recentFigures}</p>
                 <div className={styles.list}>
-                  {recent.map(f => <FigureCard key={f.id} figure={f} />)}
+                  {recent.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
                 </div>
               </>
             )}
@@ -164,7 +175,7 @@ export default function Home() {
               <>
                 <p className="section-title" style={{ marginTop: '2rem' }}>{tr.recentVideos}</p>
                 <div className={styles.list}>
-                  {videos.map(f => <FigureCard key={f.id} figure={f} />)}
+                  {videos.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
                 </div>
               </>
             )}

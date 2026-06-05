@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
-import { useTheme } from '../../contexts/ThemeContext'
 import styles from './AdminLayout.module.css'
 import Icon from '../../components/Icon'
 
 export default function AdminLayout() {
   const { session, loading, signOut } = useAuth()
-  const { theme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
-  const logo = <img src={theme === 'dark' ? '/logo-line-white.png' : '/logo-line-black.png'} alt="WakeRef" height={28} />
+  const logo = <><span className={styles.logoMark} aria-hidden="true" />WakeRef</>
 
   useEffect(() => {
     if (!loading && !session) navigate('/admin/login')

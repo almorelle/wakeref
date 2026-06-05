@@ -24,7 +24,7 @@
   gap: 8px;
   margin-bottom: 2rem;
 }
-.logo i { color: var(--c-wake); font-size: 24px; }
+.logoMark { height: 26px; color: var(--c-wake); }
 .form { display: flex; flex-direction: column; gap: 14px; }
 .error {
   font-size: 13px;

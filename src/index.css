@@ -50,6 +50,11 @@
   /* Transitions */
   --t-fast: 120ms ease;
   --t-mid:  200ms ease;
+
+  /* Navigation : hauteur (par breakpoint) + fond translucide pour superposer
+     la navbar au-dessus du hero immersif. */
+  --nav-h:  52px;
+  --nav-bg: rgba(10, 10, 15, .55);
 }
 
 [data-theme="light"] {
@@ -63,6 +68,7 @@
   --c-text:      #0d0d1a;
   --c-muted:     #60607a;
   --c-faint:     #b0b0c8;
+  --nav-bg:      rgba(245, 245, 248, .65);
 }
 
 html { font-size: 16px; -webkit-font-smoothing: antialiased; }
@@ -230,7 +236,17 @@ select.input { appearance: none; }
   width: 5px; height: 5px; border-radius: 50%;
   background: var(--c-border2);
 }
-.diff-dot.on { background: var(--c-accent); }
+.diff-dot.on { background: var(--d, var(--c-accent)); }
+
+/* Picto casque (motif de marque) — mark vectoriel via mask, dimensionnable
+   et colorable : règle la taille via `height` et la couleur via `color`. */
+.picto-mark {
+  display: inline-block;
+  aspect-ratio: 1250.314 / 1319.483;
+  background: currentColor;
+  -webkit-mask: url(/picto.svg) no-repeat center / contain;
+  mask: url(/picto.svg) no-repeat center / contain;
+}
 
 /* Section title */
 .section-title {
@@ -292,6 +308,9 @@ select.input { appearance: none; }
 }
 
 /* Responsive */
+@media (max-width: 700px) {
+  :root { --nav-h: 48px; }
+}
 @media (max-width: 600px) {
   .page-container { padding: 0 1rem 5rem; }
 }

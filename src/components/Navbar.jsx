@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import LangSwitcher from './LangSwitcher'
 import { useT } from '../i18n/useT'
@@ -8,6 +9,17 @@ import Icon from './Icon'
 export default function Navbar() {
   const tr = useT()
   const { theme, toggleTheme } = useTheme()
+
+  // Navbar transparente en haut de page (hero immersif), puis fond translucide
+  // dès qu'on scrolle — évite la bande/le liseré au repos.
+  const [scrolled, setScrolled] = useState(false)
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 4)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  const topClass = scrolled ? styles.scrolled : ''
 
   const links = [
     { to: '/',        icon: 'home',        label: tr.home    },
@@ -20,9 +32,10 @@ export default function Navbar() {
   return (
     <>
       {/* Desktop topbar */}
-      <header className={styles.topbar}>
+      <header className={`${styles.topbar} ${topClass}`}>
         <NavLink to="/" className={styles.logo}>
-          <img src={theme === 'dark' ? '/logo-line-white.png' : '/logo-line-black.png'} alt="WakeRef" height={36} />
+          <span className={styles.logoMark} aria-hidden="true" />
+          WakeRef
         </NavLink>
         <nav className={styles.topnav}>
           {links.map(l => (
@@ -43,13 +56,10 @@ export default function Navbar() {
       </header>
 
       {/* Mobile topbar — logo + thème + langue */}
-      <header className={styles.topbarMobile}>
+      <header className={`${styles.topbarMobile} ${topClass}`}>
         <NavLink to="/" className={styles.logo}>
-          <img
-            src={theme === 'dark' ? '/logo-line-white.png' : '/logo-line-black.png'}
-            alt="WakeRef"
-            height={36}
-          />
+          <span className={styles.logoMark} aria-hidden="true" />
+          WakeRef
         </NavLink>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button className={`btn-icon ${styles.themeBtn}`} onClick={toggleTheme} aria-label="Toggle theme">

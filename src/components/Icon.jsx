@@ -18,7 +18,6 @@ import {
   IconConfetti,
   IconCopy,
   IconDeviceGamepad2,
-  IconEdit,
   IconEscalator,
   IconEscalatorUp,
   IconExternalLink,
@@ -58,8 +57,6 @@ import {
   IconUpload,
   IconVideo,
   IconVideoOff,
-  IconVideoPlus,
-  IconWaveSine,
   IconX,
 } from '@tabler/icons-react'
 
@@ -82,7 +79,6 @@ const ICONS = {
   'confetti':               IconConfetti,
   'copy':                   IconCopy,
   'device-gamepad-2':       IconDeviceGamepad2,
-  'edit':                   IconEdit,
   'escalator':              IconEscalator,
   'escalator-up':           IconEscalatorUp,
   'external-link':          IconExternalLink,
@@ -122,8 +118,6 @@ const ICONS = {
   'upload':                 IconUpload,
   'video':                  IconVideo,
   'video-off':              IconVideoOff,
-  'video-plus':             IconVideoPlus,
-  'wave-sine':              IconWaveSine,
   'x':                      IconX,
 }
 

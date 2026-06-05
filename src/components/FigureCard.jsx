@@ -4,9 +4,9 @@ import { SportBadge, CategoryBadge, ContextBadge } from './Badges'
 import styles from './FigureCard.module.css'
 import Icon from './Icon'
 
-export default function FigureCard({ figure }) {
+export default function FigureCard({ figure, index = 0 }) {
   return (
-    <Link to={`/figures/${figure.slug}`} className={styles.card}>
+    <Link to={`/figures/${figure.slug}`} className={styles.card} style={{ '--i': index }}>
       <div className={styles.body}>
         <span className={styles.name}>{figure.name}</span>
         <div className={styles.meta}>

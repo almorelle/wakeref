@@ -6,7 +6,9 @@ export const t = {
     quiz:    'Quiz',
 
     // Home
-    appSubtitle:   'Référentiel wakeboard & wakeskate',
+    appSubtitle:   'Grabs, spins, raileys, inverts — référence complète de tricks, expliqués et en vidéo.',
+    heroEyebrow:   'Wakeboard & Wakeskate',
+    heroTitle:     'Tous les tricks, une seule référence.',
     searchPlaceholder: 'Rechercher une figure…',
     categories:    'Catégories',
     recentFigures: 'Figures récentes',
@@ -215,7 +217,9 @@ export const t = {
     quiz:    'Quiz',
 
     // Home
-    appSubtitle:       'Complete wakeboard and wakeskate tricks reference',
+    appSubtitle:       'Grabs, spins, raileys, inverts — complete reference for tricks, explained and on video.',
+    heroEyebrow:       'Wakeboard & Wakeskate',
+    heroTitle:         'Every trick, one reference.',
     searchPlaceholder: 'Search a trick…',
     categories:        'Categories',
     recentFigures:     'Recent tricks',
