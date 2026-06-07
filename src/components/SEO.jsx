@@ -8,11 +8,11 @@ const OG_IMAGE  = `${SITE_URL}/og-image.jpg`
 const DEFAULT = {
   fr: {
     title:       'WakeRef',
-    description: 'Référentiel complet des figures de wakeboard et wakeskate.',
+    description: 'Référentiel complet des figures de wakeboard et wakeskate. Grabs, spins, raileys, inverts — référence complète de tricks, expliqués et en vidéo.',
   },
   en: {
     title:       'WakeRef',
-    description: 'Complete wakeboard and wakeskate tricks reference.',
+    description: 'Complete wakeboard and wakeskate tricks reference. Grabs, spins, raileys, inverts — complete reference for tricks, explained and on video.',
   },
 }
 
