@@ -187,6 +187,9 @@
   justify-content: space-between;
   background: var(--c-surface);
   border: 1px solid var(--c-border);
+  /* left accent stripe encodes the entry type (color from src/data/contexts.js);
+     neutral by default = "other" */
+  border-left: 3px solid var(--c-border);
   border-radius: var(--r-md);
   padding: 10px 12px;
   gap: 8px;
@@ -386,10 +389,10 @@
   gap: 8px;
 }
 
-.entryRowJib {
-  border-color: var(--c-border2);
-  background: var(--c-surface2);
-}
+.entryRowKicker { border-left-color: #f59e0b; }
+.entryRowJib    { border-left-color: #10b981; }
+.entryRowAir    { border-left-color: #ec4899; }
+.entryRowOther  { border-left-color: var(--c-border); }
 
 .tagJib {
   max-width: 200px;

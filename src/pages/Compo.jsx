@@ -712,8 +712,11 @@ export default function Compo() {
                 {allItems.map(({ type, data }, index) => {
                   if (type === 'figure') {
                     const e = data
+                    const accent = e.contexts.includes('air_trick') ? styles.entryRowAir
+                      : e.contexts.includes('kicker') ? styles.entryRowKicker
+                      : ''
                     return (
-                      <div key={e._key} className={styles.entryRow}>
+                      <div key={e._key} className={`${styles.entryRow} ${accent}`}>
                         <div className={styles.entryInfo}>
                           <span className={styles.entryName}>{e.name}</span>
                           <div className={styles.entryTags}>
@@ -744,7 +747,7 @@ export default function Compo() {
                   }
                   const o = data
                   return (
-                    <div key={o._key} className={styles.entryRow}>
+                    <div key={o._key} className={`${styles.entryRow} ${styles.entryRowOther}`}>
                       <div className={styles.entryInfo}>
                         <span className={styles.entryName}>{o.name}</span>
                         <div className={styles.entryTags}>
