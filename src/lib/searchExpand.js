@@ -7,9 +7,7 @@ const WORD_MAP = {
   heelside:  'hs',
   heel:      'hs',
   backside:  'bs',
-  back:      'bs',
   frontside: 'fs',
-  front:     'fs',
 
   // Direction — abbreviations (recognized by tokenizer, pass-through)
   ts: 'ts',
