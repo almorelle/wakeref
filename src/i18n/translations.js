@@ -19,6 +19,9 @@ export const t = {
     ctaTitle:        'Envie d\'être mis·e en avant sur WakeRef ?',
     ctaText:         'Il manque encore des vidéos sur de nombreuses figures. Partage les tiennes avec la  commu et deviens la réf !',
     ctaButton:       'Soumettre ma vidéo',
+    wctTitle:        'Tu maîtrises ces tricks ?',
+    wctText:         'Construis ton profil de rider et ajoute-les sur World Cable Tricks.',
+    wctButton:       'Créé ton profil',
 
     // Figures list
     all:     'Tous',
@@ -229,6 +232,9 @@ export const t = {
     ctaTitle:          'Wanna be featured on WakeRef?',
     ctaText:           'Many tricks are still missing a video. Share yours and become the reference!',
     ctaButton:         'Submit my video',
+    wctTitle:          'Wanna claim your tricks?',
+    wctText:           'Build your rider profile and add them on World Cable Tricks.',
+    wctButton:         'Build your profile',
     noResults:         (q) => `No trick found for "${q}"`,
 
     // Figures list

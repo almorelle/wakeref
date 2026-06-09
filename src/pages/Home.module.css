@@ -250,6 +250,71 @@
 }
 .ctaBtn { margin-top: 4px; }
 
+/* Bannière World Cable Tricks */
+.wctBanner {
+  margin-top: 1.5rem;
+  border: 1px solid #f59e0b33;
+  border-radius: var(--r-xl);
+  background:
+    linear-gradient(135deg, #f59e0b14, transparent 55%),
+    var(--c-surface);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  text-decoration: none;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.wctBanner:hover {
+  border-color: #f59e0b66;
+  background:
+    linear-gradient(135deg, #f59e0b1e, transparent 55%),
+    var(--c-surface);
+}
+.wctLogo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.wctBody {
+  flex: 1;
+  min-width: 0;
+}
+.wctTitle {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--c-text);
+  margin-bottom: 4px;
+}
+.wctText {
+  font-size: 13px;
+  color: var(--c-muted);
+  line-height: 1.5;
+}
+.wctBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f59e0b;
+  color: #0a0a0f;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--r-lg);
+  padding: 10px 16px;
+  white-space: nowrap;
+  transition: background var(--t-fast);
+}
+.wctBanner:hover .wctBtn { background: #fbbf24; }
+
+@media (max-width: 600px) {
+  .wctBanner { flex-wrap: wrap; }
+  .wctBtn { width: 100%; justify-content: center; }
+}
+
 @media (max-width: 500px) {
   .catGrid { grid-template-columns: repeat(2, 1fr); }
 }

@@ -5,6 +5,7 @@ import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
 import { CATEGORIES } from '../data/categories'
 import { CONTEXTS } from '../data/contexts'
+import { externalUrl } from '../lib/url'
 import styles from './Home.module.css'
 import SEO from '../components/SEO'
 import Icon from '../components/Icon'
@@ -135,6 +136,22 @@ export default function Home() {
                 </button>
               </div>
             </div>
+
+            <a
+              href={externalUrl('https://www.worldcabletricks.com/', { ref: true })}
+              target="_blank"
+              rel="noopener"
+              className={styles.wctBanner}
+            >
+              <img src="/wct-logo.png" alt="World Cable Tricks" className={styles.wctLogo} />
+              <div className={styles.wctBody}>
+                <p className={styles.wctTitle}>{tr.wctTitle}</p>
+                <p className={styles.wctText}>{tr.wctText}</p>
+              </div>
+              <span className={styles.wctBtn}>
+                {tr.wctButton} <Icon name="arrow-right" />
+              </span>
+            </a>
 
             <p className="section-title" style={{ marginTop: '2rem' }}>{tr.categories}</p>
             <div className={styles.catGrid}>
