@@ -29,11 +29,18 @@ export default function Figures() {
     let q = supabase
       .from('figures_full')
       .select('id,slug,name,sport,difficulty,category_slug,category_name,contexts')
-      .order('name')
     if (activeFilter !== 'tous') q = q.eq('category_slug', activeFilter)
     if (activeContext) q = q.contains('contexts', [activeContext])
     if (activeSport)  q = q.eq('sport', activeSport)
-    q.then(({ data }) => { setFigures(data || []); setLoading(false) })
+    q.then(({ data }) => {
+      // Tri naturel : les chiffres sont comparés numériquement (180 < 360 < 1080),
+      // les noms textuels restent alphabétiques.
+      const sorted = (data || []).sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { numeric: true })
+      )
+      setFigures(sorted)
+      setLoading(false)
+    })
   }, [activeFilter, activeContext, activeSport])
 
   const buildParams = () => {

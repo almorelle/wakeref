@@ -12,8 +12,13 @@ export async function searchFigures(query) {
     terms.map(term => supabase.rpc('search_figures', { query: term }).then(r => r.data || []))
   )
 
-  if (searches.length === 1) return searches[0]
+  // Tri naturel : chiffres comparés numériquement (180 < 360 < 1080),
+  // noms textuels alphabétiques.
+  const naturalSort = results =>
+    results.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
+
+  if (searches.length === 1) return naturalSort(searches[0])
 
   const idSets = searches.map(results => new Set(results.map(f => f.id)))
-  return searches[0].filter(f => idSets.every(set => set.has(f.id)))
+  return naturalSort(searches[0].filter(f => idSets.every(set => set.has(f.id))))
 }
