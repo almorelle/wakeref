@@ -29,11 +29,34 @@ $$;
 create or replace function public.search_figures(query text)
 returns setof figures_full language sql stable
 set search_path = public as $$
-  select * from figures_full
-  where to_tsvector('french', public.immutable_unaccent(coalesce(name,'') || ' ' || coalesce(description,'')))
-        @@ plainto_tsquery('french', public.immutable_unaccent(query))
-     or name ilike '%' || query || '%'
-  order by case when lower(name) = lower(query) then 0 else 1 end, name;
+  with q as (
+    select
+      public.immutable_unaccent(lower(trim(query))) as raw,
+      -- forme « compacte » : minuscule, sans accents, sans espaces ni ponctuation.
+      -- Permet le match progressif au fil de la frappe ("backr" → Back Roll) et les
+      -- noms tapés collés ("frontflip", "frontroll") malgré les espaces du nom en base.
+      regexp_replace(public.immutable_unaccent(lower(trim(query))), '[^a-z0-9]', '', 'g') as compact
+  )
+  select f.* from figures_full f, q
+  where
+    to_tsvector('french', public.immutable_unaccent(coalesce(f.name,'') || ' ' || coalesce(f.description,'')))
+      @@ plainto_tsquery('french', q.raw)
+    or (q.compact <> '' and regexp_replace(public.immutable_unaccent(lower(f.name)), '[^a-z0-9]', '', 'g')
+          like '%' || q.compact || '%')
+  order by
+    -- Pertinence : nom exact, puis préfixe de nom, puis sous-chaîne de nom, puis
+    -- match uniquement par description (full-text). Départage par rang full-text.
+    case
+      when public.immutable_unaccent(lower(f.name)) = q.raw then 0
+      when q.compact <> '' and regexp_replace(public.immutable_unaccent(lower(f.name)), '[^a-z0-9]', '', 'g') like q.compact || '%' then 1
+      when q.compact <> '' and regexp_replace(public.immutable_unaccent(lower(f.name)), '[^a-z0-9]', '', 'g') like '%' || q.compact || '%' then 2
+      else 3
+    end,
+    ts_rank(
+      to_tsvector('french', public.immutable_unaccent(coalesce(f.name,'') || ' ' || coalesce(f.description,''))),
+      plainto_tsquery('french', q.raw)
+    ) desc,
+    f.name;
 $$;
 
 create or replace function public.figures_without_videos()

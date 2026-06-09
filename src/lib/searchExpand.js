@@ -49,7 +49,6 @@ function tokenize(raw) {
   if (/^[a-z0-9]+$/.test(q)) {
     const tokens = []
     let i = 0
-    let matchedKnownWord = false
     while (i < q.length) {
       let matched = false
       for (const word of KNOWN_WORDS) {
@@ -57,7 +56,6 @@ function tokenize(raw) {
           tokens.push(word)
           i += word.length
           matched = true
-          matchedKnownWord = true
           break
         }
       }
@@ -74,10 +72,14 @@ function tokenize(raw) {
       tokens.push(q[i])
       i++
     }
-    // No known abbreviation matched and no digits: it's a literal trick name, pass through as-is.
-    // (Digits signal an abbreviation pattern like "tb3"; without them, char-by-char splits are wrong.)
-    if (!matchedKnownWord && !/\d/.test(q)) return [q]
-    return tokens
+    // Treat the split as an abbreviation pattern only if every token is a recognized
+    // atom: a known word (ts, sbend…), a digit run, or a single approach/rotation char
+    // (t/h/b/f). This catches "tb"/"tf"/"hb"/"hf" and "tb3" alike. Otherwise it's a
+    // literal trick name typed as one word ("backroll", "frontflip", "scarecrow") —
+    // pass it through whole for the RPC's space/accent-insensitive substring match.
+    const isAtom = t => WORD_MAP[t] !== undefined || SINGLE_CHAR_MAP[t] !== undefined || /^\d+$/.test(t)
+    if (tokens.every(isAtom)) return tokens
+    return [q]
   }
 
   // Contains special chars (hyphens, etc.): pass through as a single token
