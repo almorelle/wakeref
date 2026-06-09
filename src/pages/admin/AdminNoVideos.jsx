@@ -13,7 +13,10 @@ export default function AdminNoVideos() {
   const [noThumb, setNoThumb] = useState([])
   const [loading, setLoading] = useState(true)
   const [copiedId, setCopiedId] = useState(null)
+  const [open, setOpen] = useState({})
   const navigate = useNavigate()
+
+  const toggle = (key) => setOpen(o => ({ ...o, [key]: !o[key] }))
 
   const copyLink = async (v) => {
     try {
@@ -42,29 +45,36 @@ export default function AdminNoVideos() {
     })
   }, [])
 
-  const FigurePanel = ({ icon, title, desc, figures }) => (
+  const PanelHead = ({ icon, title, desc, count, panelKey }) => (
+    <button className={styles.panelHead} onClick={() => toggle(panelKey)}>
+      <Icon name={icon} />
+      <span className={styles.panelTitle}>{title}</span>
+      <span className={styles.panelDesc}>{desc}</span>
+      <span className={styles.count}>{count}</span>
+      <Icon name="chevron-right" className={`${styles.chevron} ${open[panelKey] ? styles.chevronOpen : ''}`} />
+    </button>
+  )
+
+  const FigurePanel = ({ icon, title, desc, figures, panelKey }) => (
     <div className={styles.panel}>
-      <div className={styles.panelHead}>
-        <Icon name={icon} />
-        <span className={styles.panelTitle}>{title}</span>
-        <span className={styles.panelDesc}>{desc}</span>
-        <span className={styles.count}>{figures.length}</span>
-      </div>
-      {figures.length === 0 ? (
-        <div className={styles.empty}><Icon name="confetti" />Rien à compléter 🎉</div>
-      ) : (
-        <div className={styles.list}>
-          {figures.map(f => (
-            <button key={f.id} className={styles.item} onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
-              <span className={styles.itemName}>{f.name}</span>
-              <span className={styles.itemMeta}>
-                <CategoryBadge slug={f.category_slug} name={f.category_name} />
-                <SportBadge sport={f.sport} />
-                <DifficultyDots value={f.difficulty} />
-              </span>
-            </button>
-          ))}
-        </div>
+      <PanelHead icon={icon} title={title} desc={desc} count={figures.length} panelKey={panelKey} />
+      {open[panelKey] && (
+        figures.length === 0 ? (
+          <div className={styles.empty}><Icon name="confetti" />Rien à compléter 🎉</div>
+        ) : (
+          <div className={styles.list}>
+            {figures.map(f => (
+              <button key={f.id} className={styles.item} onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
+                <span className={styles.itemName}>{f.name}</span>
+                <span className={styles.itemMeta}>
+                  <CategoryBadge slug={f.category_slug} name={f.category_name} />
+                  <SportBadge sport={f.sport} />
+                  <DifficultyDots value={f.difficulty} />
+                </span>
+              </button>
+            ))}
+          </div>
+        )
       )}
     </div>
   )
@@ -80,6 +90,7 @@ export default function AdminNoVideos() {
         title="Figures sans vidéo"
         desc="aucune vidéo associée"
         figures={noVideo}
+        panelKey="noVideo"
       />
 
       <FigurePanel
@@ -87,34 +98,38 @@ export default function AdminNoVideos() {
         title="Figures sans vidéo uploadée"
         desc="aucune vidéo uploadée directement"
         figures={noUpload}
+        panelKey="noUpload"
       />
 
       <div className={styles.panel}>
-        <div className={styles.panelHead}>
-          <Icon name="brand-instagram" />
-          <span className={styles.panelTitle}>Liens Instagram sans miniature</span>
-          <span className={styles.panelDesc}>miniature non uploadée</span>
-          <span className={styles.count}>{noThumb.length}</span>
-        </div>
-        {noThumb.length === 0 ? (
-          <div className={styles.empty}><Icon name="confetti" />Toutes les miniatures sont là 🎉</div>
-        ) : (
-          <div className={styles.list}>
-            {noThumb.map(v => (
-              <button
-                key={v.id}
-                className={styles.item}
-                onClick={() => copyLink(v)}
-              >
-                <span className={styles.itemName}>{v.figures?.name || `Figure #${v.figure_id}`}</span>
-                <span className={styles.itemMeta}>
-                  {v.creator_name && <span className={styles.mono}>{v.creator_name}</span>}
-                  <span className={styles.mono}>{v.shortcode || 'lien invalide'}</span>
-                  <Icon name={copiedId === v.id ? 'check' : 'copy'} />
-                </span>
-              </button>
-            ))}
-          </div>
+        <PanelHead
+          icon="brand-instagram"
+          title="Liens Instagram sans miniature"
+          desc="miniature non uploadée"
+          count={noThumb.length}
+          panelKey="noThumb"
+        />
+        {open.noThumb && (
+          noThumb.length === 0 ? (
+            <div className={styles.empty}><Icon name="confetti" />Toutes les miniatures sont là 🎉</div>
+          ) : (
+            <div className={styles.list}>
+              {noThumb.map(v => (
+                <button
+                  key={v.id}
+                  className={styles.item}
+                  onClick={() => copyLink(v)}
+                >
+                  <span className={styles.itemName}>{v.figures?.name || `Figure #${v.figure_id}`}</span>
+                  <span className={styles.itemMeta}>
+                    {v.creator_name && <span className={styles.mono}>{v.creator_name}</span>}
+                    <span className={styles.mono}>{v.shortcode || 'lien invalide'}</span>
+                    <Icon name={copiedId === v.id ? 'check' : 'copy'} />
+                  </span>
+                </button>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>
