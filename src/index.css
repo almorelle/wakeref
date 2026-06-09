@@ -188,6 +188,7 @@ input, textarea, select {
   width: 100%;
 }
 .input:focus { border-color: var(--c-accent); }
+.input:focus-visible { outline: none; }
 .input::placeholder { color: var(--c-faint); }
 select.input { appearance: none; }
 

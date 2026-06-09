@@ -30,6 +30,7 @@
   border: none;
   outline: none;
 }
+.searchInput:focus-visible { outline: none; }
 .searchInput::placeholder { color: var(--c-faint); }
 .clearBtn { color: var(--c-faint); padding: 2px; display: flex; align-items: center; }
 .clearBtn:hover { color: var(--c-muted); }
