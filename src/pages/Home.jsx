@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { searchFigures } from '../lib/searchFigures'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
 import { CATEGORIES } from '../data/categories'
@@ -52,8 +53,8 @@ export default function Home() {
     if (!query.trim()) { setSearchResults(null); return }
     const timer = setTimeout(async () => {
       setSearching(true)
-      const { data } = await supabase.rpc('search_figures', { query: query.trim() })
-      setSearchResults(data || [])
+      const data = await searchFigures(query.trim())
+      setSearchResults(data)
       setSearching(false)
     }, 250)
     return () => clearTimeout(timer)

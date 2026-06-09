@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { searchFigures } from '../lib/searchFigures'
 import { useT } from '../i18n/useT'
 import { useToast } from '../hooks/useToast'
 import ToastContainer from '../components/Toast'
@@ -362,8 +363,8 @@ export default function Compo() {
     setQuery(q)
     if (!q.trim()) { setSuggestions([]); return }
     setSearching(true)
-    const { data } = await supabase.rpc('search_figures', { query: q.trim() })
-    let results = (data || []).map(parseFigure)
+    const data = await searchFigures(q.trim())
+    let results = data.map(parseFigure)
     if (addMode) results = results.filter(f => f.contexts.includes(addMode))
     setSuggestions(results.slice(0, 8))
     setSearching(false)

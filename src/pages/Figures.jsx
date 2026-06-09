@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { searchFigures } from '../lib/searchFigures'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
 import { CATEGORIES } from '../data/categories'
 import styles from './Figures.module.css'
 import SEO from '../components/SEO'
+import Icon from '../components/Icon'
 
 export default function Figures() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [figures, setFigures] = useState([])
   const [loading, setLoading] = useState(true)
+  const [query, setQuery] = useState('')
+  const [searchResults, setSearchResults] = useState(null)
+  const [searching, setSearching] = useState(false)
   const activeFilter  = searchParams.get('cat')   || 'tous'
   const activeContext = searchParams.get('ctx')   || ''
   const activeSport   = searchParams.get('sport') || ''
@@ -53,6 +58,17 @@ export default function Figures() {
     setSearchParams(p)
   }
 
+  useEffect(() => {
+    if (!query.trim()) { setSearchResults(null); return }
+    const timer = setTimeout(async () => {
+      setSearching(true)
+      const data = await searchFigures(query.trim())
+      setSearchResults(data)
+      setSearching(false)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [query])
+
   const setSport = (sport) => {
     const p = buildParams()
     if (sport) p.sport = sport
@@ -69,6 +85,25 @@ export default function Figures() {
         descriptionEn="Complete list of wakeboard and wakeskate tricks, by category."
         path="/figures"
       />
+      <div className={styles.searchBar}>
+        <div className={styles.searchWrap}>
+          <Icon name="search" />
+          <input
+            className={styles.searchInput}
+            type="text"
+            placeholder={tr.searchPlaceholder}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            autoComplete="off"
+          />
+          {query && (
+            <button onClick={() => setQuery('')} className={styles.clearBtn} aria-label={tr.clearSearch}>
+              <Icon name="x" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Filtre catégories */}
       <div className={styles.filters}>
         <button
@@ -118,15 +153,29 @@ export default function Figures() {
       </div>
 
       <div className="page-container">
-        {loading && <span className="spinner" />}
-        {!loading && figures.length === 0 && (
-          <p style={{ color: 'var(--c-muted)', fontSize: 14, paddingTop: '1rem' }}>
-            {tr.noFiguresInCat}
-          </p>
+        {query.trim() ? (
+          <>
+            {searching && <span className="spinner" />}
+            {!searching && searchResults?.length === 0 && (
+              <p style={{ color: 'var(--c-muted)', fontSize: 14, paddingTop: '1rem' }}>{tr.noResults(query)}</p>
+            )}
+            <div className={styles.list}>
+              {!searching && searchResults?.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
+            </div>
+          </>
+        ) : (
+          <>
+            {loading && <span className="spinner" />}
+            {!loading && figures.length === 0 && (
+              <p style={{ color: 'var(--c-muted)', fontSize: 14, paddingTop: '1rem' }}>
+                {tr.noFiguresInCat}
+              </p>
+            )}
+            <div className={styles.list}>
+              {figures.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
+            </div>
+          </>
         )}
-        <div className={styles.list}>
-          {figures.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
-        </div>
       </div>
     </div>
   )
