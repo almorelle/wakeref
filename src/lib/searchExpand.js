@@ -25,6 +25,7 @@ const WORD_MAP = {
   shuv:     'shove',     // Shove-It
   shoveit:  'shove',     // Shove-It
   md:       'moby',      // Moby Dick / Moby Dick 5
+  mobe:     'mobe',      // Mobe / Mobe 5
   dd:       'dum',       // Dum Dum / Dum Dum 5
 }
 
