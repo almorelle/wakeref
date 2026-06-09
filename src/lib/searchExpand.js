@@ -50,6 +50,7 @@ function tokenize(raw) {
   if (/^[a-z0-9]+$/.test(q)) {
     const tokens = []
     let i = 0
+    let matchedKnownWord = false
     while (i < q.length) {
       let matched = false
       for (const word of KNOWN_WORDS) {
@@ -57,6 +58,7 @@ function tokenize(raw) {
           tokens.push(word)
           i += word.length
           matched = true
+          matchedKnownWord = true
           break
         }
       }
@@ -73,6 +75,9 @@ function tokenize(raw) {
       tokens.push(q[i])
       i++
     }
+    // No known abbreviation matched and no digits: it's a literal trick name, pass through as-is.
+    // (Digits signal an abbreviation pattern like "tb3"; without them, char-by-char splits are wrong.)
+    if (!matchedKnownWord && !/\d/.test(q)) return [q]
     return tokens
   }
 
