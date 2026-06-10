@@ -22,7 +22,7 @@ VITE_SUPABASE_ANON_KEY=...
 
 ## Architecture
 
-**WakeRef** is a complete wakeboard & wakeskate tricks reference app — a PWA built with React 18 + Vite, backed by Supabase (PostgreSQL + Auth + Storage), deployed on Vercel.
+**WakeRef** is a complete wakeboard & wakeskate tricks reference app — a PWA built with React 19 + Vite, backed by Supabase (PostgreSQL + Auth + Storage), deployed on Vercel.
 
 ### Data layer
 

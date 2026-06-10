@@ -1,0 +1,61 @@
+{
+  "workflow_version": "1.2.0",
+  "timestamps": {
+    "started": "2026-06-11T00:00:00Z",
+    "last_updated": "2026-06-11T00:00:00Z",
+    "completed": "2026-06-11T00:00:00Z"
+  },
+  "mode": "initial_scan",
+  "scan_level": "deep",
+  "document_output_language": "English",
+  "project_root": "/Users/wushu/ws/perso/wakeref",
+  "project_knowledge": "/Users/wushu/ws/perso/wakeref/docs",
+  "repository_type": "monolith",
+  "project_parts": [
+    {
+      "part_id": "wakeref",
+      "project_type_id": "web",
+      "display_name": "WakeRef SPA",
+      "root_path": "/Users/wushu/ws/perso/wakeref",
+      "primary_framework": "React 19 + Vite 8",
+      "backend": "Supabase (PostgreSQL + Auth + Storage + Edge Functions)"
+    }
+  ],
+  "project_types": [
+    { "part_id": "wakeref", "project_type_id": "web", "display_name": "Web App" }
+  ],
+  "findings": {
+    "project_classification": "Monolith web SPA (React 19/Vite 8) over Supabase BaaS; no API layer (RLS + figures_full view + RPCs are the contract)",
+    "technology_stack": "React 19, react-router-dom 7, Vite 8, vite-plugin-pwa, @supabase/supabase-js 2, CSS Modules; JS/JSX (no TypeScript); Vercel hosting",
+    "data_models": "7 tables (figures, categories, prerequisites, videos, video_submissions, takedown_requests, compositions) + figures_full view; sport_type/video_source enums; RLS on all tables; 6 RPCs; switch groups + bilingual fields",
+    "api": "No REST API; PostgREST + 6 RPC functions + videos Storage bucket + 2 Deno Edge Functions (send-contact, notify-video-submission via Resend)",
+    "components": "React function components + CSS Modules; 2 contexts (Language, Theme); hooks useAuth/useToast/useT; 8 public pages + 10 admin pages (lazy/code-split)"
+  },
+  "completed_steps": [
+    { "step": "step_1", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Classified as monolith with 1 part (web: React 19 + Supabase)" },
+    { "step": "step_2", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Found existing docs: README.md, CLAUDE.md" },
+    { "step": "step_3", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Tech stack: React 19 / Vite 8 / Supabase" },
+    { "step": "step_4", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Conditional analysis complete; data-models.md, api-contracts.md, component-inventory.md written" },
+    { "step": "step_5", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Source tree documented" },
+    { "step": "step_6", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Dev/deployment guides written" },
+    { "step": "step_8", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Architecture doc written (single part)" },
+    { "step": "step_9", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "All supporting docs written" },
+    { "step": "step_10", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Master index generated" },
+    { "step": "step_11", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Validation complete; no incomplete markers" },
+    { "step": "step_12", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Workflow complete" }
+  ],
+  "current_step": "completed",
+  "outputs_generated": [
+    "project-scan-report.json",
+    "index.md",
+    "project-overview.md",
+    "architecture.md",
+    "source-tree-analysis.md",
+    "data-models.md",
+    "api-contracts.md",
+    "component-inventory.md",
+    "development-guide.md",
+    "deployment-guide.md"
+  ],
+  "resume_instructions": "Workflow complete. To refresh, re-run document-project and choose Re-scan; for a focused area choose Deep-dive."
+}
