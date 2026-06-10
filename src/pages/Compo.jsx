@@ -156,6 +156,7 @@ const JIB_FIGURES = [
   { slug: 'transfer',      label: 'Transfer'       },
   { slug: 'rail-to-rail',  label: 'Rail to Rail'   },
   { slug: 'gap',           label: 'Gap'            },
+  { slug: 're-entry',      label: 'Re-entry'       },
   { slug: 'fs-180',        labelKey: 'compoRotFS'  },
   { slug: 'bs-180',        labelKey: 'compoRotBS'  },
 ]
