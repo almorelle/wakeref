@@ -22,7 +22,7 @@
 
   /* Catégories */
   --cat-grabs:        #3b82f6;
-  --cat-slides:       #22c55e;
+  --cat-jib:          #22c55e;
   --cat-wakeskate:    #ef4444;
   --cat-spin:         #6366f1;
   --cat-railey:       #0ea5e9;
@@ -214,7 +214,7 @@ select.input { appearance: none; }
 .badge-wake         { background: #06b6d420; color: var(--c-wake); }
 .badge-ws           { background: #f59e0b20; color: var(--c-ws); }
 .badge-grabs        { background: #3b82f620; color: var(--cat-grabs); }
-.badge-slides       { background: #22c55e20; color: var(--cat-slides); }
+.badge-jib          { background: #22c55e20; color: var(--cat-jib); }
 .badge-wakeskate    { background: #ef444420; color: var(--cat-wakeskate); }
 .badge-spin         { background: #6366f120; color: var(--cat-spin); }
 .badge-railey       { background: #0ea5e920; color: var(--cat-railey); }

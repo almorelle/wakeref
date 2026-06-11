@@ -7,7 +7,7 @@ export const CATEGORIES = [
   { id: 6,  name: 'Front',        slug: 'front',        icon: 'rotate-clockwise-2',  color: '#22c55e' },
   { id: 7,  name: 'Tantrum',      slug: 'tantrum',      icon: 'arrow-back-up',       color: '#ef4444' },
   { id: 8,  name: 'Grabs',        slug: 'grabs',        icon: 'hand-grab',           color: '#3b82f6' },
-  { id: 9,  name: 'Slides',       slug: 'slides',       icon: 'minus',               color: '#10b981' },
+  { id: 9,  name: 'Jib',          slug: 'jib',          icon: 'minus',               color: '#10b981' },
   { id: 10, name: 'Shove-it',     slug: 'shoveit',      icon: 'flip-horizontal',     color: '#f97316' },
   { id: 11, name: 'Flip Tricks',  slug: 'fliptricks',   icon: 'rotate-clockwise-2',  color: '#ec4899' },
   { id: 12, name: 'Specials',     slug: 'specials',     icon: 'star',                color: '#a855f7' },

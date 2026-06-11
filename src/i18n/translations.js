@@ -155,7 +155,7 @@ export const t = {
     // Catégories
     catNames: {
       grabs:        'Grabs',
-      slides:       'Slides',
+      jib:          'Jib',
       wakeskate:    'Wakeskate',
       spin:         'Spin',
       railey:       'Railey',
@@ -370,7 +370,7 @@ export const t = {
     // Catégories
     catNames: {
       grabs:        'Grabs',
-      slides:       'Slides',
+      jib:          'Jib',
       wakeskate:    'Wakeskate',
       spin:         'Spin',
       railey:       'Railey',
