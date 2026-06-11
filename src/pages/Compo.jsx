@@ -570,6 +570,10 @@ export default function Compo() {
             )}
           </div>
 
+          {showSaveHint && (
+            <p className={styles.saveHintLine}>{tr.compoSaveHint}</p>
+          )}
+
           {/* Panneau de sauvegarde */}
           {showSave && (
             <div className={styles.savePanel}>

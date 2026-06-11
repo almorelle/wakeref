@@ -40,6 +40,14 @@
 }
 
 /* ── Rappel de sauvegarde ── */
+/* Ligne de message entre le titre et la suite (alternative/complément au glow). */
+.saveHintLine {
+  margin-top: -0.25rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-accent);
+}
+
 /* Le bouton respire avec un halo (glow) + un anneau pulsé tant que le run
    mérite d'être sauvegardé, pour attirer l'œil sans bloc à fermer. */
 .savePulse {
