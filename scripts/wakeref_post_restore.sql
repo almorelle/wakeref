@@ -26,6 +26,69 @@ set search_path = public as $$
 begin new.updated_at = now(); return new; end;
 $$;
 
+-- Vue figures_full créée AVANT les fonctions qui retournent `setof figures_full`
+-- (sinon le `drop view ... cascade` plus bas les supprimerait sans les recréer).
+drop view if exists figures_full cascade;
+
+create view figures_full as
+select
+  f.id, f.slug, f.name, f.sport, f.difficulty,
+  f.description, f.description_en,
+  f.tips, f.tips_en,
+  f.is_switch, f.switch_of,
+  f.built_on_id,
+  f.contexts,
+  f.approach,
+  f.rotation,
+  f.inverted,
+  f.rewind,
+  f.published, f.created_at, f.updated_at,
+  c.name  as category_name,
+  c.slug  as category_slug,
+  c.color as category_color,
+  case when f.switch_of is not null then
+    (select json_build_object('id', o.id, 'name', o.name, 'slug', o.slug)
+     from figures o where o.id = f.switch_of)
+  end as switch_of_figure,
+  case when f.built_on_id is not null then
+    (select json_build_object('id', b.id, 'name', b.name, 'slug', b.slug)
+     from figures b where b.id = f.built_on_id)
+  end as built_on_figure,
+  coalesce(
+    (select json_agg(json_build_object('id', s.id, 'name', s.name, 'slug', s.slug))
+     from figures s where s.switch_of = f.id),
+    '[]'
+  ) as switch_versions,
+  coalesce(
+    (select json_agg(json_build_object('id', p.id, 'name', p.name, 'slug', p.slug))
+     from prerequisites pr
+     join figures p on p.id = pr.requires_id
+     where pr.figure_id = f.id),
+    '[]'
+  ) as prerequisites,
+  coalesce(
+    (select json_agg(
+        json_build_object(
+          'id', v.id, 'title', v.title, 'file_path', v.file_path,
+          'source_type', v.source_type, 'source_url', v.source_url,
+          'creator_name', v.creator_name, 'creator_url', v.creator_url,
+          'caption', v.caption
+        ) order by v.sort_order)
+     from videos v
+     where v.takedown_requested = false
+       and v.figure_id in (
+         -- figure courante + sa base/version switch (relation 1-à-1) :
+         -- les vidéos sont partagées sur tout le groupe switch.
+         select g.id from figures g
+         where coalesce(g.switch_of, g.id) = coalesce(f.switch_of, f.id)
+       )),
+    '[]'
+  ) as videos
+from figures f
+left join categories c on c.id = f.category_id;
+
+alter view figures_full set (security_invoker = true);
+
 create or replace function public.search_figures(query text)
 returns setof figures_full language sql stable
 set search_path = public as $$
@@ -132,6 +195,32 @@ set search_path = public as $$
      ));
 $$;
 
+-- Arbre de dépendance built_on : interdit les cycles (A→B→…→A) et l'auto-référence.
+-- Remonte la chaîne des parents depuis le nouveau built_on_id ; si elle repasse
+-- par la figure courante, c'est un cycle.
+create or replace function public.check_built_on_acyclic()
+returns trigger language plpgsql
+set search_path = public as $$
+declare
+  cur  integer := new.built_on_id;
+  hops integer := 0;
+begin
+  while cur is not null loop
+    if cur = new.id then
+      raise exception 'Dépendance circulaire détectée sur built_on_id (figure %)', new.id
+        using errcode = 'check_violation';
+    end if;
+    hops := hops + 1;
+    if hops > 1000 then
+      raise exception 'Chaîne built_on trop longue (cycle probable)'
+        using errcode = 'check_violation';
+    end if;
+    select built_on_id into cur from figures where id = cur;
+  end loop;
+  return new;
+end;
+$$;
+
 -- ────────────────────────────────────────────────────────────
 -- 3. INDEX
 -- ────────────────────────────────────────────────────────────
@@ -147,6 +236,8 @@ create index if not exists videos_figure_id_idx
   on videos (figure_id) where takedown_requested = false;
 -- Groupe switch : coalesce(switch_of, id) + sous-requête switch_versions.
 create index if not exists figures_switch_of_idx on figures (switch_of);
+-- Arbre de dépendance : sous-requête built_on_figure + parcours des enfants.
+create index if not exists figures_built_on_id_idx on figures (built_on_id);
 -- Jointure figures → categories.
 create index if not exists figures_category_id_idx on figures (category_id);
 -- Sous-requête prerequisites (jointure par requires_id ; la PK couvre figure_id en tête).
@@ -160,69 +251,21 @@ create trigger figures_updated_at
   before update on figures
   for each row execute procedure set_updated_at();
 
+drop trigger if exists figures_built_on_acyclic on figures;
+create trigger figures_built_on_acyclic
+  before insert or update of built_on_id on figures
+  for each row when (new.built_on_id is not null)
+  execute function check_built_on_acyclic();
+
 drop trigger if exists compositions_rate_limit on compositions;
 create trigger compositions_rate_limit
   before insert on compositions
   for each row execute function compositions_rate_limit();
 
 -- ────────────────────────────────────────────────────────────
--- 5. VUE figures_full
+-- 5. VUE figures_full → déplacée en section 2 (avant les fonctions
+--    qui retournent `setof figures_full`, pour survivre au drop cascade).
 -- ────────────────────────────────────────────────────────────
-drop view if exists figures_full cascade;
-
-create view figures_full as
-select
-  f.id, f.slug, f.name, f.sport, f.difficulty,
-  f.description, f.description_en,
-  f.tips, f.tips_en,
-  f.is_switch, f.switch_of,
-  f.contexts,
-  f.approach,
-  f.rotation,
-  f.inverted,
-  f.rewind,
-  f.published, f.created_at, f.updated_at,
-  c.name  as category_name,
-  c.slug  as category_slug,
-  c.color as category_color,
-  case when f.switch_of is not null then
-    (select json_build_object('id', o.id, 'name', o.name, 'slug', o.slug)
-     from figures o where o.id = f.switch_of)
-  end as switch_of_figure,
-  coalesce(
-    (select json_agg(json_build_object('id', s.id, 'name', s.name, 'slug', s.slug))
-     from figures s where s.switch_of = f.id),
-    '[]'
-  ) as switch_versions,
-  coalesce(
-    (select json_agg(json_build_object('id', p.id, 'name', p.name, 'slug', p.slug))
-     from prerequisites pr
-     join figures p on p.id = pr.requires_id
-     where pr.figure_id = f.id),
-    '[]'
-  ) as prerequisites,
-  coalesce(
-    (select json_agg(
-        json_build_object(
-          'id', v.id, 'title', v.title, 'file_path', v.file_path,
-          'source_type', v.source_type, 'source_url', v.source_url,
-          'creator_name', v.creator_name, 'creator_url', v.creator_url,
-          'caption', v.caption
-        ) order by v.sort_order)
-     from videos v
-     where v.takedown_requested = false
-       and v.figure_id in (
-         -- figure courante + sa base/version switch (relation 1-à-1) :
-         -- les vidéos sont partagées sur tout le groupe switch.
-         select g.id from figures g
-         where coalesce(g.switch_of, g.id) = coalesce(f.switch_of, f.id)
-       )),
-    '[]'
-  ) as videos
-from figures f
-left join categories c on c.id = f.category_id;
-
-alter view figures_full set (security_invoker = true);
 
 -- ────────────────────────────────────────────────────────────
 -- 6. ROW LEVEL SECURITY

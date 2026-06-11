@@ -11,7 +11,7 @@ function Stepper({ label, value, min, max, step, suffix = '', onChange }) {
   const clamp = v => Math.max(min, Math.min(max, v))
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <span style={{ fontSize: 12, color: '#888' }}>{label}</span>
+      {label ? <span style={{ fontSize: 12, color: '#888' }}>{label}</span> : null}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button type="button" className="btn btn-ghost" style={{ padding: '4px 11px' }}
           onClick={() => onChange(clamp(value - step))} disabled={value <= min}>−</button>
@@ -46,14 +46,16 @@ export default function FigureForm() {
     inverted: false,
     rewind: false,
     spin: 0,
-    rewind_deg: 0,
-    extra_rewind_deg: 0,
+    rewind_degs: [0],
     inverts: 0,
     description: '', tips: ['', '', '', ''],
     description_en: '', tips_en: ['', '', '', ''],
   })
 
   const [prereqIds, setPrereqIds] = useState([])
+  const [prereqSearch, setPrereqSearch] = useState('')
+  const [builtOnId, setBuiltOnId] = useState(null)
+  const [builtOnSearch, setBuiltOnSearch] = useState('')
   const location = useLocation()
   const figureIds = location.state?.figureIds || []
   const currentIndex = figureIds.indexOf(parseInt(id))
@@ -88,6 +90,7 @@ export default function FigureForm() {
           ? (typeof full.prerequisites === 'string' ? JSON.parse(full.prerequisites) : full.prerequisites)
           : []
         setPrereqIds(prereqs.map(p => p.id))
+        setBuiltOnId(fig.built_on_id || null)
         setForm({
           name: fig.name,
           slug: fig.slug,
@@ -101,8 +104,7 @@ export default function FigureForm() {
           inverted: fig.inverted || false,
           rewind: fig.rewind || false,
           spin: fig.spin || 0,
-          rewind_deg: fig.rewind_deg || 0,
-          extra_rewind_deg: fig.extra_rewind_deg || 0,
+          rewind_degs: (fig.rewind_degs && fig.rewind_degs.length) ? fig.rewind_degs : [0],
           inverts: fig.inverts || 0,
           description: fig.description || '',
           tips: [...(fig.tips || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips || []).length + 1)),
@@ -120,6 +122,13 @@ export default function FigureForm() {
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }))
 
+  const setRewind = (i, v) => setForm(f => { const a = [...f.rewind_degs]; a[i] = v; return { ...f, rewind_degs: a } })
+  const addRewind = () => setForm(f => ({ ...f, rewind_degs: [...f.rewind_degs, 180] }))
+  const removeRewind = (i) => setForm(f => {
+    const a = f.rewind_degs.filter((_, j) => j !== i)
+    return { ...f, rewind_degs: a.length ? a : [0] }
+  })
+
   const setTip = (lang, i, v) => setForm(f => {
     const key = lang === 'en' ? 'tips_en' : 'tips'
     const tips = [...f[key]]
@@ -136,9 +145,13 @@ export default function FigureForm() {
     })
   }
 
-  const togglePrereq = (figId) => {
-    setPrereqIds(prev => prev.includes(figId) ? prev.filter(x => x !== figId) : [...prev, figId])
+  const addPrereq = (figId) => {
+    setPrereqIds(prev => prev.includes(figId) ? prev : [...prev, figId])
+    setPrereqSearch('')
   }
+  const removePrereq = (figId) => setPrereqIds(prev => prev.filter(x => x !== figId))
+
+  const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
   const save = async (e) => {
     e.preventDefault()
@@ -147,16 +160,16 @@ export default function FigureForm() {
       ...form,
       slug: form.slug || genSlug(form.name),
       category_id: form.category_id ? parseInt(form.category_id) : null,
+      built_on_id: builtOnId || null,
       difficulty: parseInt(form.difficulty),
       contexts: form.contexts,
       approach: form.approach,
       rotation: form.rotation,
       spin: form.spin,
-      rewind_deg: form.rewind_deg,
-      extra_rewind_deg: form.extra_rewind_deg,
+      rewind_degs: form.rewind_degs.filter(v => v > 0),
       inverts: form.inverts,
-      inverted: form.inverts > 0,    // legacy, dérivé de inverts
-      rewind: form.rewind_deg > 0,   // legacy, dérivé de rewind_deg
+      inverted: form.inverts > 0,                  // legacy, dérivé de inverts
+      rewind: form.rewind_degs.some(v => v > 0),   // legacy, dérivé de rewind_degs
       tips: form.tips.filter(t => t.trim()),
       tips_en: form.tips_en.filter(t => t.trim()),
     }
@@ -311,14 +324,81 @@ export default function FigureForm() {
 
         <div className="field">
           <label>Prérequis</label>
-          <div className={styles.prereqList}>
-            {allFigures.filter(f => !id || f.id !== parseInt(id)).map(f => (
-              <label key={f.id} className={`${styles.prereqItem} ${prereqIds.includes(f.id) ? styles.prereqChecked : ''}`}>
-                <input type="checkbox" checked={prereqIds.includes(f.id)} onChange={() => togglePrereq(f.id)} />
-                {f.name}
-              </label>
-            ))}
+          {prereqIds.length > 0 && (
+            <div className={styles.prereqChips}>
+              {prereqIds.map(pid => {
+                const f = allFigures.find(x => x.id === pid)
+                return (
+                  <span key={pid} className={styles.prereqChip}>
+                    {f ? f.name : `#${pid}`}
+                    <button type="button" className={styles.prereqChipRemove}
+                      onClick={() => removePrereq(pid)} aria-label="Retirer">×</button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+          <div className={styles.prereqSearch}>
+            <input className="input" value={prereqSearch}
+              onChange={e => setPrereqSearch(e.target.value)}
+              placeholder="Rechercher une figure à ajouter…" />
+            {prereqSearch.trim() && (() => {
+              const results = allFigures.filter(f =>
+                (!id || f.id !== parseInt(id)) &&
+                !prereqIds.includes(f.id) &&
+                norm(f.name).includes(norm(prereqSearch))
+              ).slice(0, 8)
+              return (
+                <div className={styles.prereqResults}>
+                  {results.length === 0
+                    ? <div className={styles.prereqNoResult}>Aucune figure trouvée</div>
+                    : results.map(f => (
+                        <button key={f.id} type="button" className={styles.prereqResult}
+                          onClick={() => addPrereq(f.id)}>
+                          {f.name}
+                        </button>
+                      ))}
+                </div>
+              )
+            })()}
           </div>
+        </div>
+
+        <div className="field">
+          <label>Précédent</label>
+          {builtOnId ? (
+            <div className={styles.prereqChips}>
+              <span className={styles.prereqChip}>
+                {(() => { const f = allFigures.find(x => x.id === builtOnId); return f ? f.name : `#${builtOnId}` })()}
+                <button type="button" className={styles.prereqChipRemove}
+                  onClick={() => setBuiltOnId(null)} aria-label="Retirer">×</button>
+              </span>
+            </div>
+          ) : (
+            <div className={styles.prereqSearch}>
+              <input className="input" value={builtOnSearch}
+                onChange={e => setBuiltOnSearch(e.target.value)}
+                placeholder="Rechercher la figure précédente…" />
+              {builtOnSearch.trim() && (() => {
+                const results = allFigures.filter(f =>
+                  (!id || f.id !== parseInt(id)) &&
+                  norm(f.name).includes(norm(builtOnSearch))
+                ).slice(0, 8)
+                return (
+                  <div className={styles.prereqResults}>
+                    {results.length === 0
+                      ? <div className={styles.prereqNoResult}>Aucune figure trouvée</div>
+                      : results.map(f => (
+                          <button key={f.id} type="button" className={styles.prereqResult}
+                            onClick={() => { setBuiltOnId(f.id); setBuiltOnSearch('') }}>
+                            {f.name}
+                          </button>
+                        ))}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
         </div>
 
         {/* ── Métadonnées ── */}
@@ -345,7 +425,7 @@ export default function FigureForm() {
           />
 
           <CheckGroup
-            label="Rotation"
+            label="Sens de rotation"
             fieldKey="rotation"
             options={[
               { value: 'fs', label: 'Frontside' },
@@ -355,10 +435,24 @@ export default function FigureForm() {
 
           <div className="field">
             <label>Rotation &amp; invert</label>
-            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-start' }}>
               <Stepper label="Spin" value={form.spin} min={0} max={1440} step={180} suffix="°" onChange={v => set('spin', v)} />
-              <Stepper label="Rewind" value={form.rewind_deg} min={0} max={1080} step={180} suffix="°" onChange={v => set('rewind_deg', v)} />
-              <Stepper label="Rewind 2" value={form.extra_rewind_deg} min={0} max={1080} step={180} suffix="°" onChange={v => set('extra_rewind_deg', v)} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <span style={{ fontSize: 12, color: '#888' }}>Rewind</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  {form.rewind_degs.map((v, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Stepper label="" value={v} min={0} max={1080} step={180} suffix="°" onChange={nv => setRewind(i, nv)} />
+                      {form.rewind_degs.length > 1 && (
+                        <button type="button" className={styles.rewindRemove} onClick={() => removeRewind(i)}>×</button>
+                      )}
+                    </div>
+                  ))}
+                  <button type="button" className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 12 }} onClick={addRewind}>+ rewind</button>
+                </div>
+              </div>
+
               <Stepper label="Inverts (flips)" value={form.inverts} min={0} max={5} step={1} onChange={v => set('inverts', v)} />
             </div>
           </div>
