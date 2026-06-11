@@ -30,6 +30,10 @@ CREATE TABLE public.figures (
                                 rotation ARRAY,
                                 inverted boolean NOT NULL DEFAULT false,
                                 rewind boolean NOT NULL DEFAULT false,
+                                spin smallint NOT NULL DEFAULT 0,
+                                rewind_deg smallint NOT NULL DEFAULT 0,
+                                inverts smallint NOT NULL DEFAULT 0,
+                                extra_rewind_deg smallint NOT NULL DEFAULT 0,
                                 CONSTRAINT figures_pkey PRIMARY KEY (id),
                                 CONSTRAINT figures_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id),
                                 CONSTRAINT figures_switch_of_fkey FOREIGN KEY (switch_of) REFERENCES public.figures(id)
