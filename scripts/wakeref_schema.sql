@@ -41,38 +41,6 @@ CREATE TABLE public.prerequisites (
                                       CONSTRAINT prerequisites_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id),
                                       CONSTRAINT prerequisites_requires_id_fkey FOREIGN KEY (requires_id) REFERENCES public.figures(id)
 );
-CREATE TABLE public.takedown_requests (
-                                          id integer NOT NULL DEFAULT nextval('takedown_requests_id_seq'::regclass),
-                                          video_id integer,
-                                          name text,
-                                          email text NOT NULL,
-                                          message text,
-                                          handled boolean NOT NULL DEFAULT false,
-                                          created_at timestamp with time zone DEFAULT now(),
-                                          CONSTRAINT takedown_requests_pkey PRIMARY KEY (id),
-                                          CONSTRAINT takedown_requests_video_id_fkey FOREIGN KEY (video_id) REFERENCES public.videos(id)
-);
-CREATE TABLE public.compositions (
-                                     id text NOT NULL,
-                                     name text CHECK (name IS NULL OR char_length(name) <= 80),
-                                     data jsonb NOT NULL CHECK (pg_column_size(data) <= 51200),
-                                     score integer,
-                                     created_at timestamp with time zone NOT NULL DEFAULT now(),
-                                     CONSTRAINT compositions_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.video_submissions (
-                                          id integer NOT NULL DEFAULT nextval('video_submissions_id_seq'::regclass),
-                                          figure_id integer NOT NULL,
-                                          source_url text NOT NULL,
-                                          title text,
-                                          creator_name text,
-                                          creator_url text,
-                                          caption text,
-                                          status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
-                                          submitted_at timestamp with time zone DEFAULT now(),
-                                          CONSTRAINT video_submissions_pkey PRIMARY KEY (id),
-                                          CONSTRAINT video_submissions_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id)
-);
 CREATE TABLE public.videos (
                                id integer NOT NULL DEFAULT nextval('videos_id_seq'::regclass),
                                figure_id integer NOT NULL,
@@ -90,4 +58,36 @@ CREATE TABLE public.videos (
                                uploaded_at timestamp with time zone DEFAULT now(),
                                CONSTRAINT videos_pkey PRIMARY KEY (id),
                                CONSTRAINT videos_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id)
+);
+CREATE TABLE public.takedown_requests (
+                                          id integer NOT NULL DEFAULT nextval('takedown_requests_id_seq'::regclass),
+                                          video_id integer,
+                                          name text,
+                                          email text NOT NULL,
+                                          message text,
+                                          handled boolean NOT NULL DEFAULT false,
+                                          created_at timestamp with time zone DEFAULT now(),
+                                          CONSTRAINT takedown_requests_pkey PRIMARY KEY (id),
+                                          CONSTRAINT takedown_requests_video_id_fkey FOREIGN KEY (video_id) REFERENCES public.videos(id)
+);
+CREATE TABLE public.video_submissions (
+                                          id integer NOT NULL DEFAULT nextval('video_submissions_id_seq'::regclass),
+                                          figure_id integer NOT NULL,
+                                          source_url text NOT NULL,
+                                          title text,
+                                          creator_name text,
+                                          creator_url text,
+                                          caption text,
+                                          status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text])),
+                                          submitted_at timestamp with time zone DEFAULT now(),
+                                          CONSTRAINT video_submissions_pkey PRIMARY KEY (id),
+                                          CONSTRAINT video_submissions_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id)
+);
+CREATE TABLE public.compositions (
+                                     id text NOT NULL,
+                                     name text CHECK (name IS NULL OR char_length(name) <= 80),
+                                     data jsonb NOT NULL CHECK (pg_column_size(data) <= 51200),
+                                     score integer,
+                                     created_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     CONSTRAINT compositions_pkey PRIMARY KEY (id)
 );
