@@ -476,7 +476,7 @@ export default function Compo() {
 
   const jibSummary = (p) => {
     const parts = []
-    if (p.entryRotation) parts.push(p.entryRotation.toUpperCase())
+    if (p.entryRotation) parts.push(p.entryRotation.toUpperCase() + ' in')
     if (p.figures.length) parts.push(p.figures.map(f => {
       const fig = JIB_FIGURES.find(x => x.slug === f)
       return fig ? (fig.labelKey ? tr[fig.labelKey] : fig.label) : f

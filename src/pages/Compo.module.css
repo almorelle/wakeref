@@ -433,10 +433,8 @@
 .entryRowOther  { border-left-color: var(--c-border); }
 
 .tagJib {
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .suggestionHighlight {
