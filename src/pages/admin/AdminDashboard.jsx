@@ -6,7 +6,7 @@ import Icon from '../../components/Icon'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ figures: 0, videos: 0, submissions: 0, takedowns: 0, videoPct: 0, instaNoThumb: 0, runs: 0 })
+  const [stats, setStats] = useState({ figures: 0, videos: 0, submissions: 0, takedowns: 0, videoPct: 0, instaNoThumb: 0, runs: 0, noVideo: 0, noUpload: 0 })
 
   useEffect(() => {
     Promise.all([
@@ -18,7 +18,9 @@ export default function AdminDashboard() {
       supabase.from('videos').select('source_url').eq('source_type', 'instagram'),
       supabase.storage.from('videos').list('thumbnails', { limit: 1000 }),
       supabase.from('compositions').select('id', { count: 'exact', head: true }),
-    ]).then(([f, v, sub, t, hs, insta, thumbs, runs]) => {
+      supabase.rpc('figures_without_videos'),
+      supabase.rpc('figures_without_uploaded_videos'),
+    ]).then(([f, v, sub, t, hs, insta, thumbs, runs, nv, nu]) => {
       const row = hs.data?.[0]
       const videoPct = row && row.total_figures > 0
         ? Math.round((row.figures_with_video / row.total_figures) * 100)
@@ -30,6 +32,9 @@ export default function AdminDashboard() {
         return !shortcode || !thumbSet.has(`${shortcode}.jpg`)
       }).length
 
+      const noVideoIds = new Set((nv.data || []).map(f => f.id))
+      const noUpload = (nu.data || []).filter(f => !noVideoIds.has(f.id)).length
+
       setStats({
         figures: f.count || 0,
         videos: v.count || 0,
@@ -38,17 +43,21 @@ export default function AdminDashboard() {
         videoPct,
         instaNoThumb,
         runs: runs.count || 0,
+        noVideo: noVideoIds.size,
+        noUpload,
       })
     })
   }, [])
 
   const tiles = [
     { label: 'Figures', value: stats.figures, icon: 'list', action: () => navigate('/admin/figures'), color: 'var(--c-accent)' },
-    { label: 'Figures avec vidéo', value: `${stats.videoPct}%`, icon: 'video', action: () => navigate('/admin/no-videos'), color: 'var(--c-accent)' },
     { label: 'Vidéos', value: stats.videos, icon: 'video', action: () => navigate('/admin/videos'), color: 'var(--c-accent)' },
+    { label: 'Figures avec vidéo', value: `${stats.videoPct}%`, icon: 'video', action: () => navigate('/admin/no-videos'), color: 'var(--c-accent)' },
+    { label: 'Figures sans vidéo', value: stats.noVideo, icon: 'video-off', action: () => navigate('/admin/no-videos?open=noVideo'), color: stats.noVideo > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
+    { label: 'Avec vidéo sans upload', value: stats.noUpload, icon: 'cloud-upload', action: () => navigate('/admin/no-videos?open=onlyExternal'), color: stats.noUpload > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
+    { label: 'Instagram sans miniature', value: stats.instaNoThumb, icon: 'brand-instagram', action: () => navigate('/admin/no-videos?open=noThumb'), color: stats.instaNoThumb > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
     { label: 'Retraits en attente', value: stats.takedowns, icon: 'flag', action: () => navigate('/admin/takedowns'), color: stats.takedowns > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
     { label: 'Soumissions à traiter', value: stats.submissions, icon: 'inbox', action: () => navigate('/admin/submissions'), color: stats.submissions > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
-    { label: 'Instagram sans miniature', value: stats.instaNoThumb, icon: 'brand-instagram', action: () => navigate('/admin/no-videos'), color: stats.instaNoThumb > 0 ? 'var(--c-danger)' : 'var(--c-success)' },
     { label: 'Runs sauvegardés', value: stats.runs, icon: 'list', action: () => navigate('/admin/compositions'), color: 'var(--c-accent)' },
   ]
 

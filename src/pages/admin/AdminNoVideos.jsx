@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { externalUrl } from '../../lib/url'
 import { CategoryBadge, SportBadge } from '../../components/Badges'
@@ -13,7 +13,11 @@ export default function AdminNoVideos() {
   const [noThumb, setNoThumb] = useState([])
   const [loading, setLoading] = useState(true)
   const [copiedId, setCopiedId] = useState(null)
-  const [open, setOpen] = useState({})
+  const [searchParams] = useSearchParams()
+  const [open, setOpen] = useState(() => {
+    const section = searchParams.get('open')
+    return section ? { [section]: true } : {}
+  })
   const navigate = useNavigate()
 
   const toggle = (key) => setOpen(o => ({ ...o, [key]: !o[key] }))
@@ -81,6 +85,9 @@ export default function AdminNoVideos() {
 
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
 
+  const noVideoIds = new Set(noVideo.map(f => f.id))
+  const onlyExternal = noUpload.filter(f => !noVideoIds.has(f.id))
+
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>À compléter</h1>
@@ -99,6 +106,14 @@ export default function AdminNoVideos() {
         desc="aucune vidéo uploadée directement"
         figures={noUpload}
         panelKey="noUpload"
+      />
+
+      <FigurePanel
+        icon="cloud-upload"
+        title="Figures avec vidéo mais sans upload"
+        desc="vidéo associée mais aucun upload direct"
+        figures={onlyExternal}
+        panelKey="onlyExternal"
       />
 
       <div className={styles.panel}>
