@@ -491,6 +491,10 @@ export default function Compo() {
     ...otherEntries.map(o => ({ type: 'other', data: o })),
   ].sort((a, b) => (a.data._seq ?? 0) - (b.data._seq ?? 0))
 
+  // Glow the save button once the run is worth keeping (3+ tricks), but not when
+  // it's already saved/unchanged or the save panel is already open.
+  const showSaveHint = allItems.length >= 3 && !savedId && !showSave
+
   // Swap an item with its neighbour, then renumber _seq 1..N across all three
   // arrays so the order survives across types (a jib can move above a figure).
   const moveItem = (index, dir) => {
@@ -551,7 +555,7 @@ export default function Compo() {
             {allItems.length > 0 && (
               <div className={styles.headerActions}>
                 <button
-                  className="btn btn-primary btn-sm"
+                  className={`btn btn-primary btn-sm ${showSaveHint ? styles.savePulse : ''}`}
                   onClick={() => { setShowSave(true); setSavedId(null) }}
                 >
                   {tr.compoSave}

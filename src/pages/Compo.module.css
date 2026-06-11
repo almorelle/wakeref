@@ -36,6 +36,29 @@
   color: var(--c-text);
 }
 
+/* ── Rappel de sauvegarde ── */
+/* Le bouton respire avec un halo (glow) + un anneau pulsé tant que le run
+   mérite d'être sauvegardé, pour attirer l'œil sans bloc à fermer. */
+.savePulse {
+  animation: savePulse 1.6s ease-in-out infinite;
+}
+@keyframes savePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, .55), 0 0 6px 1px rgba(59, 130, 246, .45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0), 0 0 18px 4px rgba(59, 130, 246, .8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Pas d'animation, mais on garde un halo statique pour l'indice visuel */
+  .savePulse {
+    animation: none;
+    box-shadow: 0 0 12px 2px rgba(59, 130, 246, .6);
+  }
+}
+
 /* ── Save / share ── */
 .savePanel,
 .sharePanel {
