@@ -7,6 +7,24 @@ import styles from './FigureForm.module.css'
 import { useLocation } from 'react-router-dom'
 import Icon from '../../components/Icon'
 
+function Stepper({ label, value, min, max, step, suffix = '', onChange }) {
+  const clamp = v => Math.max(min, Math.min(max, v))
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <span style={{ fontSize: 12, color: '#888' }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button type="button" className="btn btn-ghost" style={{ padding: '4px 11px' }}
+          onClick={() => onChange(clamp(value - step))} disabled={value <= min}>−</button>
+        <span style={{ minWidth: 54, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+          {value}{suffix}
+        </span>
+        <button type="button" className="btn btn-ghost" style={{ padding: '4px 11px' }}
+          onClick={() => onChange(clamp(value + step))} disabled={value >= max}>+</button>
+      </div>
+    </div>
+  )
+}
+
 export default function FigureForm() {
   const { id } = useParams()
   const isEdit = !!id
@@ -27,6 +45,10 @@ export default function FigureForm() {
     rotation: [],
     inverted: false,
     rewind: false,
+    spin: 0,
+    rewind_deg: 0,
+    extra_rewind_deg: 0,
+    inverts: 0,
     description: '', tips: ['', '', '', ''],
     description_en: '', tips_en: ['', '', '', ''],
   })
@@ -78,6 +100,10 @@ export default function FigureForm() {
           rotation: fig.rotation || [],
           inverted: fig.inverted || false,
           rewind: fig.rewind || false,
+          spin: fig.spin || 0,
+          rewind_deg: fig.rewind_deg || 0,
+          extra_rewind_deg: fig.extra_rewind_deg || 0,
+          inverts: fig.inverts || 0,
           description: fig.description || '',
           tips: [...(fig.tips || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips || []).length + 1)),
           description_en: fig.description_en || '',
@@ -125,8 +151,12 @@ export default function FigureForm() {
       contexts: form.contexts,
       approach: form.approach,
       rotation: form.rotation,
-      inverted: form.inverted,
-      rewind: form.rewind,
+      spin: form.spin,
+      rewind_deg: form.rewind_deg,
+      extra_rewind_deg: form.extra_rewind_deg,
+      inverts: form.inverts,
+      inverted: form.inverts > 0,    // legacy, dérivé de inverts
+      rewind: form.rewind_deg > 0,   // legacy, dérivé de rewind_deg
       tips: form.tips.filter(t => t.trim()),
       tips_en: form.tips_en.filter(t => t.trim()),
     }
@@ -324,16 +354,12 @@ export default function FigureForm() {
           />
 
           <div className="field">
-            <label>Qualificatifs</label>
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
-                <input type="checkbox" checked={form.inverted} onChange={e => set('inverted', e.target.checked)} />
-                Inversé (tête en bas)
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
-                <input type="checkbox" checked={form.rewind} onChange={e => set('rewind', e.target.checked)} />
-                Rewind
-              </label>
+            <label>Rotation &amp; invert</label>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+              <Stepper label="Spin" value={form.spin} min={0} max={1440} step={180} suffix="°" onChange={v => set('spin', v)} />
+              <Stepper label="Rewind" value={form.rewind_deg} min={0} max={1080} step={180} suffix="°" onChange={v => set('rewind_deg', v)} />
+              <Stepper label="Rewind 2" value={form.extra_rewind_deg} min={0} max={1080} step={180} suffix="°" onChange={v => set('extra_rewind_deg', v)} />
+              <Stepper label="Inverts (flips)" value={form.inverts} min={0} max={5} step={1} onChange={v => set('inverts', v)} />
             </div>
           </div>
 
