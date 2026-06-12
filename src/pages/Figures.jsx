@@ -145,11 +145,11 @@ export default function Figures() {
         <span style={{ width: 1, background: 'var(--c-border)', margin: '0 4px', alignSelf: 'stretch' }} />
 
         {[
-          { value: '',          label: tr.all      },
-          { value: 'kicker',    label: 'Kicker'    },
-          { value: 'jib',       label: 'Jib'       },
-          { value: 'flat',      label: 'Flat'       },
-          { value: 'air_trick', label: 'Air Trick' },
+          { value: '',          label: tr.all                          },
+          { value: 'kicker',    label: tr.ctxNames?.kicker    || 'Kicker'    },
+          { value: 'air_trick', label: tr.ctxNames?.air_trick || 'Air Trick' },
+          { value: 'feature',   label: tr.ctxNames?.feature   || 'Feature'   },
+          { value: 'flat',      label: tr.ctxNames?.flat      || 'Flat'      },
         ].map(ctx => (
           <button
             key={ctx.value}

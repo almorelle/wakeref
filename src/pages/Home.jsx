@@ -159,7 +159,7 @@ export default function Home() {
                   style={{ '--cat-color': ctx.color, '--i': CATEGORIES.length + i }}
                 >
                   <Icon name={ctx.icon} style={{ color: ctx.color }} />
-                  <span className={styles.catName}>{ctx.label}</span>
+                  <span className={styles.catName}>{tr.ctxNames?.[ctx.slug] || ctx.label}</span>
                 </button>
               ))}
             </div>

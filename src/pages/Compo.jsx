@@ -52,7 +52,7 @@ const parseFigure = (f) => ({
 // Une passe jib génère des pseudo-entrées pour le moteur de score
 function jibPassToEntries(pass) {
   const entries = []
-  const base = { _jib: true, side: pass.side, contexts: ['jib'], slug: null, category_slug: null, inverted: false, rotation: [] }
+  const base = { _jib: true, side: pass.side, contexts: ['feature'], slug: null, category_slug: null, inverted: false, rotation: [] }
 
   // Entrée — approche
   entries.push({ ...base, _key: `${pass._key}_entry`, approach: [pass.approach] })
@@ -107,14 +107,14 @@ function computeScore(entries, jibPasses) {
   scored['sw_ts_air'] = tsAirLeft && tsAirRight
   scored['whip'] = entries.some(e => e.category_slug === 'whip')
 
-  // GLISSE (kicker + jib)
-  scored['flip'] = all.some(e => e.inverted && (e.contexts.includes('kicker') || e.contexts.includes('jib')))
-  scored['spin'] = all.some(e => e.category_slug === 'spin' && (e.contexts.includes('kicker') || e.contexts.includes('jib')))
+  // GLISSE (kicker + feature)
+  scored['flip'] = all.some(e => e.inverted && (e.contexts.includes('kicker') || e.contexts.includes('feature')))
+  scored['spin'] = all.some(e => e.category_slug === 'spin' && (e.contexts.includes('kicker') || e.contexts.includes('feature')))
   scored['fslip_bsboard'] = all.some(e => e.slug === 'front-lip' || e.slug === 'back-board')
   scored['fsboard_bslip'] = all.some(e => e.slug === 'front-board' || e.slug === 'back-lip')
 
-  // ENTRIES (kicker/jib)
-  const jibKicker = all.filter(e => e.contexts.includes('kicker') || e.contexts.includes('jib'))
+  // ENTRIES (kicker/feature)
+  const jibKicker = all.filter(e => e.contexts.includes('kicker') || e.contexts.includes('feature'))
   const tsLeft  = jibKicker.some(e => e.approach.includes('ts') && e.side === 'left')
   const tsRight = jibKicker.some(e => e.approach.includes('ts') && e.side === 'right')
   const hsLeft  = jibKicker.some(e => e.approach.includes('hs') && e.side === 'left')
@@ -380,14 +380,14 @@ export default function Compo() {
     questions.push({ id: 'side', labelKey: 'compoSide', optionKeys: ['compoLeft', 'compoRight'] })
 
     if (!addMode) {
-      const hasAir    = fig.contexts.includes('air_trick')
-      const hasKicker = fig.contexts.includes('kicker')
-      const hasJib    = fig.contexts.includes('jib')
-      if (hasAir && (hasKicker || hasJib)) {
+      const hasAir     = fig.contexts.includes('air_trick')
+      const hasKicker  = fig.contexts.includes('kicker')
+      const hasFeature = fig.contexts.includes('feature')
+      if (hasAir && (hasKicker || hasFeature)) {
         const opts = []
-        if (hasAir)    opts.push('Air Trick')
-        if (hasKicker) opts.push('Kicker')
-        if (hasJib)    opts.push('Jib')
+        if (hasAir)     opts.push('Air Trick')
+        if (hasKicker)  opts.push('Kicker')
+        if (hasFeature) opts.push(tr.ctxNames?.feature || 'Feature')
         questions.push({ id: 'context', labelKey: 'compoContext', options: opts })
       }
     }
@@ -405,7 +405,7 @@ export default function Compo() {
     const side = answers.side === 'compoRight' ? 'right' : 'left'
     let resolvedContexts = [...fig.contexts]
     if (answers.context) {
-      const map = { 'Air Trick': 'air_trick', 'Kicker': 'kicker', 'Jib': 'jib' }
+      const map = { 'Air Trick': 'air_trick', 'Kicker': 'kicker', [tr.ctxNames?.feature || 'Feature']: 'feature' }
       resolvedContexts = [map[answers.context]]
     } else if (addMode) {
       resolvedContexts = [addMode]
@@ -471,7 +471,7 @@ export default function Compo() {
   }
 
   const sideLabel = (s) => s === 'left' ? tr.compoLeft : tr.compoRight
-  const ctxLabel  = (c) => ({ air_trick: 'Air Trick', kicker: 'Kicker', jib: 'Jib', flat: 'Flat' })[c] || c
+  const ctxLabel  = (c) => tr.ctxNames?.[c] || c
   const appLabel  = (a) => a === 'ts' ? tr.compoToeside : tr.compoHeelside
 
   const jibSummary = (p) => {

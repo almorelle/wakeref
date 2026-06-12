@@ -456,7 +456,7 @@ export default function FigureForm() {
             fieldKey="contexts"
             options={[
               { value: 'kicker',    label: 'Kicker'    },
-              { value: 'jib',       label: 'Jib'       },
+              { value: 'feature',   label: 'Module'    },
               { value: 'flat',      label: 'Flat'      },
               { value: 'air_trick', label: 'Air Trick' },
             ]}
