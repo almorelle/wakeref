@@ -167,6 +167,8 @@ export default function FigureDetail() {
   )
 
   const prereqs         = typeof figure.prerequisites === 'string' ? JSON.parse(figure.prerequisites) : figure.prerequisites || []
+  const builtOn         = figure.built_on_figure ? (typeof figure.built_on_figure === 'string' ? JSON.parse(figure.built_on_figure) : figure.built_on_figure) : null
+  const builtOnChildren = typeof figure.built_on_children === 'string' ? JSON.parse(figure.built_on_children) : figure.built_on_children || []
   const switchOf        = figure.switch_of_figure ? (typeof figure.switch_of_figure === 'string' ? JSON.parse(figure.switch_of_figure) : figure.switch_of_figure) : null
   const switchVersions  = typeof figure.switch_versions === 'string' ? JSON.parse(figure.switch_versions) : figure.switch_versions || []
   const videos          = typeof figure.videos === 'string'       ? JSON.parse(figure.videos)       : figure.videos  || []
@@ -215,6 +217,40 @@ export default function FigureDetail() {
         path={'/figures/' + figure.slug}
       />
       <div className="page-container">
+        {(builtOn || builtOnChildren.length > 0) && (
+          <section className={styles.section}>
+            <p className="section-title"><Icon name="binary-tree" /> {tr.progression}</p>
+            <div className={`${styles.tree} ${builtOn ? styles.treeHorizontal : styles.treeVertical}`}>
+              {builtOn && (
+                <>
+                  <Link to={'/figures/' + builtOn.slug} className={styles.treeNode}>
+                    {builtOn.name}
+                    {builtOn.switch_names && <span className={styles.hasSwitch}>+ {builtOn.switch_names}</span>}
+                  </Link>
+                  <div className={styles.treeConnector} aria-hidden="true" />
+                </>
+              )}
+              <span className={`${styles.treeNode} ${styles.treeNodeCurrent}`}>
+                {figure.name}
+                {switchVersions.length > 0 && <span className={styles.hasSwitch}>+ {switchVersions.map(s => s.name).join(', ')}</span>}
+              </span>
+              {builtOnChildren.length > 0 && (
+                <>
+                  <div className={styles.treeConnector} aria-hidden="true" />
+                  <div className={styles.treeChildren}>
+                    {builtOnChildren.map(n => (
+                      <Link key={n.id} to={'/figures/' + n.slug} className={styles.treeNode}>
+                        {n.name}
+                        {n.switch_names && <span className={styles.hasSwitch}>+ {n.switch_names}</span>}
+                      </Link>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        )}
+
         <section className={styles.section}>
           <p className="section-title"><Icon name="file-description" /> {tr.description}</p>
           <p className={styles.desc}>{desc}</p>

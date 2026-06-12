@@ -105,6 +105,111 @@
 }
 .prereqChip:hover { background: #3b82f620; }
 
+/* Arbre de progression : parent (-1) → figure courante → suivantes (+1).
+   Horizontale si la figure a un parent, verticale sinon (les racines sans parent
+   peuvent avoir beaucoup d'enfants → enfants en ligne wrap).
+   La variante est choisie en JSX via .treeHorizontal / .treeVertical. */
+.tree {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 4px 2px;
+}
+.treeConnector {
+  background: var(--c-border2);
+  flex-shrink: 0;
+}
+.treeNode {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 8px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--c-border2);
+  background: var(--c-surface2);
+  color: var(--c-muted);
+  text-align: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all var(--t-fast);
+}
+a.treeNode:hover {
+  border-color: var(--c-accent);
+  color: var(--c-accent);
+  background: #3b82f620;
+}
+.treeNodeCurrent {
+  border-color: var(--c-wake);
+  color: var(--c-text);
+  background: var(--c-surface3);
+  box-shadow: 0 0 0 3px #06b6d420;
+}
+/* Marqueur « existe en switch » */
+.hasSwitch {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--c-wake);
+  background: #06b6d418;
+  border: 1px solid #06b6d440;
+  vertical-align: middle;
+}
+.treeChildren { position: relative; display: flex; }
+
+/* ─── Variante horizontale (≤3 enfants) : parent → courante → enfants en colonne ─── */
+/* `safe center` : centré tant que ça tient, mais bascule à gauche quand ça déborde
+   pour que le scroll horizontal atteigne bien le nœud parent (sinon tronqué sur mobile). */
+.treeHorizontal {
+  flex-direction: row;
+  overflow-x: auto;
+  justify-content: safe center;
+}
+.treeHorizontal .treeConnector { width: 22px; height: 2px; }
+.treeHorizontal .treeChildren {
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+}
+/* Trait vertical reliant les enfants au connecteur */
+.treeHorizontal .treeChildren::before {
+  content: '';
+  position: absolute;
+  left: -11px;
+  top: 25%;
+  bottom: 25%;
+  width: 2px;
+  background: var(--c-border2);
+}
+
+/* ─── Variante verticale (>3 enfants) : parent / courante / enfants en ligne wrap ─── */
+.treeVertical { flex-direction: column; }
+.treeVertical .treeConnector { width: 2px; height: 18px; }
+.treeVertical .treeChildren {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+}
+/* Trait horizontal reliant les enfants au connecteur */
+.treeVertical .treeChildren::before {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  background: var(--c-border2);
+}
+
+/* Pas de trait de liaison s'il n'y a qu'un seul enfant */
+.treeChildren:has(> :only-child)::before { display: none; }
+
 .videosGrid {
   columns: 2;
   column-gap: 12px;

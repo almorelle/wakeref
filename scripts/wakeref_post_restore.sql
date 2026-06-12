@@ -51,8 +51,11 @@ select
      from figures o where o.id = f.switch_of)
   end as switch_of_figure,
   case when f.built_on_id is not null then
-    (select json_build_object('id', b.id, 'name', b.name, 'slug', b.slug)
-     from figures b where b.id = f.built_on_id)
+    (select json_build_object('id', b.id, 'name', b.name, 'slug', b.slug,
+              'switch_names', (select string_agg(x.name, ', ' order by x.name)
+                               from figures x where x.switch_of = b.id))
+     from figures b where b.id = f.built_on_id
+       and b.switch_of is null)  -- pas de parent affiché si c'est lui-même un switch
   end as built_on_figure,
   coalesce(
     (select json_agg(json_build_object('id', s.id, 'name', s.name, 'slug', s.slug))
@@ -83,7 +86,18 @@ select
          where coalesce(g.switch_of, g.id) = coalesce(f.switch_of, f.id)
        )),
     '[]'
-  ) as videos
+  ) as videos,
+  -- Figures directement dérivées (built_on_id = figure courante) : le « +1 » de l'arbre.
+  -- On exclut les switchs ; switch_names liste la/les version(s) switch de chaque nœud.
+  coalesce(
+    (select json_agg(json_build_object('id', n.id, 'name', n.name, 'slug', n.slug,
+              'switch_names', (select string_agg(x.name, ', ' order by x.name)
+                               from figures x where x.switch_of = n.id))
+                     order by n.rotation, n.inverted, n.name)
+     from figures n where n.built_on_id = f.id
+       and n.switch_of is null),
+    '[]'
+  ) as built_on_children
 from figures f
 left join categories c on c.id = f.category_id;
 
