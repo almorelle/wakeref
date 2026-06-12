@@ -138,22 +138,6 @@ export default function Home() {
               </div>
             </div>
 
-            <a
-              href={externalUrl('https://www.worldcabletricks.com/', { ref: true })}
-              target="_blank"
-              rel="noopener"
-              className={styles.wctBanner}
-            >
-              <img src="/wct-logo.png" alt="World Cable Tricks" className={styles.wctLogo} />
-              <div className={styles.wctBody}>
-                <p className={styles.wctTitle}>{tr.wctTitle}</p>
-                <p className={styles.wctText}>{tr.wctText}</p>
-              </div>
-              <span className={styles.wctBtn}>
-                {tr.wctButton} <Icon name="arrow-right" />
-              </span>
-            </a>
-
             <p className="section-title" style={{ marginTop: '2rem' }}>{tr.categories}</p>
             <div className={styles.catGrid}>
               {CATEGORIES.map((c, i) => (
@@ -179,6 +163,22 @@ export default function Home() {
                 </button>
               ))}
             </div>
+
+            <a
+              href={externalUrl('https://www.worldcabletricks.com/', { ref: true })}
+              target="_blank"
+              rel="noopener"
+              className={styles.wctBanner}
+            >
+              <img src="/wct-logo.png" alt="World Cable Tricks" className={styles.wctLogo} />
+              <div className={styles.wctBody}>
+                <p className={styles.wctTitle}>{tr.wctTitle}</p>
+                <p className={styles.wctText}>{tr.wctText}</p>
+              </div>
+              <span className={styles.wctBtn}>
+                {tr.wctButton} <Icon name="arrow-right" />
+              </span>
+            </a>
 
             {recent.length > 0 && (
               <>
