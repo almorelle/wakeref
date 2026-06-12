@@ -7,22 +7,37 @@ import styles from './FigureForm.module.css'
 import { useLocation } from 'react-router-dom'
 import Icon from '../../components/Icon'
 
-// Un « slot » de type de rotation par 360° complet : ceux du spin d'abord,
-// puis ceux de chaque rewind ≥ 360°. Source unique pour l'UI et l'enregistrement.
-function rotationSlots(spin, rewindDegs) {
+// Un « slot » de type de rotation : un par 360° complet (spin d'abord, puis
+// chaque rewind ≥ 360°), plus le cas particulier d'une rotation BS impaire
+// (180/540/900…) suivie d'un rewind de 180° — celui-ci étant forcément BS,
+// la passe de poignée est imposée (slot `forced`).
+// Renvoie des objets { label, forced? } ; source unique pour l'UI et l'enregistrement.
+function rotationSlots(spin, rewindDegs, rotation) {
   const slots = []
+  const rw = (rewindDegs || []).filter(d => d > 0)
+  const isBS = (rotation || []).includes('bs')
+
+  // tours complets du spin
   const spins = Math.floor(spin / 360)
   for (let i = 0; i < spins; i++) {
-    slots.push(spins > 1 ? `Spin · ${(i + 1) * 360}°` : 'Spin')
+    slots.push({ label: spins > 1 ? `Spin · ${(i + 1) * 360}°` : 'Spin' })
   }
-  const rw = (rewindDegs || []).filter(d => d >= 360)
-  rw.forEach((d, ri) => {
+
+  // tours complets de chaque rewind ≥ 360°
+  const rwFull = rw.filter(d => d >= 360)
+  rwFull.forEach((d, ri) => {
     const n = Math.floor(d / 360)
     for (let i = 0; i < n; i++) {
-      const base = rw.length > 1 ? `Rewind ${ri + 1}` : 'Rewind'
-      slots.push(n > 1 ? `${base} · ${(i + 1) * 360}°` : base)
+      const base = rwFull.length > 1 ? `Rewind ${ri + 1}` : 'Rewind'
+      slots.push({ label: n > 1 ? `${base} · ${(i + 1) * 360}°` : base })
     }
   })
+
+  // spin BS impair + rewind de 180° (forcément BS) ⇒ passe de poignée imposée
+  if (spin % 360 === 180 && isBS && rw.includes(180)) {
+    slots.push({ label: 'Rewind 180°', forced: 'handle_pass' })
+  }
+
   return slots
 }
 
@@ -197,9 +212,8 @@ export default function FigureForm() {
       rewind_degs: form.rewind_degs.filter(v => v > 0),
       // une entrée par 360° complet (spin puis rewinds), dans l'ordre ;
       // vide → null (position conservée)
-      rotation_type: form.rotation_type
-        .slice(0, rotationSlots(form.spin, form.rewind_degs).length)
-        .map(v => v || null),
+      rotation_type: rotationSlots(form.spin, form.rewind_degs, form.rotation)
+        .map((slot, i) => slot.forced || form.rotation_type[i] || null),
       inverts: form.inverts,
       inverted: form.inverts > 0,                  // legacy, dérivé de inverts
       rewind: form.rewind_degs.some(v => v > 0),   // legacy, dérivé de rewind_degs
@@ -487,17 +501,18 @@ export default function FigureForm() {
               </div>
 
               {(() => {
-                const slots = rotationSlots(form.spin, form.rewind_degs)
+                const slots = rotationSlots(form.spin, form.rewind_degs, form.rotation)
                 if (!slots.length) return null
                 return (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <span style={{ fontSize: 12, color: '#888' }}>Type de rotation (par 360°)</span>
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
-                      {slots.map((label, i) => (
+                      {slots.map((slot, i) => (
                         <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <span style={{ fontSize: 11, color: '#888' }}>{label}</span>
+                          <span style={{ fontSize: 11, color: '#888' }}>{slot.label}</span>
                           <select className="input" style={{ minWidth: 130 }}
-                            value={form.rotation_type[i] || ''}
+                            value={slot.forced || form.rotation_type[i] || ''}
+                            disabled={!!slot.forced}
                             onChange={e => setRotationType(i, e.target.value)}>
                             <option value="">—</option>
                             <option value="ole">Ole</option>
