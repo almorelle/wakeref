@@ -34,6 +34,7 @@ CREATE TABLE public.figures (
                                 inverts smallint NOT NULL DEFAULT 0,
                                 rewind_degs ARRAY NOT NULL DEFAULT '{}'::smallint[],
                                 built_on_id integer,
+                                rotation_type ARRAY NOT NULL DEFAULT '{}'::text[] CHECK (rotation_type <@ ARRAY['ole'::text, 'handle_pass'::text]),
                                 CONSTRAINT figures_pkey PRIMARY KEY (id),
                                 CONSTRAINT figures_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id),
                                 CONSTRAINT figures_switch_of_fkey FOREIGN KEY (switch_of) REFERENCES public.figures(id),

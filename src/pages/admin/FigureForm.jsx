@@ -7,6 +7,25 @@ import styles from './FigureForm.module.css'
 import { useLocation } from 'react-router-dom'
 import Icon from '../../components/Icon'
 
+// Un « slot » de type de rotation par 360° complet : ceux du spin d'abord,
+// puis ceux de chaque rewind ≥ 360°. Source unique pour l'UI et l'enregistrement.
+function rotationSlots(spin, rewindDegs) {
+  const slots = []
+  const spins = Math.floor(spin / 360)
+  for (let i = 0; i < spins; i++) {
+    slots.push(spins > 1 ? `Spin · ${(i + 1) * 360}°` : 'Spin')
+  }
+  const rw = (rewindDegs || []).filter(d => d >= 360)
+  rw.forEach((d, ri) => {
+    const n = Math.floor(d / 360)
+    for (let i = 0; i < n; i++) {
+      const base = rw.length > 1 ? `Rewind ${ri + 1}` : 'Rewind'
+      slots.push(n > 1 ? `${base} · ${(i + 1) * 360}°` : base)
+    }
+  })
+  return slots
+}
+
 function Stepper({ label, value, min, max, step, suffix = '', onChange }) {
   const clamp = v => Math.max(min, Math.min(max, v))
   return (
@@ -47,6 +66,7 @@ export default function FigureForm() {
     rewind: false,
     spin: 0,
     rewind_degs: [0],
+    rotation_type: [],
     inverts: 0,
     description: '', tips: ['', '', '', ''],
     description_en: '', tips_en: ['', '', '', ''],
@@ -105,6 +125,7 @@ export default function FigureForm() {
           rewind: fig.rewind || false,
           spin: fig.spin || 0,
           rewind_degs: (fig.rewind_degs && fig.rewind_degs.length) ? fig.rewind_degs : [0],
+          rotation_type: fig.rotation_type || [],
           inverts: fig.inverts || 0,
           description: fig.description || '',
           tips: [...(fig.tips || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips || []).length + 1)),
@@ -127,6 +148,13 @@ export default function FigureForm() {
   const removeRewind = (i) => setForm(f => {
     const a = f.rewind_degs.filter((_, j) => j !== i)
     return { ...f, rewind_degs: a.length ? a : [0] }
+  })
+
+  const setRotationType = (i, v) => setForm(f => {
+    const a = [...f.rotation_type]
+    while (a.length <= i) a.push('')
+    a[i] = v
+    return { ...f, rotation_type: a }
   })
 
   const setTip = (lang, i, v) => setForm(f => {
@@ -167,6 +195,11 @@ export default function FigureForm() {
       rotation: form.rotation,
       spin: form.spin,
       rewind_degs: form.rewind_degs.filter(v => v > 0),
+      // une entrée par 360° complet (spin puis rewinds), dans l'ordre ;
+      // vide → null (position conservée)
+      rotation_type: form.rotation_type
+        .slice(0, rotationSlots(form.spin, form.rewind_degs).length)
+        .map(v => v || null),
       inverts: form.inverts,
       inverted: form.inverts > 0,                  // legacy, dérivé de inverts
       rewind: form.rewind_degs.some(v => v > 0),   // legacy, dérivé de rewind_degs
@@ -452,6 +485,30 @@ export default function FigureForm() {
                   <button type="button" className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 12 }} onClick={addRewind}>+ rewind</button>
                 </div>
               </div>
+
+              {(() => {
+                const slots = rotationSlots(form.spin, form.rewind_degs)
+                if (!slots.length) return null
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <span style={{ fontSize: 12, color: '#888' }}>Type de rotation (par 360°)</span>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+                      {slots.map((label, i) => (
+                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <span style={{ fontSize: 11, color: '#888' }}>{label}</span>
+                          <select className="input" style={{ minWidth: 130 }}
+                            value={form.rotation_type[i] || ''}
+                            onChange={e => setRotationType(i, e.target.value)}>
+                            <option value="">—</option>
+                            <option value="ole">Ole</option>
+                            <option value="handle_pass">Handle pass</option>
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
 
               <Stepper label="Inverts (flips)" value={form.inverts} min={0} max={5} step={1} onChange={v => set('inverts', v)} />
             </div>
