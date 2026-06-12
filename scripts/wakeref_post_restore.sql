@@ -97,7 +97,25 @@ select
      from figures n where n.built_on_id = f.id
        and n.switch_of is null),
     '[]'
-  ) as built_on_children
+  ) as built_on_children,
+  -- Champs de décomposition du trick (placés en fin de vue pour rester
+  -- compatibles avec un CREATE OR REPLACE VIEW lors des migrations).
+  f.spin,
+  f.inverts,
+  f.rewind_degs,
+  f.rotation_type,
+  -- Trick de base : racine de la chaîne built_on (le plus haut parent).
+  (with recursive anc as (
+     select b.id, b.name, b.slug, b.built_on_id
+     from figures b where b.id = f.built_on_id
+     union all
+     select p.id, p.name, p.slug, p.built_on_id
+     from figures p join anc a on p.id = a.built_on_id
+   )
+   select json_build_object('id', a.id, 'name', a.name, 'slug', a.slug)
+   from anc a where a.built_on_id is null
+   limit 1
+  ) as base_figure
 from figures f
 left join categories c on c.id = f.category_id;
 

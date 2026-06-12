@@ -92,6 +92,70 @@
   flex-shrink: 0;
 }
 
+/* Décomposition du trick : chips (base → inverts → rotations) reliés par un
+   trait épais qui se fond avec l'outline des boîtes. Une seule ligne, scrollable
+   et centrée sur mobile (safe center → flex-start quand ça déborde). */
+.decomp {
+  --decomp-accent: var(--c-border);   /* surchargé par .decompHs / .decompTs */
+  display: flex;
+  align-items: stretch;
+  justify-content: safe center;
+  gap: 0;
+  overflow-x: auto;
+  padding: 4px 2px;
+}
+/* Identité couleur selon l'approche (outline des boîtes). */
+.decompHs { --decomp-accent: #f59e0b; }   /* Heelside — ambre */
+.decompTs { --decomp-accent: #8b5cf6; }   /* Toeside — violet */
+
+/* Séparateur « + » entre deux boîtes. */
+.decompPlus {
+  align-self: center;
+  flex-shrink: 0;
+  padding: 4px 12px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--c-muted);
+}
+.decompChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+  min-width: 92px;
+  flex-shrink: 0;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1.5px solid var(--decomp-accent);
+  background: var(--c-surface2);
+}
+.decompIcon { color: var(--c-wake); flex-shrink: 0; }
+.decompLabel {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+.decompSub {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Mobile : breakdown en colonne. */
+@media (max-width: 600px) {
+  .decomp {
+    flex-direction: column;
+    align-items: center;
+    overflow-x: visible;
+  }
+}
+
 .prereqs { display: flex; flex-wrap: wrap; gap: 8px; }
 .prereqChip {
   font-family: var(--font-display);

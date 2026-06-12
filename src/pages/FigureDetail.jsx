@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { externalUrl } from '../lib/url'
@@ -9,6 +9,7 @@ import { useLocalizedField } from '../contexts/LanguageContext'
 import SEO from '../components/SEO'
 import styles from './FigureDetail.module.css'
 import Icon from '../components/Icon'
+import { decomposeTrick, rotationIcon } from '../lib/trickDecomposition'
 
 // Carte Instagram : affiche le thumbnail `thumbnails/<shortcode>.jpg` du bucket
 // s'il existe, sinon retombe sur la tuile dégradée brandée.
@@ -172,9 +173,58 @@ export default function FigureDetail() {
   const switchOf        = figure.switch_of_figure ? (typeof figure.switch_of_figure === 'string' ? JSON.parse(figure.switch_of_figure) : figure.switch_of_figure) : null
   const switchVersions  = typeof figure.switch_versions === 'string' ? JSON.parse(figure.switch_versions) : figure.switch_versions || []
   const videos          = typeof figure.videos === 'string'       ? JSON.parse(figure.videos)       : figure.videos  || []
+  const baseFigure      = figure.base_figure ? (typeof figure.base_figure === 'string' ? JSON.parse(figure.base_figure) : figure.base_figure) : null
 
   const desc            = localize(figure, 'description')
   const tips            = localize(figure, 'tips') || []
+
+  // Décomposition du trick en composantes élémentaires (base → inverts → rotations).
+  const decomp     = decomposeTrick(figure)
+  // Section masquée pour les tricks sans invert ni spin (rien à décomposer).
+  const hasDecomp  = decomp.inverts > 0 || (figure.spin || 0) > 0
+  const approachLabel = decomp.approach.map(a => (a === 'ts' ? tr.approachTs : tr.approachHs)).join(' / ')
+  const dirLabel   = (dir, long) =>
+    dir === 'fs' ? (long ? tr.dirFsLong : tr.dirFsShort)
+    : dir === 'bs' ? (long ? tr.dirBsLong : tr.dirBsShort)
+    : ''
+  const typeLabel  = type => (type === 'ole' ? tr.rotTypeOle : type === 'handle_pass' ? tr.rotTypeHandlePass : '')
+
+  // Couleur d'identité selon l'approche : ambre (Heelside) / violet (Toeside).
+  const approachSide  = decomp.approach[0]
+  const approachClass = approachSide === 'hs' ? styles.decompHs
+    : approachSide === 'ts' ? styles.decompTs : ''
+
+  const DecompChip = ({ icon, label, sub }) => (
+    <div className={styles.decompChip}>
+      {icon && <Icon name={icon} size={22} className={styles.decompIcon} />}
+      <span className={styles.decompLabel}>{label}</span>
+      {sub && <span className={styles.decompSub}>{sub}</span>}
+    </div>
+  )
+
+  // Composantes affichées, dans l'ordre : base → inverts → rotations.
+  // 1re boîte = trick de base + approche en sous-label. Quand il y a un invert,
+  // le 1er est absorbé dans la boîte de base (qui prend alors l'icône d'invert).
+  // La catégorie Spin n'affiche pas le trick de base.
+  const decompChips = []
+  const hasBase = decomp.approach.length > 0 && figure.category_slug !== 'spin'
+  const baseAbsorbsInvert = hasBase && decomp.inverts > 0
+  if (hasBase) {
+    decompChips.push({
+      key: 'base',
+      icon: baseAbsorbsInvert ? 'rotate-360' : undefined,
+      label: baseFigure?.name || figure.name,
+      sub: approachLabel,
+    })
+  }
+  for (let i = baseAbsorbsInvert ? 1 : 0; i < decomp.inverts; i++) {
+    decompChips.push({ key: `inv-${i}`, icon: 'rotate-360', label: tr.decompInvert })
+  }
+  decomp.rotations.forEach((u, i) => {
+    const label = `${u.degs}° ${dirLabel(u.dir, true)}`
+    const sub = [u.rewind && tr.decompRewind, typeLabel(u.type)].filter(Boolean).join(' · ')
+    decompChips.push({ key: `rot-${i}`, icon: rotationIcon(u.degs, u.cw), label, sub })
+  })
 
   return (
     <div className={styles.page}>
@@ -255,6 +305,20 @@ export default function FigureDetail() {
           <p className="section-title"><Icon name="file-description" /> {tr.description}</p>
           <p className={styles.desc}>{desc}</p>
         </section>
+
+        {hasDecomp && (
+          <section className={styles.section}>
+            <p className="section-title"><Icon name="binary-tree" /> {tr.decomposition}</p>
+            <div className={`${styles.decomp} ${approachClass}`}>
+              {decompChips.map((c, i) => (
+                <Fragment key={c.key}>
+                  {i > 0 && <span className={styles.decompPlus} aria-hidden="true">+</span>}
+                  <DecompChip icon={c.icon} label={c.label} sub={c.sub} />
+                </Fragment>
+              ))}
+            </div>
+          </section>
+        )}
 
         {tips.length > 0 && (
           <section className={styles.section}>
