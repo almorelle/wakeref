@@ -94,5 +94,5 @@ See `source-tree-analysis.md` for the annotated tree. Entry points: `index.html`
 
 1. **No automated tests or linting** — refactors are unguarded.
 2. **Schema managed by hand** across two SQL files + the live DB — easy to drift; keep them and `src/data/*` in sync.
-3. **Build depends on Supabase reachability** (sitemap step) — a DB outage breaks deploys.
+3. **Build env vars are baked into the client bundle** — `VITE_SUPABASE_*` are required at build time for the app to work (the sitemap step itself is best-effort and no longer breaks the build on a DB outage).
 4. **Doc drift** on framework versions (React/Router) between `package.json` and `README`/`CLAUDE.md`.

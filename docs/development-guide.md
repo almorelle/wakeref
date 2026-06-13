@@ -61,7 +61,7 @@ npm run build    # node scripts/generate-sitemap.js && vite build  →  dist/
 npm run preview  # serve the production build locally
 ```
 
-> `npm run build` first runs `scripts/generate-sitemap.js`, which **queries your Supabase project** (using `.env.local`) for published figure slugs + categories and writes `public/sitemap.xml`. A reachable Supabase project and valid env vars are therefore required for a successful build.
+> `npm run build` first runs `scripts/generate-sitemap.js`, which queries your Supabase project (using `.env.local`) for published figure slugs + categories and writes `public/sitemap.xml`. This step is **best-effort**: if Supabase is unreachable or env vars are missing, it warns and the build still proceeds (keeping the previous sitemap, or writing a static-only one). The `VITE_SUPABASE_*` vars are still baked into the client bundle, so they're required for the app itself.
 
 ## Scripts reference
 

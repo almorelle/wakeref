@@ -46,5 +46,5 @@ DB from scratch: run `scripts/wakeref_post_restore.sql` in the Supabase SQL Edit
 
 - **No tests / no linter** configured — verification is manual.
 - **Schema is hand-managed** across `scripts/wakeref_post_restore.sql` (executable) and `scripts/wakeref_schema.sql` (reference dump); no migration tool.
-- **Build queries Supabase** (sitemap generation) — needs valid env vars + a reachable project.
+- **Build queries Supabase** for the sitemap, but **best-effort** — a DB outage no longer fails the build. `VITE_SUPABASE_*` are still baked into the client bundle (required for the app).
 - Targets the Supabase **free plan** — avoid paid-only features.

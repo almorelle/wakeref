@@ -64,7 +64,7 @@ wakeref/
 │           └── AdminCompositions.jsx
 │
 ├── scripts/                    # ── Build & DB tooling ──
-│   ├── generate-sitemap.js     # Runs in `npm run build`: queries Supabase, writes public/sitemap.xml
+│   ├── generate-sitemap.js     # Runs in `npm run build`: best-effort Supabase query → public/sitemap.xml (never fails the build)
 │   ├── wakeref_post_restore.sql # ★ Executable: extensions, functions, view, RLS, grants, triggers, bucket
 │   └── wakeref_schema.sql      # Reference dump (context only — NOT executed)
 │

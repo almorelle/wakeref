@@ -50,7 +50,7 @@ public/ assets/ static assets
 - **Bilingual** via `field` / `field_en` columns + `useLocalizedField()`; UI strings in `src/i18n/translations.js`.
 - **No tests, no linter** configured — verification is manual.
 - **Schema is hand-managed** in two SQL files; no migration tool.
-- Build queries Supabase to generate the sitemap, so env vars + DB reachability are needed to build.
+- Build queries Supabase for the sitemap (best-effort: a DB outage won't fail the build); `VITE_SUPABASE_*` env vars are still baked into the client bundle and required.
 - Targets the Supabase **free plan** (avoid paid-only features).
 
 ## Documentation map

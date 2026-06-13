@@ -25,13 +25,13 @@ GitHub Actions ─ daily pg_dump ───────────────�
 
 ## Build settings
 
-- **Build command:** `npm run build` → runs `scripts/generate-sitemap.js` (queries Supabase for slugs/categories, writes `public/sitemap.xml`) then `vite build`.
+- **Build command:** `npm run build` → runs `scripts/generate-sitemap.js` (best-effort Supabase query for slugs/categories, writes `public/sitemap.xml`) then `vite build`.
 - **Output directory:** `dist/`.
-- **Required env vars** (set in Vercel Project Settings → Environment Variables — and available at build time, since the sitemap script needs them):
+- **Required env vars** (set in Vercel Project Settings → Environment Variables — baked into the client bundle at build time via `import.meta.env`):
   - `VITE_SUPABASE_URL`
   - `VITE_SUPABASE_ANON_KEY`
 
-> Because the sitemap step hits Supabase during build, a failing/unreachable Supabase project or missing env vars will fail the Vercel build.
+> The sitemap step queries Supabase during the build but is **best-effort**: if the project is unreachable or the env vars are missing, it logs a warning and the build still succeeds (keeping the previous `public/sitemap.xml`, or writing a static-only one if none exists). The `VITE_SUPABASE_*` vars are still baked into the client bundle, so they remain required for the deployed app to work.
 
 ## First-time deploy
 
