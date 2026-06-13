@@ -12,17 +12,17 @@ import Icon from '../components/Icon'
 export default function Figures() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [figures, setFigures] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loadedKey, setLoadedKey] = useState(null)
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState(null)
   const [searching, setSearching] = useState(false)
   const activeFilter  = searchParams.get('cat')   || 'tous'
   const activeContext = searchParams.get('ctx')   || ''
   const activeSport   = searchParams.get('sport') || ''
+  const filterKey = `${activeFilter}|${activeContext}|${activeSport}`
   const tr = useT()
 
   useEffect(() => {
-    setLoading(true)
     // Liste : on ne sélectionne que les colonnes affichées par FigureCard.
     // Évite que la vue figures_full calcule les sous-requêtes lourdes
     // (videos, prerequisites, switch_versions) pour chaque figure.
@@ -39,9 +39,12 @@ export default function Figures() {
         a.name.localeCompare(b.name, undefined, { numeric: true })
       )
       setFigures(sorted)
-      setLoading(false)
+      setLoadedKey(`${activeFilter}|${activeContext}|${activeSport}`)
     })
   }, [activeFilter, activeContext, activeSport])
+
+  // Loading while the fetched list doesn't match the current filters yet.
+  const loading = loadedKey !== filterKey
 
   const buildParams = () => {
     const base = {}
@@ -66,13 +69,14 @@ export default function Figures() {
   }
 
   useEffect(() => {
-    if (!query.trim()) { setSearchResults(null); return }
+    const q = query.trim()
     const timer = setTimeout(async () => {
+      if (!q) { setSearchResults(null); return }
       setSearching(true)
-      const data = await searchFigures(query.trim())
+      const data = await searchFigures(q)
       setSearchResults(data)
       setSearching(false)
-    }, 250)
+    }, q ? 250 : 0)
     return () => clearTimeout(timer)
   }, [query])
 

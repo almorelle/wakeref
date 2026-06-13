@@ -60,7 +60,13 @@ export default function Quiz() {
     setQuestions(qs); setIdx(0); setScore(0); setAnswered(null); setChosen(null); setDone(false)
   }, [allFigures])
 
-  useEffect(() => { if (allFigures.length) buildQuiz() }, [allFigures, buildQuiz])
+  // Build the initial quiz once figures are loaded. Deferred a tick so the
+  // setState isn't synchronous within the effect (avoids a cascading render).
+  useEffect(() => {
+    if (!allFigures.length) return
+    const t = setTimeout(buildQuiz, 0)
+    return () => clearTimeout(t)
+  }, [allFigures, buildQuiz])
 
   const answer = (fig) => {
     if (answered) return
@@ -169,7 +175,7 @@ export default function Quiz() {
                   <a
                     href={externalUrl(creator.url, { ref: true })}
                     target="_blank"
-                    rel="noopener"
+                    rel="noopener noreferrer"
                     className={styles.watermark}
                   >
                     @{creator.handle}

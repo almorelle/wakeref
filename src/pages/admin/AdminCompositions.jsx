@@ -23,7 +23,7 @@ export default function AdminCompositions() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void (async () => { await load() })() }, [])
 
   const remove = async (run) => {
     if (!window.confirm('Supprimer ce run ?')) return
@@ -43,7 +43,7 @@ export default function AdminCompositions() {
       {!loading && runs.length === 0 && (
         <div className={styles.empty}>
           <Icon name="inbox" style={{ fontSize: 32 }} />
-          <p>Aucun run sauvegardé pour l'instant.</p>
+          <p>Aucun run sauvegardé pour l&apos;instant.</p>
         </div>
       )}
 

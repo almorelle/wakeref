@@ -7,6 +7,40 @@ import DifficultyDots from '../../components/DifficultyDots'
 import styles from './AdminNoVideos.module.css'
 import Icon from '../../components/Icon'
 
+const PanelHead = ({ icon, title, desc, count, panelKey, open, toggle }) => (
+  <button className={styles.panelHead} onClick={() => toggle(panelKey)}>
+    <Icon name={icon} />
+    <span className={styles.panelTitle}>{title}</span>
+    <span className={styles.panelDesc}>{desc}</span>
+    <span className={styles.count}>{count}</span>
+    <Icon name="chevron-right" className={`${styles.chevron} ${open[panelKey] ? styles.chevronOpen : ''}`} />
+  </button>
+)
+
+const FigurePanel = ({ icon, title, desc, figures, panelKey, open, toggle, navigate }) => (
+  <div className={styles.panel}>
+    <PanelHead icon={icon} title={title} desc={desc} count={figures.length} panelKey={panelKey} open={open} toggle={toggle} />
+    {open[panelKey] && (
+      figures.length === 0 ? (
+        <div className={styles.empty}><Icon name="confetti" />Rien à compléter 🎉</div>
+      ) : (
+        <div className={styles.list}>
+          {figures.map(f => (
+            <button key={f.id} className={styles.item} onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
+              <span className={styles.itemName}>{f.name}</span>
+              <span className={styles.itemMeta}>
+                <CategoryBadge slug={f.category_slug} name={f.category_name} />
+                <SportBadge sport={f.sport} />
+                <DifficultyDots value={f.difficulty} />
+              </span>
+            </button>
+          ))}
+        </div>
+      )
+    )}
+  </div>
+)
+
 export default function AdminNoVideos() {
   const [noVideo, setNoVideo] = useState([])
   const [noUpload, setNoUpload] = useState([])
@@ -49,40 +83,6 @@ export default function AdminNoVideos() {
     })
   }, [])
 
-  const PanelHead = ({ icon, title, desc, count, panelKey }) => (
-    <button className={styles.panelHead} onClick={() => toggle(panelKey)}>
-      <Icon name={icon} />
-      <span className={styles.panelTitle}>{title}</span>
-      <span className={styles.panelDesc}>{desc}</span>
-      <span className={styles.count}>{count}</span>
-      <Icon name="chevron-right" className={`${styles.chevron} ${open[panelKey] ? styles.chevronOpen : ''}`} />
-    </button>
-  )
-
-  const FigurePanel = ({ icon, title, desc, figures, panelKey }) => (
-    <div className={styles.panel}>
-      <PanelHead icon={icon} title={title} desc={desc} count={figures.length} panelKey={panelKey} />
-      {open[panelKey] && (
-        figures.length === 0 ? (
-          <div className={styles.empty}><Icon name="confetti" />Rien à compléter 🎉</div>
-        ) : (
-          <div className={styles.list}>
-            {figures.map(f => (
-              <button key={f.id} className={styles.item} onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
-                <span className={styles.itemName}>{f.name}</span>
-                <span className={styles.itemMeta}>
-                  <CategoryBadge slug={f.category_slug} name={f.category_name} />
-                  <SportBadge sport={f.sport} />
-                  <DifficultyDots value={f.difficulty} />
-                </span>
-              </button>
-            ))}
-          </div>
-        )
-      )}
-    </div>
-  )
-
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
 
   const noVideoIds = new Set(noVideo.map(f => f.id))
@@ -98,6 +98,9 @@ export default function AdminNoVideos() {
         desc="aucune vidéo associée"
         figures={noVideo}
         panelKey="noVideo"
+        open={open}
+        toggle={toggle}
+        navigate={navigate}
       />
 
       <FigurePanel
@@ -106,6 +109,9 @@ export default function AdminNoVideos() {
         desc="aucune vidéo uploadée directement"
         figures={noUpload}
         panelKey="noUpload"
+        open={open}
+        toggle={toggle}
+        navigate={navigate}
       />
 
       <FigurePanel
@@ -114,6 +120,9 @@ export default function AdminNoVideos() {
         desc="vidéo associée mais aucun upload direct"
         figures={onlyExternal}
         panelKey="onlyExternal"
+        open={open}
+        toggle={toggle}
+        navigate={navigate}
       />
 
       <div className={styles.panel}>
@@ -123,6 +132,8 @@ export default function AdminNoVideos() {
           desc="miniature non uploadée"
           count={noThumb.length}
           panelKey="noThumb"
+          open={open}
+          toggle={toggle}
         />
         {open.noThumb && (
           noThumb.length === 0 ? (

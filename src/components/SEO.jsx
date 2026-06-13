@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useLanguage } from '../contexts/LanguageContext'
+import { useLanguage } from '../contexts/language-context'
 
 const SITE_NAME = 'WakeRef'
 const SITE_URL  = 'https://wakeref.app'

@@ -23,7 +23,7 @@ export default function AdminFigures() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void (async () => { await load() })() }, [])
 
   const deleteFigure = async (id, name) => {
     if (!confirm(`Supprimer "${name}" ? Cette action est irréversible.`)) return

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { searchFigures } from '../lib/searchFigures'
@@ -166,6 +166,13 @@ const ROTATIONS = [
   { value: 'bs', labelKey: 'compoRotBS' },
 ]
 
+const OptBtn = ({ active, onClick, children }) => (
+  <button
+    className={`${styles.optBtn} ${active ? styles.optSelected : ''}`}
+    onClick={onClick}
+  >{children}</button>
+)
+
 // ── Formulaire Passe Jib ─────────────────────────────────────
 function JibForm({ tr, onConfirm, onCancel }) {
   const [pass, setPass] = useState({
@@ -184,13 +191,6 @@ function JibForm({ tr, onConfirm, onCancel }) {
   const set = (key, val) => setPass(p => ({ ...p, [key]: p[key] === val ? null : val }))
 
   const valid = pass.side && pass.approach
-
-  const OptBtn = ({ active, onClick, children }) => (
-    <button
-      className={`${styles.optBtn} ${active ? styles.optSelected : ''}`}
-      onClick={onClick}
-    >{children}</button>
-  )
 
   return (
     <div className={styles.pending}>
@@ -297,7 +297,7 @@ export default function Compo() {
   const [suggestions, setSuggestions] = useState([])
   const [searching, setSearching]     = useState(false)
   const [highlightIdx, setHighlightIdx] = useState(-1)
-  const stored = useRef(loadStored()).current
+  const [stored] = useState(loadStored)
   const [name, setName]               = useState(stored?.name || '')
   const [entries, setEntries]         = useState(stored?.entries || [])
   const [jibPasses, setJibPasses]     = useState(stored?.jibPasses || [])
@@ -307,6 +307,7 @@ export default function Compo() {
   const [addMode, setAddMode]         = useState(null) // null | 'jib' | 'kicker' | 'air_trick' | 'other'
   const [saving, setSaving]           = useState(false)
   const [savedId, setSavedId]         = useState(null) // id of the run once saved → share link
+  const [savedSig, setSavedSig]       = useState(null) // content signature the saved link belongs to
   const [showSave, setShowSave]       = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false) // score breakdown fold (mobile only)
 
@@ -316,13 +317,21 @@ export default function Compo() {
   const seqRef = useRef(maxStoredSeq)
   const nextSeq = () => ++seqRef.current
 
+  // Minimal snapshot of the run — persisted to localStorage and used to tell
+  // whether a previously generated share link still matches the current content.
+  const snapshot = useMemo(
+    () => JSON.stringify({ name, entries, jibPasses, otherEntries }),
+    [name, entries, jibPasses, otherEntries]
+  )
+
   // Persist the composition so an accidental refresh doesn't lose it
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ name, entries, jibPasses, otherEntries }))
-  }, [name, entries, jibPasses, otherEntries])
+    localStorage.setItem(STORAGE_KEY, snapshot)
+  }, [snapshot])
 
-  // Any edit makes the previously generated share link stale
-  useEffect(() => { setSavedId(null) }, [name, entries, jibPasses, otherEntries])
+  // The share link is stale as soon as the content drifts from what was saved,
+  // so it's derived (not reset via an effect).
+  const linkValid = savedId !== null && savedSig === snapshot
 
   // Load a saved run when the URL carries an id (/compo/:id)
   useEffect(() => {
@@ -343,7 +352,7 @@ export default function Compo() {
         .reduce((m, x) => Math.max(m, x._seq || 0), 0)
     })()
     return () => { cancelled = true }
-  }, [id])
+  }, [id, toast, tr])
 
   const resetCompo = () => {
     setName('')
@@ -459,6 +468,7 @@ export default function Compo() {
     setSaving(false)
     if (error) { toast(tr.compoSaveError, 'error'); return }
     setSavedId(newId)
+    setSavedSig(snapshot)
     setShowSave(false)
   }
 
@@ -493,7 +503,7 @@ export default function Compo() {
 
   // Glow the save button once the run is worth keeping (3+ tricks), but not when
   // it's already saved/unchanged or the save panel is already open.
-  const showSaveHint = allItems.length >= 3 && !savedId && !showSave
+  const showSaveHint = allItems.length >= 3 && !linkValid && !showSave
 
   // Swap an item with its neighbour, then renumber _seq 1..N across all three
   // arrays so the order survives across types (a jib can move above a figure).
@@ -600,7 +610,7 @@ export default function Compo() {
           )}
 
           {/* Lien de partage après sauvegarde */}
-          {savedId && (
+          {linkValid && (
             <div className={styles.sharePanel}>
               <p className={styles.shareTitle}>{tr.compoSavedTitle}</p>
               <div className={styles.shareRow}>

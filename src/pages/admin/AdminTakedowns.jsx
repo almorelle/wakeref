@@ -19,7 +19,7 @@ export default function AdminTakedowns() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void (async () => { await load() })() }, [])
 
   const handle = async (req, approve) => {
     if (approve) {
@@ -55,7 +55,7 @@ export default function AdminTakedowns() {
               <div className={styles.cardMeta}>
                 <span className={styles.figure}>{r.videos?.figures?.name || 'Figure inconnue'}</span>
                 <span className={styles.detail}>{r.name || 'Anonyme'} — {r.email}</span>
-                {r.message && <p className={styles.message}>"{r.message}"</p>}
+                {r.message && <p className={styles.message}>&quot;{r.message}&quot;</p>}
                 <span className={styles.date}>{new Date(r.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
               </div>
               <div className={styles.actions}>

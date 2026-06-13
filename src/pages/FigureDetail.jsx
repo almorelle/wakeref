@@ -5,7 +5,7 @@ import { externalUrl } from '../lib/url'
 import DifficultyDots from '../components/DifficultyDots'
 import { SportBadge, CategoryBadge, ContextBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
-import { useLocalizedField } from '../contexts/LanguageContext'
+import { useLocalizedField } from '../contexts/language-context'
 import SEO from '../components/SEO'
 import styles from './FigureDetail.module.css'
 import Icon from '../components/Icon'
@@ -29,7 +29,7 @@ function InstagramCard({ v, label }) {
   )
 
   return (
-    <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener" className={styles.instaCard}>
+    <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener noreferrer" className={styles.instaCard}>
       {showImg ? (
         <>
           <img
@@ -61,19 +61,25 @@ export default function FigureDetail() {
   const localize = useLocalizedField()
 
   const [figure, setFigure] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loadedSlug, setLoadedSlug] = useState(null)
   const [takedownVideo, setTakedownVideo] = useState(null)
   const [takedownForm, setTakedownForm] = useState({ name: '', email: '', message: '' })
   const [takedownSent, setTakedownSent] = useState(false)
   const [copied, setCopied] = useState(false)
 
   useEffect(() => {
-    setLoading(true)
-    supabase.from('figures_full').select('*').eq('slug', slug).single().then(({ data }) => {
+    let active = true
+    ;(async () => {
+      const { data } = await supabase.from('figures_full').select('*').eq('slug', slug).single()
+      if (!active) return
       setFigure(data)
-      setLoading(false)
-    })
+      setLoadedSlug(slug)
+    })()
+    return () => { active = false }
   }, [slug])
+
+  // Loading while the fetched figure doesn't match the current slug yet.
+  const loading = loadedSlug !== slug
 
   const shareTrick = async () => {
     const url = window.location.href
@@ -378,13 +384,13 @@ export default function FigureDetail() {
                     <div className={styles.videoMeta}>
                       {v.title && <p className={styles.videoTitle}>{v.title}</p>}
                       {v.creator_name && (
-                        <a href={externalUrl(v.creator_url, { ref: true }) || '#'} target="_blank" rel="noopener" className={styles.creator}>
+                        <a href={externalUrl(v.creator_url, { ref: true }) || '#'} target="_blank" rel="noopener noreferrer" className={styles.creator}>
                           <Icon name={v.source_type === 'instagram' ? 'brand-instagram' : v.source_type === 'youtube' ? 'brand-youtube' : 'video'} />
                           {v.creator_name}
                         </a>
                       )}
                       {v.source_type === 'upload' && v.source_url && (
-                        <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener" className={styles.sourceLink}>
+                        <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener noreferrer" className={styles.sourceLink}>
                           {tr.originalSource} <Icon name="external-link" />
                         </a>
                       )}

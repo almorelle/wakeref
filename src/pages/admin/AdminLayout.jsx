@@ -9,13 +9,19 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [prevPath, setPrevPath] = useState(location.pathname)
   const logo = <><span className={styles.logoMark} aria-hidden="true" />WakeRef</>
 
   useEffect(() => {
     if (!loading && !session) navigate('/admin/login')
   }, [session, loading, navigate])
 
-  useEffect(() => { setMenuOpen(false) }, [location.pathname])
+  // Close the mobile menu on navigation (adjust state during render rather than
+  // in an effect, which avoids an extra render pass).
+  if (prevPath !== location.pathname) {
+    setPrevPath(location.pathname)
+    setMenuOpen(false)
+  }
 
   if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
   if (!session) return null

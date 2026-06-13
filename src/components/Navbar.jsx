@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import LangSwitcher from './LangSwitcher'
 import { useT } from '../i18n/useT'
-import { useTheme } from '../contexts/ThemeContext'
+import { useTheme } from '../contexts/theme-context'
 import styles from './Navbar.module.css'
 import Icon from './Icon'
 

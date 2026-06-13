@@ -1,15 +1,13 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import styles from './AdminVideos.module.css'
-import { useLocation } from 'react-router-dom'
 import Icon from '../../components/Icon'
 
 export default function AdminVideos() {
   const [searchParams] = useSearchParams()
-  const navigate = useNavigate()
   const { toasts, toast } = useToast()
   const prefigureId = searchParams.get('figure')
 
@@ -17,9 +15,6 @@ export default function AdminVideos() {
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
-
-  const location = useLocation()
-  const prefill = location.state?.prefill
 
   const [form, setForm] = useState({
     figure_id: prefigureId || '',
@@ -45,7 +40,7 @@ export default function AdminVideos() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void (async () => { await load() })() }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
 

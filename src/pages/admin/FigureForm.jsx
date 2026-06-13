@@ -59,6 +59,24 @@ function Stepper({ label, value, min, max, step, suffix = '', onChange }) {
   )
 }
 
+const CheckGroup = ({ label, fieldKey, options, form, toggleArray }) => (
+  <div className="field">
+    <label>{label}</label>
+    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      {options.map(opt => (
+        <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
+          <input
+            type="checkbox"
+            checked={(form[fieldKey] || []).includes(opt.value)}
+            onChange={() => toggleArray(fieldKey, opt.value)}
+          />
+          {opt.label}
+        </label>
+      ))}
+    </div>
+  </div>
+)
+
 export default function FigureForm() {
   const { id } = useParams()
   const isEdit = !!id
@@ -246,24 +264,6 @@ export default function FigureForm() {
     { id: 'fr', label: '🇫🇷 Français' },
     { id: 'en', label: '🇬🇧 English' },
   ]
-
-  const CheckGroup = ({ label, fieldKey, options }) => (
-    <div className="field">
-      <label>{label}</label>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        {options.map(opt => (
-          <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
-            <input
-              type="checkbox"
-              checked={(form[fieldKey] || []).includes(opt.value)}
-              onChange={() => toggleArray(fieldKey, opt.value)}
-            />
-            {opt.label}
-          </label>
-        ))}
-      </div>
-    </div>
-  )
 
   return (
     <div className={styles.page}>
@@ -460,6 +460,8 @@ export default function FigureForm() {
               { value: 'flat',      label: 'Flat'      },
               { value: 'air_trick', label: 'Air Trick' },
             ]}
+            form={form}
+            toggleArray={toggleArray}
           />
 
           <CheckGroup
@@ -469,6 +471,8 @@ export default function FigureForm() {
               { value: 'hs', label: 'Heelside' },
               { value: 'ts', label: 'Toeside'  },
             ]}
+            form={form}
+            toggleArray={toggleArray}
           />
 
           <CheckGroup
@@ -478,6 +482,8 @@ export default function FigureForm() {
               { value: 'fs', label: 'Frontside' },
               { value: 'bs', label: 'Backside'  },
             ]}
+            form={form}
+            toggleArray={toggleArray}
           />
 
           <div className="field">

@@ -50,13 +50,14 @@ export default function Home() {
   }, [])
 
   useEffect(() => {
-    if (!query.trim()) { setSearchResults(null); return }
+    const q = query.trim()
     const timer = setTimeout(async () => {
+      if (!q) { setSearchResults(null); return }
       setSearching(true)
-      const data = await searchFigures(query.trim())
+      const data = await searchFigures(q)
       setSearchResults(data)
       setSearching(false)
-    }, 250)
+    }, q ? 250 : 0)
     return () => clearTimeout(timer)
   }, [query])
 
@@ -167,7 +168,7 @@ export default function Home() {
             <a
               href={externalUrl('https://www.worldcabletricks.com/', { ref: true })}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className={styles.wctBanner}
             >
               <img src="/wct-logo.png" alt="World Cable Tricks" className={styles.wctLogo} />

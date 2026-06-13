@@ -1,6 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-
-const ThemeContext = createContext(null)
+import { useState } from 'react'
+import { ThemeContext } from './theme-context'
 
 const STORAGE_KEY = 'wakeref_theme'
 
@@ -36,8 +35,4 @@ export function ThemeProvider({ children }) {
       {children}
     </ThemeContext.Provider>
   )
-}
-
-export function useTheme() {
-  return useContext(ThemeContext)
 }

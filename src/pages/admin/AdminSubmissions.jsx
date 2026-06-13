@@ -20,7 +20,7 @@ export default function AdminSubmissions() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { void (async () => { await load() })() }, [])
 
   const review = async (sub, newStatus) => {
     await supabase.from('video_submissions').update({ status: newStatus }).eq('id', sub.id)
@@ -98,7 +98,7 @@ function SubmissionCard({ sub, onReview }) {
             }
           </span>
         )}
-        {sub.caption && <p className={styles.caption}>"{sub.caption}"</p>}
+        {sub.caption && <p className={styles.caption}>&quot;{sub.caption}&quot;</p>}
         <span className={styles.date}>
           {new Date(sub.submitted_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}
         </span>
