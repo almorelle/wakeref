@@ -1,6 +1,6 @@
 # Component & Page Inventory — WakeRef
 
-> Generated: 2026-06-11 · Deep Scan
+> Generated: 2026-06-11 · Updated: 2026-06-13
 
 WakeRef is a React 19 SPA. UI is plain React function components with **CSS Modules** (`*.module.css`) per component/page, plus one global design system in `src/index.css` (CSS custom properties, theming via `data-theme` attribute). No UI component library, no Tailwind. Icons come from `@tabler/icons-react`, wrapped by a single `Icon` component.
 
@@ -44,7 +44,7 @@ Provider order (`src/main.jsx`): `BrowserRouter` → `ThemeProvider` → `Langua
 |------|-------|-------|
 | `Home` | `/` | Hero + `home_stats` RPC, featured figures from `figures_full` |
 | `Figures` | `/figures` | Searchable/filterable trick list; reads `figures_full`, search via `searchFigures` lib; category filter via `?cat=` |
-| `FigureDetail` | `/figures/:slug` | Full trick page: description/tips (localized), videos (Storage), prerequisites, switch group, takedown request form |
+| `FigureDetail` | `/figures/:slug` | Full trick page: description/tips (localized), videos (Storage), prerequisites, switch group, takedown form; **trick breakdown** (rotation units via `lib/trickDecomposition.js`) + **built-on tree** (base → this → children, from the view's `base_figure`/`built_on_figure`/`built_on_children`) |
 | `Quiz` | `/quiz` | Lazy-loaded. Video-based guess-the-trick quiz |
 | `Compo` | `/compo`, `/compo/:id` | Lazy-loaded. Run/line builder with score; saves to `compositions`, shareable by id via `get_composition` |
 | `Contact` | `/contact` | Contact form → `send-contact` Edge Function |
@@ -61,7 +61,7 @@ All lazy-loaded and **never bundled into the public chunk** (code-split in `App.
 | `AdminLayout` | `/admin/*` wrapper | Auth guard (redirects to `/admin/login`); sidebar + mobile drawer nav |
 | `AdminDashboard` | `/admin` | Counts across tables + thumbnail coverage |
 | `AdminFigures` | `/admin/figures` | Figure list/management |
-| `FigureForm` | `/admin/figures/new`, `/admin/figures/:id/edit` | Create/edit figure incl. prerequisites, bilingual fields |
+| `FigureForm` | `/admin/figures/new`, `/admin/figures/:id/edit` | Create/edit figure incl. prerequisites, bilingual fields, **built-on parent**, and a **rotation builder** (spin degrees / rewinds / per-slot ole·handle-pass via `lib/trickDecomposition.js`) writing `spin`/`inverts`/`rewind_degs`/`rotation_type` |
 | `AdminVideos` | `/admin/videos` | Upload/remove videos (Storage), manage `videos` rows |
 | `AdminNoVideos` | `/admin/no-videos` | Figures missing (uploaded) videos — foldable sections |
 | `AdminSubmissions` | `/admin/submissions` | Moderate `video_submissions` |
@@ -70,12 +70,12 @@ All lazy-loaded and **never bundled into the public chunk** (code-split in `App.
 
 ## i18n
 
-Two languages, `fr` (default) + `en`. All UI strings in `src/i18n/translations.js` as `{ fr: {…}, en: {…} }` (~430 lines). DB content is bilingual via `field` / `field_en` columns, resolved at render time by `useLocalizedField()` (FR fallback). Language persisted in `localStorage`.
+Two languages, `fr` (default) + `en`. All UI strings in `src/i18n/translations.js` as `{ fr: {…}, en: {…} }` (~465 lines). DB content is bilingual via `field` / `field_en` columns, resolved at render time by `useLocalizedField()` (FR fallback). Language persisted in `localStorage`.
 
 ## Static reference data (`src/data/`)
 
-- `categories.js` — 14 categories with `{id, name, slug, icon, color}` (mirrors the `categories` table, adds icons).
-- `contexts.js` — 4 trick contexts: `kicker`, `jib`, `flat`, `air_trick` (with icon + color).
+- `categories.js` — 14 categories with `{id, name, slug, icon, color}` (mirrors the `categories` table, adds icons). Note: the `Jib` category (id 9) was formerly "Slides".
+- `contexts.js` — 4 trick contexts: `kicker`, `feature`, `flat`, `air_trick` (with icon + color). The former `jib` context was migrated to `feature`.
 
 ## Conventions for new UI
 

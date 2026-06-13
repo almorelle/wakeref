@@ -1,6 +1,6 @@
 # Architecture — WakeRef
 
-> Generated: 2026-06-11 · Deep Scan · Type: `web` · Repository: **monolith**
+> Generated: 2026-06-11 · Updated: 2026-06-13 · Type: `web` · Repository: **monolith**
 
 ## Executive summary
 
@@ -44,8 +44,9 @@ Two route groups: a `PublicLayout` (Navbar + `<Outlet/>`) and an auth-guarded `A
 
 See `data-models.md` for the full schema. Key ideas:
 
-- **Core entity `figures`** with self-referential **switch groups** (`switch_of`) and many-to-many **prerequisites**.
-- **`figures_full` view** denormalizes category, switch relations, prerequisites, and **switch-group-shared videos** into one JSON-rich row — this is what the UI reads.
+- **Core entity `figures`** with self-referential **switch groups** (`switch_of`), a self-referential **built-on tree** (`built_on_id`, kept acyclic by a trigger), and many-to-many **prerequisites**.
+- **`figures_full` view** denormalizes category, switch relations, prerequisites, **switch-group-shared videos**, the **built-on tree** (parent / children / recursive root), and the **trick-decomposition** columns (`spin`/`inverts`/`rewind_degs`/`rotation_type`) into one JSON-rich row — this is what the UI reads.
+- **Trick decomposition** (`src/lib/trickDecomposition.js`) turns those columns into displayable rotation units for the breakdown UI and the admin rotation builder.
 - **Bilingual columns** (`field` / `field_en`) resolved client-side via `useLocalizedField()`.
 - **Public-write inboxes** (`video_submissions`, `takedown_requests`, `compositions`) are insert-only for `anon`, read by admin.
 - **French full-text search** via a GIN index over `unaccent`-normalized text, exposed through `search_figures()` and enriched by client-side abbreviation expansion.
@@ -87,6 +88,7 @@ See `source-tree-analysis.md` for the annotated tree. Entry points: `index.html`
 - **SEO:** `src/components/SEO.jsx` imperatively manages title/meta/OG per page+language; sitemap generated at build; security/cache headers in `vercel.json`.
 - **PWA:** auto-updating service worker; installable manifest.
 - **Abuse control:** `compositions` insert rate-limit trigger (20/min) and 50 KB JSON size cap.
+- **Data invariants in-DB:** `figures_built_on_acyclic` trigger forbids cycles/self-references in the built-on tree; `rotation_type` CHECK-constrained to `{ole, handle_pass}`.
 
 ## Architectural risks / watch-items
 

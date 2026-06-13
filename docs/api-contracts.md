@@ -1,6 +1,6 @@
 # API Contracts — WakeRef
 
-> Generated: 2026-06-11 · Deep Scan
+> Generated: 2026-06-11 · Updated: 2026-06-13
 
 WakeRef has **no custom HTTP/REST API layer of its own**. The browser talks straight to Supabase:
 
@@ -44,7 +44,7 @@ Switch-group aware: a figure counts as "having a video" if any figure in its swi
 
 ## 2. PostgREST table access (per role)
 
-Reads go through the `figures_full` view for display; raw tables are used for admin writes and narrow lookups. Effective access (RLS + grants):
+Reads go through the `figures_full` view for display; raw tables are used for admin writes and narrow lookups. The view now also exposes the built-on tree (`built_on_figure`, `built_on_children`, `base_figure`) and the trick-decomposition columns (`spin`, `inverts`, `rewind_degs`, `rotation_type`) consumed by `FigureDetail` (breakdown + tree) and `FigureForm` (rotation builder) — see `data-models.md`. Effective access (RLS + grants):
 
 | Table / View | `anon` | `authenticated` (admin) |
 |--------------|--------|--------------------------|

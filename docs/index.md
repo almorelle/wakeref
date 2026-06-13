@@ -1,6 +1,6 @@
 # WakeRef — Project Documentation Index
 
-> Primary entry point for AI-assisted development. Generated 2026-06-11 via Deep Scan (BMAD document-project).
+> Primary entry point for AI-assisted development. Generated 2026-06-11 · Updated 2026-06-13 (BMAD document-project).
 
 ## Project Overview
 

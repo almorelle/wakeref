@@ -1,6 +1,6 @@
 # Source Tree Analysis — WakeRef
 
-> Generated: 2026-06-11 · Deep Scan · Repository type: **monolith** (single React SPA + Supabase backend-as-a-service)
+> Generated: 2026-06-11 · Updated: 2026-06-13 · Repository type: **monolith** (single React SPA + Supabase backend-as-a-service)
 
 ```
 wakeref/
@@ -19,6 +19,7 @@ wakeref/
 │   │   ├── supabase.js         # ★ Singleton Supabase client (the only client instance)
 │   │   ├── searchFigures.js    # Query expansion → parallel RPC → id-intersection → natural sort
 │   │   ├── searchExpand.js     # Tokenizer + abbreviation map (tb3 → ts/bs/3, backroll → back roll)
+│   │   ├── trickDecomposition.js # Breaks a trick into rotation units (spin/rewinds/ole/handle-pass)
 │   │   └── url.js              # externalUrl() / creatorHandle() helpers
 │   │
 │   ├── contexts/               # React Context providers (app-wide state)
@@ -35,7 +36,7 @@ wakeref/
 │   │
 │   ├── data/                   # Static reference data mirrored from DB
 │   │   ├── categories.js       # 14 categories (+ icons/colors)
-│   │   └── contexts.js         # 4 trick contexts
+│   │   └── contexts.js         # 4 trick contexts (kicker, feature, flat, air_trick)
 │   │
 │   ├── components/             # Shared UI (each with co-located *.module.css)
 │   │   ├── Navbar.jsx          # Public nav (desktop/mobile/bottom bar)
@@ -47,7 +48,7 @@ wakeref/
 │   └── pages/                  # Route components
 │       ├── Home.jsx            # / (home_stats RPC, featured)
 │       ├── Figures.jsx         # /figures (search + filter)
-│       ├── FigureDetail.jsx    # /figures/:slug (videos, prereqs, takedown form)
+│       ├── FigureDetail.jsx    # /figures/:slug (videos, prereqs, takedown form, trick breakdown + built-on tree)
 │       ├── Quiz.jsx            # /quiz (lazy)
 │       ├── Compo.jsx           # /compo, /compo/:id (lazy) — largest file (~800 LOC)
 │       ├── Contact.jsx         # /contact (send-contact Edge Fn)

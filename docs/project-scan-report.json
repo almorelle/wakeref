@@ -2,10 +2,10 @@
   "workflow_version": "1.2.0",
   "timestamps": {
     "started": "2026-06-11T00:00:00Z",
-    "last_updated": "2026-06-11T00:00:00Z",
-    "completed": "2026-06-11T00:00:00Z"
+    "last_updated": "2026-06-13T00:00:00Z",
+    "completed": "2026-06-13T00:00:00Z"
   },
-  "mode": "initial_scan",
+  "mode": "full_rescan",
   "scan_level": "deep",
   "document_output_language": "English",
   "project_root": "/Users/wushu/ws/perso/wakeref",
@@ -27,7 +27,7 @@
   "findings": {
     "project_classification": "Monolith web SPA (React 19/Vite 8) over Supabase BaaS; no API layer (RLS + figures_full view + RPCs are the contract)",
     "technology_stack": "React 19, react-router-dom 7, Vite 8, vite-plugin-pwa, @supabase/supabase-js 2, CSS Modules; JS/JSX (no TypeScript); Vercel hosting",
-    "data_models": "7 tables (figures, categories, prerequisites, videos, video_submissions, takedown_requests, compositions) + figures_full view; sport_type/video_source enums; RLS on all tables; 6 RPCs; switch groups + bilingual fields",
+    "data_models": "7 tables (figures, categories, prerequisites, videos, video_submissions, takedown_requests, compositions) + figures_full view; sport_type/video_source enums; RLS on all tables; 6 RPCs; switch groups + bilingual fields; built-on tree (figures.built_on_id, acyclic trigger, view exposes parent/children/root) + trick-decomposition columns (spin/inverts/rewind_degs/rotation_type); contexts: jib renamed to feature",
     "api": "No REST API; PostgREST + 6 RPC functions + videos Storage bucket + 2 Deno Edge Functions (send-contact, notify-video-submission via Resend)",
     "components": "React function components + CSS Modules; 2 contexts (Language, Theme); hooks useAuth/useToast/useT; 8 public pages + 10 admin pages (lazy/code-split)"
   },
@@ -42,7 +42,8 @@
     { "step": "step_9", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "All supporting docs written" },
     { "step": "step_10", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Master index generated" },
     { "step": "step_11", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Validation complete; no incomplete markers" },
-    { "step": "step_12", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Workflow complete" }
+    { "step": "step_12", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Workflow complete" },
+    { "step": "refresh", "status": "completed", "timestamp": "2026-06-13T00:00:00Z", "summary": "Incremental rescan (HEAD 4fb6701): updated data-models, api-contracts, component-inventory, source-tree-analysis, architecture, project-overview, index for built-on tree + trick decomposition + jib->feature context" }
   ],
   "current_step": "completed",
   "outputs_generated": [
