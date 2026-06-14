@@ -97,3 +97,10 @@ CREATE TABLE public.compositions (
                                      created_at timestamp with time zone NOT NULL DEFAULT now(),
                                      CONSTRAINT compositions_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.figure_views (
+                                     figure_id integer NOT NULL,
+                                     day date NOT NULL DEFAULT CURRENT_DATE,
+                                     views integer NOT NULL DEFAULT 0,
+                                     CONSTRAINT figure_views_pkey PRIMARY KEY (figure_id, day),
+                                     CONSTRAINT figure_views_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id)
+);

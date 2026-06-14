@@ -227,6 +227,34 @@ set search_path = public as $$
      ));
 $$;
 
+-- Vues de figures : incrémente le bucket du jour. security definer pour écrire
+-- malgré l'absence de grant direct anon (cf. compositions_rate_limit).
+create or replace function public.track_figure_view(fig_id integer)
+returns void
+language sql security definer
+set search_path = public as $$
+  insert into figure_views (figure_id, day, views)
+  select fig_id, current_date, 1
+  where exists (select 1 from figures where id = fig_id)
+  on conflict (figure_id, day) do update
+    set views = figure_views.views + 1;
+$$;
+
+-- Top figures sur une fenêtre glissante (défaut 30j) : ids ordonnés desc.
+create or replace function public.most_viewed_figures(days integer default 30, lim integer default 5)
+returns table(figure_id integer)
+language sql stable security definer
+set search_path = public as $$
+  select fv.figure_id
+  from figure_views fv
+  join figures f on f.id = fv.figure_id
+  where f.published
+    and fv.day > current_date - days
+  group by fv.figure_id
+  order by sum(fv.views) desc
+  limit lim;
+$$;
+
 -- Arbre de dépendance built_on : interdit les cycles (A→B→…→A) et l'auto-référence.
 -- Remonte la chaîne des parents depuis le nouveau built_on_id ; si elle repasse
 -- par la figure courante, c'est un cycle.
@@ -274,6 +302,16 @@ create index if not exists figures_built_on_id_idx on figures (built_on_id);
 create index if not exists figures_category_id_idx on figures (category_id);
 -- Sous-requête prerequisites (jointure par requires_id ; la PK couvre figure_id en tête).
 create index if not exists prerequisites_requires_id_idx on prerequisites (requires_id);
+-- Compteur de vues par figure (buckets journaliers). Créée ici (avant l'index/RLS)
+-- pour que le chemin restore « from scratch » fonctionne sans la migration 0001.
+create table if not exists public.figure_views (
+  figure_id integer not null references figures(id) on delete cascade,
+  day       date    not null default current_date,
+  views     integer not null default 0,
+  primary key (figure_id, day)
+);
+-- Fenêtre glissante de most_viewed_figures (filtre sur day).
+create index if not exists figure_views_day_idx on figure_views (day);
 
 -- ────────────────────────────────────────────────────────────
 -- 4. TRIGGER
@@ -309,6 +347,7 @@ alter table videos            enable row level security;
 alter table takedown_requests enable row level security;
 alter table video_submissions enable row level security;
 alter table compositions      enable row level security;
+alter table figure_views      enable row level security;
 
 -- Supprime les policies existantes avant de les recréer
 drop policy if exists "Lecture publique categories"    on categories;
@@ -327,6 +366,7 @@ drop policy if exists "Mise à jour admin soumissions"  on video_submissions;
 drop policy if exists "Insertion publique compositions" on compositions;
 drop policy if exists "Lecture admin compositions"      on compositions;
 drop policy if exists "Suppression admin compositions"  on compositions;
+drop policy if exists "Lecture admin figure_views"      on figure_views;
 
 create policy "Lecture publique categories"    on categories    for select using (true);
 create policy "Lecture publique figures"       on figures       for select using (published = true);
@@ -346,6 +386,8 @@ create policy "Mise à jour admin soumissions"  on video_submissions for update 
 create policy "Insertion publique compositions" on compositions for insert with check (true);
 create policy "Lecture admin compositions"      on compositions for select using ((select auth.role()) = 'authenticated');
 create policy "Suppression admin compositions"  on compositions for delete using ((select auth.role()) = 'authenticated');
+-- figure_views : pas d'accès direct anon (écritures/top via RPC security definer) ; lecture admin seule.
+create policy "Lecture admin figure_views"      on figure_views  for select using ((select auth.role()) = 'authenticated');
 
 
 -- ────────────────────────────────────────────────────────────
@@ -397,3 +439,6 @@ grant select, update on public.video_submissions to authenticated;
 grant usage, select on sequence video_submissions_id_seq to anon, authenticated;
 grant insert on public.compositions to anon, authenticated;
 grant select, delete on public.compositions to authenticated;
+grant select on public.figure_views to authenticated;
+grant execute on function public.track_figure_view(integer)            to anon, authenticated;
+grant execute on function public.most_viewed_figures(integer, integer)  to anon, authenticated;

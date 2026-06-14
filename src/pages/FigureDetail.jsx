@@ -78,6 +78,22 @@ export default function FigureDetail() {
     return () => { active = false }
   }, [slug])
 
+  // Compteur de vues : une vue par figure / jour / navigateur (dédupe localStorage,
+  // pas d'auth). Écriture via la RPC security definer ; erreurs avalées (best-effort).
+  useEffect(() => {
+    if (!figure?.id) return
+    const key = `wakeref_viewed_${figure.id}_${new Date().toISOString().slice(0, 10)}`
+    // Flag posé AVANT l'appel : dédupe le double-rendu StrictMode / les remontages
+    // rapides. try/catch car localStorage throw en navigation privée.
+    try {
+      if (localStorage.getItem(key)) return
+      localStorage.setItem(key, '1')
+    } catch { /* storage indispo : on tracke au plus une fois par montage */ }
+    // NB : le builder supabase est « thenable » mais n'expose pas .catch() ;
+    // on passe le handler d'erreur en 2e argument de .then().
+    supabase.rpc('track_figure_view', { fig_id: figure.id }).then(() => {}, () => {})
+  }, [figure?.id])
+
   // Loading while the fetched figure doesn't match the current slug yet.
   const loading = loadedSlug !== slug
 

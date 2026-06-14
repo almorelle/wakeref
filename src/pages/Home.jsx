@@ -13,7 +13,7 @@ export default function Home() {
   const [query, setQuery] = useState('')
   const [searchResults, setSearchResults] = useState(null)
   const [searching, setSearching] = useState(false)
-  const [recent, setRecent] = useState([])
+  const [mostViewed, setMostViewed] = useState([])
   const [videos, setVideos] = useState([])
   const [stats, setStats] = useState(null)
   const navigate = useNavigate()
@@ -28,9 +28,16 @@ export default function Home() {
       setStats({ total, pct })
     })
 
-    supabase.from('figures_full').select('*').order('created_at', { ascending: false }).limit(5).then(({ data }) => {
-      if (data) setRecent(data)
-    })
+    // Figures les plus consultées (fenêtre glissante 30j) : la RPC renvoie des
+    // ids ordonnés, qu'on réhydrate via figures_full en conservant le classement.
+    supabase.rpc('most_viewed_figures').then(async ({ data: rows }) => {
+      const ids = rows?.map(r => r.figure_id) ?? []
+      if (!ids.length) return
+      const { data: figs } = await supabase.from('figures_full').select('*').in('id', ids)
+      if (!figs) return
+      const byId = new Map(figs.map(f => [f.id, f]))
+      setMostViewed(ids.map(id => byId.get(id)).filter(Boolean))
+    }).catch(() => {})
     supabase.from('videos')
       .select('figure_id')
       .eq('takedown_requested', false)
@@ -173,11 +180,11 @@ export default function Home() {
               </span>
             </a>
 
-            {recent.length > 0 && (
+            {mostViewed.length > 0 && (
               <>
-                <p className="section-title" style={{ marginTop: '2rem' }}>{tr.recentFigures}</p>
+                <p className="section-title" style={{ marginTop: '2rem' }}>{tr.mostViewedFigures}</p>
                 <div className={styles.list}>
-                  {recent.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
+                  {mostViewed.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
                 </div>
               </>
             )}
