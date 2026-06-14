@@ -1,11 +1,13 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3, 4]
+session_active: false
+workflow_completed: true
 inputDocuments: []
 session_topic: 'Challenge WakeRef direction & next features; rethink the home page'
 session_goals: 'Diverge on candidate features and home-page directions before prioritizing'
 selected_approach: 'ai-recommended'
-techniques_used: ['Question Storming', 'What If Scenarios', 'Role Playing']
-ideas_generated: 41
+techniques_used: ['Question Storming', 'What If Scenarios', 'Role Playing', 'Cross-Pollination']
+ideas_generated: 48
 context_file: ''
 ---
 
@@ -150,18 +152,98 @@ Goal of this pass: turn the militant / inclusivity dimension into concrete featu
 
 **[Compétition #39] WakeRef = digital successor to the handwritten sheet** — today, end of an age category → chef juge collects all paper sheets, fed archives them. WakeRef captures the *tricks* of each run (not the note); potentially the chef juge consolidates a category's runs digitally. Replaces a concrete paper ritual without touching the fed's note tool.
 
+### Phase 4 — Cross-Pollination (analogical transfer, filtered by values)
+
+Sources probed: climbing apps, Spotify. **A values filter emerged mid-pass and reframed the whole technique** (see #43): only steal patterns that *include*, never that *rank*.
+
+**[Progression #42] The "project / target trick" = nice-to-have, personality-dependent** — borrowed from climbing's "project" (a route above your level you work over sessions). Some riders love cataloging for personal kicks; others just want "how do I do this trick" — and that need is *already covered*: every trick carries description, tips, breakdown, and for >50% a how-to video (YouTube/Instagram). So a "path to a target trick" via the prereq/built-on graph is a bonus, not an unlock. Reframes WakeRef as already a good *curator/aggregator of how-to* content.
+
+**[Valeur #43] Anti-ego / anti-perf-culture as a design principle** — Alexis sees climbing as a sport that feeds ego and "be the best" under the guise of self-improvement, and wants to *actively avoid leaving openings for that*. So reject by principle any pattern that manufactures ranking, flex, or perf comparison (Strava leaderboards, Duolingo leagues/streaks, climbing grade pyramids). Turns Cross-Pollination into selective sorting: steal only what *includes*, never what *hierarchizes*. Operationalizes the session's "don't feed egos." Retroactively explains why the project/ticklist felt off (risk of becoming a flex).
+
+**[Curation #44] Curated parcours / collections (anti-ego by nature)** — borrowed from Spotify (its power is curated playlists, not your personal library). Editorial collections you build, the user fills nothing. A playlist *includes and orients*, it doesn't rank. Extends your curation strength (#31) and embodies your values without any perf device. WakeRef's "progression" runs through *inclusive editorial*, not competitive personal tracking. Seeds floated: "Your first tricks", "Sit-wake essentials" (#33), "Judge-cert prep" (#40), "Jib explained" (pedagogical angle on the #8 hard problem), "Best how-to videos".
+
+**[Valeur #45] Non-labeled inclusive curation — the theme carries quality, not identity** — refinement of a floated "Elles envoient" (women-shred) collection: Alexis rejects the *labeled* positive-discrimination framing. Prefer a non-gendered *"Beautiful, clean tricks"* heavily filled with women *without saying so*. Labeling by identity ("here's what women do") invites the opt-out ("and for big men's tricks, go there instead"). Finest version of "felt, not labeled" (#24) — inclusion via *filling*, never via *labeling*; applies to gender and disciplines alike.
+
+**[Curation #46] Segment beginner parcours by profile, not just level** — "kid/small beginner" ≠ "30yo adult discovering wake": progression differs, and the *health/prevention* angle (warm-up, body care, avoiding injury) weighs far more for the adult. One generic "beginner" parcours fits neither. Introduces two new axes: profile/age as a curation dimension, and health/prevention as a theme (never appeared before).
+
+**[Curation #47] Warm-up & prevention via aggregation of existing content** — not immediate, but a list aggregating quick warm-up videos + prevention/strengthening muscu orientations (e.g. winter). Lots of content already exists → just curate/aggregate, don't produce. Confirms the growth model: **WakeRef grows by curation, not production** (common thread of #31, #44, #46, #47) — light, faithful to survive-abandonment (curate once ≠ maintain).
+
+**[Scope #48] Self-service & best-effort — not a learning platform** — (emerged from rejecting a Duolingo spaced-repetition-of-quiz-mistakes idea as over-engineered.) WakeRef isn't trying to be the best platform ever or a pedagogy expert. *Formal training is the fed's job* (they have budget, however misused). WakeRef = self-service, best-effort. Reject over-engineered learning features. Bounds the judge-training angle (#40): WakeRef provides the tool & material self-service, **not a pedagogical engine**. Anti-scope-creep.
+
 ---
 
-## ⏸ Session paused — RESUME HERE
-
-**Where we stopped:** Phase 3 (Role Playing) done and rich — all 3 personas explored. ~41 ideas captured above.
+## Idea Organization and Prioritization
 
 **Live thesis:** WakeRef = an **independent, values-driven trick reference + judge's copilot**, self-sufficient and account-free, designed to survive abandonment. Born from a federal judge's real need (recognize tricks, score runs). Already has traction (~300 videos, ~60% coverage, gender-balanced; quiz works; compo tested at the 2024 French championships).
 
-**Pending decision (next step):**
-- **[organize]** — go to idea organization & prioritization (themes / quick wins / horizon) and produce a plan.
-- **[cross-pollination]** — last planned technique, untapped (Strava / Duolingo / skate / climbing) if more divergence wanted.
+### Invariants (the filter every candidate feature must pass)
+
+1. **No-auth by default** (localStorage, Compo pattern) — auth only returns for a *role* (admin), never for the public.
+2. **Survive abandonment** — zero network effect, zero fed dependency; curate ≠ maintain.
+3. **Anti-ego / anti-perf** (#43) — include, never rank.
+4. **Self-service, best-effort** (#48) — not a learning platform; formal training is the fed's job.
+5. **Inclusion by *filling*, not labeling** (#45) — felt, never labeled.
+6. **Grow by curation, not production** (#31, #44, #47).
+
+### Thematic organization
+
+- **Theme A — The judge's copilot** *(killer angle)*: quiz already = recognition training (#6); voice live capture (#35); two-phase judging (#36); successor to the paper sheet (#39); public no-auth training (#40). Bounds: no note management (#37), no official fed adoption (#41), no pedagogical engine (#48).
+- **Theme B — Structural inclusion (disciplines & genders)**: handiwake = 3rd discipline (#26); guaranteed per-session quiz parity, extensible to discipline (#25, #27); no UX silos (#28); inclusion = sporting legitimacy (#33); non-labeled representation by filling (#24, #45).
+- **Theme C — Editorial curation (parcours)**: anti-ego curated collections (#44); segmented by profile/age (#46); warm-up/prevention by aggregation (#47); refocus on description+videos vs weak tips (#31).
+- **Theme D — Data model "one trick, facets"**: unified fiche + localized facets (tips sit/stand tabs + 3-discipline video filter) (#29→#34); default facet = last opened, localStorage (#30); discipline axis lives mainly in quiz & compo (#32).
+- **Theme E — Account-free profile & compo** *(partly deferred)*: passively-accreting profile, view-link + edit-token (#22); discipline-aware compo (#32, #33); "project/target trick" judged nice-to-have (#42); affinity-based coach showcase (#20).
+
+### Prioritization (validated by Alexis)
+
+| Horizon | Ideas | Rationale |
+|---|---|---|
+| ⚡ Quick wins | Per-session quiz parity (#25/#27) · curated parcours (#44/#45/#46) · default video ordering (#24) | Low cost, high values alignment, no schema break |
+| 🔨 Chantiers | Handiwake 3rd discipline (#26) + localized facets (#34/#30/#32) · discipline-aware compo (#32/#33) | Touch the schema, but unlock both inclusion and judge copilot |
+| 🌅 Horizon | Full judge mode: voice capture (#35), two-phase judging (#36), digital sheet (#39) | High potential but ambitious (voice, field UX) |
+| 🚫 Out of scope / rejected | Perf gamification (#43), pedagogical engine (#48), note management (#37), fed adoption (#41), personal project (#42) | Deliberate decisions |
+| 📦 Delegated | Home redesign → `bmad-ux` (#23) | Other skill |
+
+### Action plans (top priorities)
+
+**⚡ QW1 — Guaranteed per-session quiz parity (#25/#27)**
+- Data prereq: add a *structured gender flag* on `videos` (today only the person's name exists) — best-effort backfill (~300 videos, by hand).
+- Code: replace pure random in quiz draw with *controlled sampling* balancing gender across the N questions.
+- Extension: same engine, discipline axis, once handiwake exists.
+
+**⚡ QW2 — Curated parcours (#44/#45/#46)**
+- Schema: `collections` (id, title, description, position) + `collection_figures` (collection_id, figure_id, position) — light, Compo-spirited.
+- UI: a list page + a collection page reusing existing trick cards. Admin: collections CRUD.
+- Starter content: "Your first tricks (kid/teen)", "Discovering wake as an adult", "Sit-wake essentials", "Beautiful clean tricks" (heavily filled with women, *non-labeled* #45).
+
+**⚡ QW3 — Default video ordering (#24)**
+- If a sort field already exists on `videos` per figure → pure *content* work: move women riders up by hand. Otherwise add `sort_order` on `videos`, then curate. Fastest of the three, potentially zero code.
+
+**🔨 Chantier 1 — Handiwake = 3rd discipline (#26 + #34/#30/#32)**
+- Migration: `sport` enum → `wakeboard | wakeskate | handiwake`.
+- Propagation: catalog filters, navbar, quiz, compo take the 3rd value.
+- Localized facets: tips sit/stand tabs, 3-discipline video filter, default facet in localStorage.
+- Resolves the three discipline tensions (#28, #33, #34) in one move.
+
+**Suggested start order:** QW3 → QW2 (little/no schema), then QW1 and the handiwake chantier.
 
 **Deferred to other skills/sessions:** home redesign → `bmad-ux`; cross-device profile auth arbitrage (magic-link/passkey) → later.
 
-**Untapped veins if more divergence wanted:** culture/community, the jib cataloging hard-problem, Cross-Pollination (Strava/Duolingo/skate/climbing apps).
+## Session Summary and Insights
+
+**Key achievements:**
+- 48 collaboratively developed ideas across 4 techniques (Question Storming, What If, Role Playing, Cross-Pollination).
+- A coherent product thesis crystallized: independent, values-driven reference + judge's copilot, no-auth, built to survive abandonment.
+- Six explicit *invariants* now act as a reusable design filter.
+- A concrete, prioritized plan with action steps for 3 quick wins + 1 chantier.
+
+**Creative breakthroughs:**
+- Representation reframed from personalization → *universal editorial posture, felt not labeled* (#24, #45) — and the lever is curation, not auth.
+- The no-auth tension repeatedly threatened to force accounts (judge mode), and was repeatedly resolved by role-scoping or by dropping the feature — the philosophy held.
+- Cross-Pollination's biggest yield was not a feature but a *values filter* (#43) + a scope boundary (#48): clarifying rejections.
+- Handiwake-as-3rd-discipline (#26) + localized facets (#34) resolve three tensions at once.
+
+**Session reflection:** Strong convergence late — Alexis shifted from generating directions to *refining principles and bounding scope*, the natural signal that divergence was complete. The richest material came from challenging the facilitator's proposals (personalized defaults rejected, labeled collections rejected, over-engineered learning rejected).
+
+---
+
+✅ **Session complete.**
