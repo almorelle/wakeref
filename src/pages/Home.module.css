@@ -69,7 +69,7 @@
   animation: heroRise .6s ease both;
 }
 .heroText { margin-bottom: 1.25rem; }
-.searchWrap { position: relative; max-width: 460px; }
+.searchWrap { position: relative; }
 @keyframes heroRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
 .eyebrow {
@@ -119,14 +119,14 @@
   background: var(--c-surface2);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  padding: 10px 14px;
+  padding: 14px 18px;
   transition: border-color var(--t-fast);
 }
 .searchWrap:focus-within { border-color: var(--c-accent); }
-.searchWrap i { color: var(--c-muted); font-size: 18px; flex-shrink: 0; }
+.searchWrap i { color: var(--c-muted); font-size: 20px; flex-shrink: 0; }
 .searchInput {
   flex: 1;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--c-text);
   background: none;
   border: none;
@@ -145,45 +145,76 @@
 }
 .empty { font-size: 14px; color: var(--c-muted); padding: 1rem 0; }
 
-.catGrid {
+/* Tuiles features : le launchpad (remplace l'ancienne grille catégories) */
+.tiles {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 0.75rem;
+  gap: 14px;
+  margin-top: 1.75rem;
 }
-.catCard {
+.tile {
+  position: relative;
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  padding: 18px 14px;
+  padding: 22px 20px 20px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
+  gap: 14px;
   cursor: pointer;
-  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
   text-align: left;
-  animation: catRise .5s ease both;
-  animation-delay: calc(min(var(--i, 0), 12) * 45ms + .12s);
+  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
+  animation: tileRise .5s ease both;
+  animation-delay: calc(var(--i, 0) * 70ms + .15s);
 }
-.catCard:hover {
-  border-color: var(--cat-color, var(--c-accent));
+.tile:hover {
+  border-color: var(--tile, var(--c-accent));
   background: var(--c-surface2);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
-@keyframes catRise {
+@keyframes tileRise {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.catCard i {
-  font-size: 22px;
-  color: var(--cat-color, var(--c-accent));
+.tileIcon {
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tile, var(--c-accent));
+  background: color-mix(in srgb, var(--tile, var(--c-accent)) 14%, transparent);
+  transition: background var(--t-fast);
 }
-.catName {
+.tileIcon i { font-size: 24px; }
+.tile:hover .tileIcon {
+  background: color-mix(in srgb, var(--tile, var(--c-accent)) 22%, transparent);
+}
+.tileName {
   font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.01em;
   color: var(--c-text);
+}
+.tileSub {
+  font-size: 13.5px;
+  color: var(--c-muted);
+  line-height: 1.5;
+}
+.tileGo {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  color: var(--c-faint);
+  display: inline-flex;
+  transition: color var(--t-fast), transform var(--t-fast);
+}
+.tile:hover .tileGo {
+  color: var(--tile, var(--c-accent));
+  transform: translateX(2px);
 }
 
 .list {
@@ -316,6 +347,6 @@
   .wctBtn { width: 100%; justify-content: center; }
 }
 
-@media (max-width: 500px) {
-  .catGrid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 760px) {
+  .tiles { grid-template-columns: 1fr; }
 }

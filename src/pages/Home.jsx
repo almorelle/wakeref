@@ -4,8 +4,6 @@ import { supabase } from '../lib/supabase'
 import { searchFigures } from '../lib/searchFigures'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
-import { CATEGORIES } from '../data/categories'
-import { CONTEXTS } from '../data/contexts'
 import { externalUrl } from '../lib/url'
 import styles from './Home.module.css'
 import SEO from '../components/SEO'
@@ -117,6 +115,26 @@ export default function Home() {
 
         {!query.trim() && (
           <>
+            <div className={styles.tiles}>
+              {[
+                { to: '/figures', icon: 'list',       color: 'var(--c-accent)', title: tr.tileCatalogTitle, sub: tr.tileCatalogSub },
+                { to: '/quiz',    icon: 'help',       color: 'var(--c-wake)',   title: tr.tileQuizTitle,    sub: tr.tileQuizSub },
+                { to: '/compo',   icon: 'calculator', color: 'var(--c-ws)',     title: tr.tileCompoTitle,   sub: tr.tileCompoSub },
+              ].map((f, i) => (
+                <button
+                  key={f.to}
+                  className={styles.tile}
+                  onClick={() => navigate(f.to)}
+                  style={{ '--tile': f.color, '--i': i }}
+                >
+                  <span className={styles.tileGo}><Icon name="arrow-right" /></span>
+                  <span className={styles.tileIcon}><Icon name={f.icon} /></span>
+                  <span className={styles.tileName}>{f.title}</span>
+                  <span className={styles.tileSub}>{f.sub}</span>
+                </button>
+              ))}
+            </div>
+
             <div className={styles.cta}>
               {stats && (
                 <div className={styles.ctaStats}>
@@ -137,32 +155,6 @@ export default function Home() {
                   <Icon name="upload" /> {tr.ctaButton}
                 </button>
               </div>
-            </div>
-
-            <p className="section-title" style={{ marginTop: '2rem' }}>{tr.categories}</p>
-            <div className={styles.catGrid}>
-              {CATEGORIES.map((c, i) => (
-                <button
-                  key={c.id}
-                  className={styles.catCard}
-                  onClick={() => navigate(`/figures?cat=${c.slug}`)}
-                  style={{ '--cat-color': c.color, '--i': i }}
-                >
-                  <Icon name={c.icon} style={{ color: c.color }} />
-                  <span className={styles.catName}>{tr.catNames[c.slug] || c.name}</span>
-                </button>
-              ))}
-              {CONTEXTS.map((ctx, i) => (
-                <button
-                  key={ctx.slug}
-                  className={styles.catCard}
-                  onClick={() => navigate(`/figures?ctx=${ctx.slug}`)}
-                  style={{ '--cat-color': ctx.color, '--i': CATEGORIES.length + i }}
-                >
-                  <Icon name={ctx.icon} style={{ color: ctx.color }} />
-                  <span className={styles.catName}>{tr.ctxNames?.[ctx.slug] || ctx.label}</span>
-                </button>
-              ))}
             </div>
 
             <a
