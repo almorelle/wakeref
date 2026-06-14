@@ -4,8 +4,8 @@ inputDocuments: []
 session_topic: 'Challenge WakeRef direction & next features; rethink the home page'
 session_goals: 'Diverge on candidate features and home-page directions before prioritizing'
 selected_approach: 'ai-recommended'
-techniques_used: ['Question Storming', 'What If Scenarios', 'Role Playing', 'Cross-Pollination']
-ideas_generated: []
+techniques_used: ['Question Storming', 'What If Scenarios', 'Role Playing']
+ideas_generated: 41
 context_file: ''
 ---
 
@@ -116,16 +116,52 @@ Question clusters generated (no answers — problem-space mapping):
 
 ---
 
+### Phase 3 — Role Playing (personas → concrete features)
+
+Goal of this pass: turn the militant / inclusivity dimension into concrete features. Three personas: young female rider (Lina), handi-rider (Karim), judge (Sophie).
+
+**[Inclusivité #24] Representation is an editorial posture, not personalization** — don't show "women to women." Show *everyone*, men first, that the sport is for women as much as for them. Lever = default display order (manually curated; 200 tricks, names known) + organic pool parity that "shows" on fiches & quiz. No auth, no gender guessing. Representation is *felt, never labeled* (no "female rider" badge); it targets the male gaze, not the comfort of women riders. _Alexis's correction — stronger than the personalized-default idea, which is rejected._
+
+**[Inclusivité #25] Guaranteed parity per quiz session (not just on average)** — controlled sampling forces gender balance within the N questions of a game, instead of relying on random draw over the global pool. Representation becomes a guaranteed *experience*, not a statistic.
+
+**[Modèle #26] Handiwake = full third discipline in the `sport` enum** — different gear (like wakeskate), so `sport` → `wakeboard | wakeskate | handiwake`. Not a checkbox on standing tricks. Genuinely shared tricks stay shared via switch-groups / built-on; sit-wake-specific tricks exist in their own right. "First-class, not duplication" becomes a schema decision.
+
+**[Inclusivité #27] Parity-per-session generalizes to discipline** — quiz can be filtered by discipline and/or guarantee wakeskate + sit-wake representation (same controlled-sampling engine as gender parity #25). One sampling engine, two inclusion axes (gender × discipline), composable.
+
+**[UX #28] No discipline silos: everyone reaches everything easily** — sit-wakers also enjoy watching standing wake (and vice versa). Discipline is a filter/focus, never a wall. Inclusion juxtaposes without hierarchy.
+
+**[Architecture #29→#34] The faceted fiche, localized version** — *one* trick entity (slug, name, place in the built-on tree = the common language intact). Initial idea (#29): facets per discipline for `tips`/`description`/`difficulty`/`videos`. _Refined by Alexis (#34):_ keep the fiche unified (identity, breakdown, progression shared); facets only where they pay off — **tips section with "tips sit-wake / tips standing" tabs** + **videos section filterable by the 3 disciplines**. No heavy facet table on the whole fiche / schema. If tips differ *too* much → make them distinct tricks instead.
+
+**[UX #30] Default facet = last facet opened (localStorage)** — no auth; remember the last discipline viewed (like `wakeref_lang`) and open it by default on other tricks.
+
+**[Contenu #31] Tips are not the core — description (breakdown + progression) + videos are** — feedback shows people are happy with description + videos. `tips` are Claude-generated, often imprecise (worse for sit-wake). Don't over-invest per-discipline tips; possibly revisit their status. Real need going forward = *more content* (videos), curated to keep parity & cover under-filmed disciplines.
+
+**[Direction #32] The discipline axis lives mainly in the QUIZ and COMPO, not the fiche** — fiche stays largely shared; real per-discipline differentiation is in quiz (by category *or* mixed global) and compo (run typed wake / wakeskate / sit-wake). Moves "discipline" complexity off the costly object (fiche + schema) onto the two features where it adds value.
+
+**[Compétition #33] Inclusion as a lever of *sporting legitimacy*, not cosmetic** — a discipline-aware compo makes sit-wake (and wakeskate) judgeable as seriously as standing wake. WakeRef could be the first tool to do so. Inclusion goes from gesture (video parity) to competitive recognition — links the militant core to the judge's-copilot killer angle.
+
+**[Compétition #35] Live capture by voice dictation, easy correction after** — the real pain of the paper sheet is *writing while keeping your head up*. Dictate tricks aloud during the run (head up, focused), correct mis-captures after. Need: the *exact* tricks, not just a marker. Vocabulary is *closed* (~200 known tricks) → grammar-constrained recognition is far more feasible than open dictation.
+
+**[Compétition #36] Two-phase judging, made explicit** — (1) live capture, head up, during the run (~1 min, 8–12 tricks); (2) post-run window of a few minutes to evaluate, discuss between judges, position the note vs the pool's other notes. The judge starts the next run, so phase 2 has no time pressure. Hard constraint: **no video replay** of a trick allowed.
+
+**[Recadrage #37] Note-spacing is a human act — NOT WakeRef's job** — pool = max 6 riders; the 1st's note is the reference, set by the chef juge in agreement; judges deliberately leave margin (don't pack the top two; keep room for an in-between rider or an improved 2nd run) and adapt gaps from known rider level. Crucially: notes are **not comparable** — 65 in one pool ≠ 65 in another / another age category; each pool/round resets. ⇒ No suggested note, no cross-pool note comparator. (My "objective comparator" provocation largely falls.)
+
+**[Direction #38→#41] Public Compo vs Judge usage — auth need shrank** — initial idea (#38): judge *mode* behind an account (like admin) to save judged runs (not notes; the fed has its own tool, with 3–5 judges + 1 scorer). _Walked back by Alexis (#40, #41):_ judge **training stays public & no-auth like the rest**; official fed adoption as input tool is unrealistic (politically very closed, little leverage); in-competition use = unofficial *personal* convenience — a judge can capture on WakeRef then recopy to paper if comfier. Zero fed dependency, zero network effect — honors the survive-abandonment law.
+
+**[Compétition #39] WakeRef = digital successor to the handwritten sheet** — today, end of an age category → chef juge collects all paper sheets, fed archives them. WakeRef captures the *tricks* of each run (not the note); potentially the chef juge consolidates a category's runs digitally. Replaces a concrete paper ritual without touching the fed's note tool.
+
+---
+
 ## ⏸ Session paused — RESUME HERE
 
-**Where we stopped:** Phase 2 (What If) done and rich. ~23 ideas captured above.
+**Where we stopped:** Phase 3 (Role Playing) done and rich — all 3 personas explored. ~41 ideas captured above.
 
 **Live thesis:** WakeRef = an **independent, values-driven trick reference + judge's copilot**, self-sufficient and account-free, designed to survive abandonment. Born from a federal judge's real need (recognize tricks, score runs). Already has traction (~300 videos, ~60% coverage, gender-balanced; quiz works; compo tested at the 2024 French championships).
 
 **Pending decision (next step):**
-- **[personas]** — short Role Playing pass (young female rider, handi-rider, judge) to turn the militant/inclusivity dimension into concrete features (NOT yet done).
 - **[organize]** — go to idea organization & prioritization (themes / quick wins / horizon) and produce a plan.
+- **[cross-pollination]** — last planned technique, untapped (Strava / Duolingo / skate / climbing) if more divergence wanted.
 
 **Deferred to other skills/sessions:** home redesign → `bmad-ux`; cross-device profile auth arbitrage (magic-link/passkey) → later.
 
-**Untapped veins if more divergence wanted:** inclusivity-as-features (gender parity, handiwake first-class), culture/community, the jib cataloging hard-problem, Cross-Pollination (Strava/Duolingo/skate/climbing apps).
+**Untapped veins if more divergence wanted:** culture/community, the jib cataloging hard-problem, Cross-Pollination (Strava/Duolingo/skate/climbing apps).
