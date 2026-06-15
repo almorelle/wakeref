@@ -2,14 +2,15 @@ import { lazy, Suspense } from 'react'
 import { Routes, Route, Outlet } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Home from './pages/Home'
-import Figures from './pages/Figures'
-import FigureDetail from './pages/FigureDetail'
-import Contact from './pages/Contact'
-import NotFound from './pages/NotFound'
-import SubmitVideo from './pages/SubmitVideo'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
-// Pages publiques lourdes : chargées à la demande
+// Seule la home est embarquée dans le chunk initial (premier écran).
+// Toutes les autres routes publiques sont chargées à la demande.
+const Figures = lazy(() => import('./pages/Figures'))
+const FigureDetail = lazy(() => import('./pages/FigureDetail'))
+const Contact = lazy(() => import('./pages/Contact'))
+const NotFound = lazy(() => import('./pages/NotFound'))
+const SubmitVideo = lazy(() => import('./pages/SubmitVideo'))
 const Quiz = lazy(() => import('./pages/Quiz'))
 const Compo = lazy(() => import('./pages/Compo'))
 

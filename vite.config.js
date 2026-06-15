@@ -3,6 +3,20 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      output: {
+        // Vendors isolés : mis en cache au-delà des déploiements et téléchargés
+        // en parallèle du code applicatif au lieu d'un seul gros chunk bloquant.
+        advancedChunks: {
+          groups: [
+            { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },
+            { name: 'react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

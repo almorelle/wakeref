@@ -28,30 +28,16 @@ export default function Home() {
       setStats({ total, pct })
     })
 
-    // Figures les plus consultées (fenêtre glissante 30j) : la RPC renvoie des
-    // ids ordonnés, qu'on réhydrate via figures_full en conservant le classement.
-    supabase.rpc('most_viewed_figures').then(async ({ data: rows }) => {
-      const ids = rows?.map(r => r.figure_id) ?? []
-      if (!ids.length) return
-      const { data: figs } = await supabase.from('figures_full').select('*').in('id', ids)
-      if (!figs) return
-      const byId = new Map(figs.map(f => [f.id, f]))
-      setMostViewed(ids.map(id => byId.get(id)).filter(Boolean))
+    // Figures les plus consultées (fenêtre glissante 30j) : la RPC renvoie
+    // directement les colonnes de carte, déjà ordonnées — un seul aller-retour.
+    supabase.rpc('most_viewed_figures').then(({ data }) => {
+      if (data?.length) setMostViewed(data)
     }).catch(() => {})
-    supabase.from('videos')
-      .select('figure_id')
-      .eq('takedown_requested', false)
-      .order('uploaded_at', { ascending: false })
-      .limit(5)
-      .then(async ({ data: vids }) => {
-        if (!vids?.length) return
-        const ids = [...new Set(vids.map(v => v.figure_id))]
-        const { data: figs } = await supabase
-          .from('figures_full')
-          .select('*')
-          .in('id', ids)
-        if (figs) setVideos(figs)
-      })
+
+    // Figures aux vidéos les plus récentes : idem, un seul aller-retour.
+    supabase.rpc('recent_video_figures').then(({ data }) => {
+      if (data?.length) setVideos(data)
+    }).catch(() => {})
   }, [])
 
   useEffect(() => {

@@ -121,6 +121,18 @@ left join categories c on c.id = f.category_id;
 
 alter view figures_full set (security_invoker = true);
 
+-- Vue légère pour les listes de cartes (home : most-viewed / vidéos récentes).
+-- Strictement les colonnes affichées par FigureCard — aucun des agrégats JSON
+-- coûteux de figures_full (videos, switch_versions, base_figure récursif…).
+drop view if exists figures_card cascade;
+create view figures_card as
+select f.id, f.slug, f.name, f.sport, f.difficulty, f.contexts,
+       c.name as category_name, c.slug as category_slug
+from figures f
+left join categories c on c.id = f.category_id;
+
+alter view figures_card set (security_invoker = true);
+
 create or replace function public.search_figures(query text)
 returns setof figures_full language sql stable
 set search_path = public as $$
@@ -240,19 +252,46 @@ set search_path = public as $$
     set views = figure_views.views + 1;
 $$;
 
--- Top figures sur une fenêtre glissante (défaut 30j) : ids ordonnés desc.
-create or replace function public.most_viewed_figures(days integer default 30, lim integer default 5)
-returns table(figure_id integer)
+-- Top figures sur une fenêtre glissante (défaut 30j), prêtes à afficher.
+-- Renvoie directement les colonnes de carte, ordonnées par vues desc : la home
+-- n'a plus besoin d'un second aller-retour pour réhydrater les ids.
+drop function if exists public.most_viewed_figures(integer, integer);
+create function public.most_viewed_figures(days integer default 30, lim integer default 5)
+returns setof figures_card
 language sql stable security definer
 set search_path = public as $$
-  select fv.figure_id
-  from figure_views fv
-  join figures f on f.id = fv.figure_id
-  where f.published
-    and fv.day > current_date - days
-  group by fv.figure_id
-  order by sum(fv.views) desc
-  limit lim;
+  with top as (
+    select fv.figure_id, sum(fv.views) as v
+    from figure_views fv
+    join figures f on f.id = fv.figure_id
+    where f.published
+      and fv.day > current_date - days
+    group by fv.figure_id
+    order by v desc
+    limit lim
+  )
+  select c.* from top
+  join figures_card c on c.id = top.figure_id
+  order by top.v desc;
+$$;
+
+-- Figures dont la vidéo (hors retrait) est la plus récente, prêtes à afficher.
+-- Remplace l'ancien waterfall « videos → figures_full.in(ids) » de la home.
+create or replace function public.recent_video_figures(lim integer default 5)
+returns setof figures_card
+language sql stable
+set search_path = public as $$
+  with recent as (
+    select v.figure_id, max(v.uploaded_at) as last_up
+    from videos v
+    where v.takedown_requested = false
+    group by v.figure_id
+    order by last_up desc
+    limit lim
+  )
+  select c.* from recent
+  join figures_card c on c.id = recent.figure_id
+  order by recent.last_up desc;
 $$;
 
 -- Arbre de dépendance built_on : interdit les cycles (A→B→…→A) et l'auto-référence.
@@ -420,7 +459,7 @@ create policy "Delete admin seulement"
 -- 8. GRANTS
 -- ────────────────────────────────────────────────────────────
 grant usage on schema public to anon, authenticated;
-grant select on categories, figures, prerequisites, videos, figures_full to anon, authenticated;
+grant select on categories, figures, prerequisites, videos, figures_full, figures_card to anon, authenticated;
 grant select on takedown_requests to authenticated;
 grant insert, update, delete on public.videos          to authenticated;
 grant insert, update, delete on public.categories      to authenticated;
@@ -442,3 +481,4 @@ grant select, delete on public.compositions to authenticated;
 grant select on public.figure_views to authenticated;
 grant execute on function public.track_figure_view(integer)            to anon, authenticated;
 grant execute on function public.most_viewed_figures(integer, integer)  to anon, authenticated;
+grant execute on function public.recent_video_figures(integer)          to anon, authenticated;
