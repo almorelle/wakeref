@@ -174,6 +174,13 @@ export const t = {
       sw_bs_rotation:  'Switch Backside',
     },
 
+    // Sports
+    sportNames: {
+      wakeboard:    'Wakeboard',
+      wakeskate:    'Wakeskate',
+      seated:       'Wakeboard assis',
+    },
+
     // Catégories
     catNames: {
       grabs:        'Grabs',
@@ -409,6 +416,13 @@ export const t = {
       sw_fs_rotation:  'Switch Frontside',
       bs_rotation:     'Backside',
       sw_bs_rotation:  'Switch Backside',
+    },
+
+    // Sports
+    sportNames: {
+      wakeboard:    'Wakeboard',
+      wakeskate:    'Wakeskate',
+      seated:       'Seated wakeboard',
     },
 
     // Catégories

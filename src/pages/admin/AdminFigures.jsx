@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import styles from './AdminFigures.module.css'
-import { ContextBadge } from '../../components/Badges'
+import { ContextBadge, SportBadge } from '../../components/Badges'
 import Icon from '../../components/Icon'
 
 export default function AdminFigures() {
@@ -66,7 +66,7 @@ export default function AdminFigures() {
               <div className={styles.rowName}>{f.name}</div>
               <div className={styles.rowMeta}>
                 <span className={`badge badge-${f.category_slug}`}>{f.category_name}</span>
-                <span className={`badge badge-${f.sport === 'wakeskate' ? 'ws' : 'wake'}`}>{f.sport}</span>
+                <SportBadge sport={f.sport} />
                 {f.contexts?.map(ctx => <ContextBadge key={ctx} context={ctx} />)}
                 <span style={{ fontSize: 12, color: 'var(--c-muted)' }}>Difficulté {f.difficulty}/5</span>
                 {!f.published && <span className="badge" style={{ background: '#ef444420', color: 'var(--c-danger)' }}>Non publié</span>}

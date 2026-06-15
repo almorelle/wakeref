@@ -1,9 +1,12 @@
 import { useT } from '../i18n/useT'
 
+const SPORT_BADGE_CLASS = { wakeskate: 'ws', seated: 'seated' }
+
 export function SportBadge({ sport }) {
+  const tr = useT()
   return (
-    <span className={`badge badge-${sport === 'wakeskate' ? 'ws' : 'wake'}`}>
-      {sport === 'wakeskate' ? 'Wakeskate' : 'Wakeboard'}
+    <span className={`badge badge-${SPORT_BADGE_CLASS[sport] || 'wake'}`}>
+      {tr.sportNames?.[sport] || tr.sportNames?.wakeboard || 'Wakeboard'}
     </span>
   )
 }

@@ -313,6 +313,7 @@ export default function FigureForm() {
             <select className="input" value={form.sport} onChange={e => set('sport', e.target.value)}>
               <option value="wakeboard">Wakeboard</option>
               <option value="wakeskate">Wakeskate</option>
+              <option value="seated">Wakeboard assis</option>
             </select>
           </div>
           <div className="field">

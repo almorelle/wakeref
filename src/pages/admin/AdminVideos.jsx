@@ -6,6 +6,9 @@ import ToastContainer from '../../components/Toast'
 import styles from './AdminVideos.module.css'
 import Icon from '../../components/Icon'
 
+const SPORT_LABELS = { wakeboard: 'Wakeboard', wakeskate: 'Wakeskate', seated: 'Wakeboard assis' }
+const GENDER_LABELS = { woman: 'Femme', man: 'Homme', other: 'Autre' }
+
 export default function AdminVideos() {
   const [searchParams] = useSearchParams()
   const { toasts, toast } = useToast()
@@ -24,6 +27,8 @@ export default function AdminVideos() {
     creator_name: '',
     creator_url: '',
     caption: '',
+    sport: '',             // '' = hérite du sport de la figure
+    performer_gender: '',   // curation interne (jamais public)
   })
   const [file, setFile] = useState(null)
 
@@ -65,11 +70,13 @@ export default function AdminVideos() {
       ...form,
       figure_id: parseInt(form.figure_id),
       file_path,
+      sport: form.sport || null,                         // '' → hérite de la figure
+      performer_gender: form.performer_gender || null,   // '' → non renseigné
     })
     if (error) { toast(error.message, 'error'); setUploading(false); return }
 
     toast('Vidéo ajoutée !', 'success')
-    setForm(f => ({ ...f, title: '', source_url: '', creator_name: '', creator_url: '', caption: '' }))
+    setForm(f => ({ ...f, title: '', source_url: '', creator_name: '', creator_url: '', caption: '', sport: '', performer_gender: '' }))
     setFile(null)
     setUploading(false)
     load()
@@ -156,6 +163,27 @@ export default function AdminVideos() {
             <input className="input" value={form.caption} onChange={e => set('caption', e.target.value)} placeholder="Contexte, événement…" />
           </div>
 
+          <div className={styles.row2}>
+            <div className="field">
+              <label>Sport (si différent de la figure)</label>
+              <select className="input" value={form.sport} onChange={e => set('sport', e.target.value)}>
+                <option value="">— Hérite de la figure —</option>
+                <option value="wakeboard">Wakeboard</option>
+                <option value="wakeskate">Wakeskate</option>
+                <option value="seated">Wakeboard assis</option>
+              </select>
+            </div>
+            <div className="field">
+              <label>Genre de la personne (curation interne)</label>
+              <select className="input" value={form.performer_gender} onChange={e => set('performer_gender', e.target.value)}>
+                <option value="">— Non renseigné —</option>
+                <option value="woman">Femme</option>
+                <option value="man">Homme</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <button type="submit" className="btn btn-primary" disabled={uploading}>
               {uploading ? 'Upload en cours…' : <><Icon name="upload" /> Ajouter la vidéo</>}
@@ -181,6 +209,8 @@ export default function AdminVideos() {
               <span className={styles.videoTitle}>{v.title || 'Sans titre'}</span>
               {v.creator_name && <span className={styles.videoCreator}>{v.creator_name}</span>}
               {v.creator_url && <span className={styles.videoCreator}>{v.creator_url}</span>}
+              {v.sport && <span className={styles.videoCreator}>Sport : {SPORT_LABELS[v.sport] || v.sport}</span>}
+              {v.performer_gender && <span className={styles.videoCreator}>{GENDER_LABELS[v.performer_gender] || v.performer_gender}</span>}
               {v.takedown_requested && <span className="badge" style={{ background: '#ef444420', color: 'var(--c-danger)' }}>Retrait demandé</span>}
             </div>
             <button className="btn btn-ghost btn-sm btn-icon" style={{ color: 'var(--c-danger)' }} onClick={() => deleteVideo(v)} aria-label="Supprimer la vidéo">

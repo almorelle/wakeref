@@ -17,6 +17,7 @@
   --c-accent2:   #60a5fa;
   --c-wake:      #06b6d4;
   --c-ws:        #f59e0b;
+  --c-seated:    #a855f7;
   --c-danger:    #ef4444;
   --c-success:   #22c55e;
 
@@ -213,6 +214,7 @@ select.input { appearance: none; }
 }
 .badge-wake         { background: #06b6d420; color: var(--c-wake); }
 .badge-ws           { background: #f59e0b20; color: var(--c-ws); }
+.badge-seated       { background: #a855f720; color: var(--c-seated); }
 .badge-grabs        { background: #3b82f620; color: var(--cat-grabs); }
 .badge-jib          { background: #22c55e20; color: var(--cat-jib); }
 .badge-wakeskate    { background: #ef444420; color: var(--cat-wakeskate); }

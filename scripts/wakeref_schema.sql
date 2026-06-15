@@ -62,6 +62,8 @@ CREATE TABLE public.videos (
                                takedown_at timestamp with time zone,
                                sort_order integer DEFAULT 0,
                                uploaded_at timestamp with time zone DEFAULT now(),
+                               sport USER-DEFINED,
+                               performer_gender text CHECK (performer_gender = ANY (ARRAY['man'::text, 'woman'::text, 'other'::text])),
                                CONSTRAINT videos_pkey PRIMARY KEY (id),
                                CONSTRAINT videos_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id)
 );
