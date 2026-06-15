@@ -16,6 +16,41 @@ function shuffle(arr) {
   return a
 }
 
+// Vidéo « principale » d'une figure = 1re vidéo uploadée (file_path), dans
+// l'ordre sort_order renvoyé par figures_full. C'est celle que le quiz montre.
+function mainVideo(figure) {
+  const vids = typeof figure.videos === 'string' ? JSON.parse(figure.videos) : figure.videos || []
+  return vids.find(v => v.file_path) || null
+}
+
+// Cible d'équilibrage de l'échantillonnage par session (#24/#25). 0.5 = parité.
+const BALANCE_RATIO = 0.6
+
+// Échantillonnage équilibré par session (#25) : on remplit d'abord le groupe
+// primaire jusqu'à la cible (BALANCE_RATIO), puis on complète avec le groupe
+// secondaire, puis avec les vidéos sans genre renseigné. Best-effort : si un
+// pool est trop petit pour la cible, on prend ce qu'on a et on complète. Le
+// genre considéré est celui de la vidéo effectivement montrée (mainVideo).
+function balancedSample(figures, total) {
+  const primary = [], secondary = [], rest = []
+  for (const f of figures) {
+    const g = mainVideo(f)?.performer_gender
+    if (g === 'woman') primary.push(f)
+    else if (g === 'man') secondary.push(f)
+    else rest.push(f)
+  }
+  const P = shuffle(primary), S = shuffle(secondary), R = shuffle(rest)
+  const out = []
+  const quota = Math.round(total * BALANCE_RATIO)
+  while (out.length < quota && P.length) out.push(P.pop())
+  while (out.length < total && S.length) out.push(S.pop())
+  for (const f of [...R, ...P, ...S]) {
+    if (out.length >= total) break
+    out.push(f)
+  }
+  return out
+}
+
 export default function Quiz() {
   const [allFigures, setAllFigures] = useState([])
   const [questions, setQuestions] = useState([])
@@ -37,10 +72,7 @@ export default function Quiz() {
   }, [])
 
   const buildQuiz = useCallback(() => {
-    const withVideos = allFigures.filter(f => {
-      const vids = typeof f.videos === 'string' ? JSON.parse(f.videos) : f.videos || []
-      return vids.some(v => v.file_path) // file_path = upload direct uniquement
-    })
+    const withVideos = allFigures.filter(f => mainVideo(f)) // upload direct uniquement
 
     if (withVideos.length === 0) {
       setNoVideos(true)
@@ -48,7 +80,8 @@ export default function Quiz() {
     }
     setNoVideos(false)
 
-    const selected = shuffle(withVideos).slice(0, Math.min(TOTAL, withVideos.length))
+    // Sélection à parité garantie, puis mélange de l'ordre d'apparition.
+    const selected = shuffle(balancedSample(withVideos, Math.min(TOTAL, withVideos.length)))
     const selectedIds = new Set(selected.map(f => f.id))
 
     const qs = selected.map(correct => {
@@ -82,19 +115,14 @@ export default function Quiz() {
   }
 
   const getVideoUrl = (figure) => {
-    const vids = typeof figure.videos === 'string' ? JSON.parse(figure.videos) : figure.videos || []
-    if (!vids.length) return null
-    const v = vids.find(v => v.file_path)
-    if (v.file_path) {
-      const { data } = supabase.storage.from('videos').getPublicUrl(v.file_path)
-      return data.publicUrl
-    }
-    return null
+    const v = mainVideo(figure)
+    if (!v) return null
+    const { data } = supabase.storage.from('videos').getPublicUrl(v.file_path)
+    return data.publicUrl
   }
 
   const getCreator = (figure) => {
-    const vids = typeof figure.videos === 'string' ? JSON.parse(figure.videos) : figure.videos || []
-    const v = vids.find(v => v.file_path)
+    const v = mainVideo(figure)
     if (!v) return null
     const handle = creatorHandle(v.creator_url)
     return handle ? { handle, url: v.creator_url } : null

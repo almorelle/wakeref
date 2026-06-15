@@ -75,7 +75,7 @@ select
           'id', v.id, 'title', v.title, 'file_path', v.file_path,
           'source_type', v.source_type, 'source_url', v.source_url,
           'creator_name', v.creator_name, 'creator_url', v.creator_url,
-          'caption', v.caption
+          'caption', v.caption, 'performer_gender', v.performer_gender
         ) order by v.sort_order)
      from videos v
      where v.takedown_requested = false
