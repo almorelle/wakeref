@@ -97,7 +97,8 @@
   font-weight: 800;
   letter-spacing: -.03em;
   line-height: .98;
-  max-width: 12ch;
+  max-width: 14ch;
+  text-wrap: balance;
   margin-bottom: 10px;
   background: linear-gradient(135deg, #f0f0f8 25%, var(--c-wake) 95%);
   -webkit-background-clip: text;
@@ -133,7 +134,7 @@
   outline: none;
 }
 .searchInput:focus-visible { outline: none; }
-.searchInput::placeholder { color: var(--c-faint); }
+.searchInput::placeholder { color: var(--c-muted); }
 .clearBtn { color: var(--c-faint); padding: 2px; display: flex; align-items: center; }
 .clearBtn:hover { color: var(--c-muted); }
 
@@ -222,6 +223,8 @@
   flex-direction: column;
   gap: 8px;
 }
+/* espace au-dessus des titres de section (contenu de référence) */
+.sectionTitle { margin-top: 2rem; }
 
 /* Panneau d'appel à contribution */
 .cta {
@@ -325,22 +328,27 @@
   color: var(--c-muted);
   line-height: 1.5;
 }
+/* CTA secondaire : bordé plutôt que plein, pour ne pas concurrencer le
+   bouton primaire « Soumettre ma vidéo ». Garde l'identité ambre WCT. */
 .wctBtn {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #f59e0b;
-  color: #0a0a0f;
+  background: transparent;
+  color: #f59e0b;
+  border: 1px solid #f59e0b66;
   font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
   border-radius: var(--r-lg);
   padding: 10px 16px;
   white-space: nowrap;
-  transition: background var(--t-fast);
+  transition: background var(--t-fast), border-color var(--t-fast);
 }
-.wctBanner:hover .wctBtn { background: #fbbf24; }
+.wctBanner:hover .wctBtn { background: #f59e0b1a; border-color: #f59e0b; }
+/* sur fond clair, l'ambre vif passe sous le seuil AA : on fonce le texte */
+:global([data-theme='light']) .wctBtn { color: #b45309; }
 
 @media (max-width: 600px) {
   .wctBanner { flex-wrap: wrap; }
@@ -348,6 +356,11 @@
 }
 
 @media (max-width: 760px) {
+  /* hero compacté : on resserre l'espace vertical pour faire remonter la
+     barre de recherche (action n°1) dans le premier écran. */
+  .hero { padding: calc(1.5rem + var(--nav-h)) 1.25rem 1.5rem; }
+  .heroText { margin-bottom: 1rem; }
+  .eyebrow { margin-bottom: 10px; }
   .tiles { grid-template-columns: 1fr; }
   /* Quand on tape, le contenu passe des tuiles/CTA (page haute) aux seuls
      résultats (souvent un spinner ou peu de cartes) : la page se raccourcit et

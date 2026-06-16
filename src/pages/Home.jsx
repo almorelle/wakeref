@@ -98,6 +98,7 @@ export default function Home() {
             <input
               className={styles.searchInput}
               type="text"
+              aria-label={tr.searchPlaceholder}
               placeholder={tr.searchPlaceholder}
               value={query}
               onChange={e => setQuery(e.target.value)}
@@ -146,6 +147,26 @@ export default function Home() {
               ))}
             </div>
 
+            {/* Contenu de référence en premier : c'est ce que l'utilisateur
+                vient consulter. Les CTA de contribution viennent après. */}
+            {mostViewed.length > 0 && (
+              <>
+                <p className={`section-title ${styles.sectionTitle}`}>{tr.mostViewedFigures}</p>
+                <div className={styles.list}>
+                  {mostViewed.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
+                </div>
+              </>
+            )}
+
+            {videos.length > 0 && (
+              <>
+                <p className={`section-title ${styles.sectionTitle}`}>{tr.recentVideos}</p>
+                <div className={styles.list}>
+                  {videos.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
+                </div>
+              </>
+            )}
+
             <div className={styles.cta}>
               {stats && (
                 <div className={styles.ctaStats}>
@@ -183,24 +204,6 @@ export default function Home() {
                 {tr.wctButton} <Icon name="arrow-right" />
               </span>
             </a>
-
-            {mostViewed.length > 0 && (
-              <>
-                <p className="section-title" style={{ marginTop: '2rem' }}>{tr.mostViewedFigures}</p>
-                <div className={styles.list}>
-                  {mostViewed.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
-                </div>
-              </>
-            )}
-
-            {videos.length > 0 && (
-              <>
-                <p className="section-title" style={{ marginTop: '2rem' }}>{tr.recentVideos}</p>
-                <div className={styles.list}>
-                  {videos.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
-                </div>
-              </>
-            )}
           </>
         )}
       </div>

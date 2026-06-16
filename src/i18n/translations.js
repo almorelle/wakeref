@@ -27,7 +27,7 @@ export const t = {
     ctaButton:       'Soumettre ma vidéo',
     wctTitle:        'Tu maîtrises ces tricks ?',
     wctText:         'Ajoute-les sur World Cable Tricks et construis ton profil de rider.',
-    wctButton:       'Créé ton profil sur WTC',
+    wctButton:       'Crée ton profil WTC',
 
     // Figures list
     all:     'Tous',
@@ -270,7 +270,7 @@ export const t = {
     ctaButton:         'Submit my video',
     wctTitle:          'Wanna claim your tricks?',
     wctText:           'Add them on World Cable Tricks and build your rider profile.',
-    wctButton:         'Build your profile on WCT',
+    wctButton:         'Build your WCT profile',
     noResults:         (q) => `No trick found for "${q}"`,
 
     // Figures list
