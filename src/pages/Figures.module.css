@@ -14,23 +14,10 @@
   gap: 0.6rem;
 }
 
-/* Une ligne par axe : label fixe à gauche + chips qui défilent à droite. */
-.filterRow {
+/* Rangée des 3 menus déroulants d'axes (catégorie / sport / obstacle). */
+.filterBtns {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.filterLabel {
-  flex-shrink: 0;
-  width: 82px;
-  white-space: nowrap;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--c-muted);
+  gap: 8px;
 }
 
 .searchWrap {
@@ -58,52 +45,6 @@
 .searchInput::placeholder { color: var(--c-muted); }
 .clearBtn { color: var(--c-faint); padding: 2px; display: flex; align-items: center; }
 .clearBtn:hover { color: var(--c-muted); }
-
-.filters {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.filters::-webkit-scrollbar { display: none; }
-/* Fondu de bord piloté par ScrollRow : signale le scroll horizontal du côté
-   où du contenu reste masqué (scrollbar cachée). N'apparaît que si ça scrolle,
-   donc ne rogne jamais le dernier chip quand tout tient à l'écran. */
-.filters[data-fade-right]:not([data-fade-left]) {
-  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
-  mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
-}
-.filters[data-fade-left]:not([data-fade-right]) {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 24px);
-  mask-image: linear-gradient(to right, transparent, #000 24px);
-}
-.filters[data-fade-left][data-fade-right] {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 32px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 24px, #000 calc(100% - 32px), transparent);
-}
-
-.chip {
-  flex-shrink: 0;
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 9px 14px;
-  border-radius: 100px;
-  border: 1px solid var(--c-border2);
-  color: var(--c-muted);
-  background: transparent;
-  cursor: pointer;
-  transition: all var(--t-fast);
-  white-space: nowrap;
-}
-.chip:hover { color: var(--c-text); border-color: var(--c-border2); }
-.chip.active {
-  background: var(--chip-color, var(--c-accent));
-  border-color: transparent;
-  color: #fff;
-}
 
 .count {
   font-size: 13px;

@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { searchFigures } from '../lib/searchFigures'
 import FigureCard from '../components/FigureCard'
-import ScrollRow from '../components/ScrollRow'
+import FilterDropdown from '../components/FilterDropdown'
 import { useT } from '../i18n/useT'
 import { CATEGORIES } from '../data/categories'
 import styles from './Figures.module.css'
@@ -117,66 +117,44 @@ export default function Figures() {
           )}
         </div>
 
-        {/* Axe catégorie */}
-        <div className={styles.filterRow}>
-          <span className={styles.filterLabel}>{tr.filterLabels.category}</span>
-          <ScrollRow className={styles.filters}>
-            <button
-              className={`${styles.chip} ${activeFilter === 'tous' ? styles.active : ''}`}
-              onClick={() => setFilter('tous')}
-            >{tr.all}</button>
-            {CATEGORIES.map(c => (
-              <button
-                key={c.id}
-                className={`${styles.chip} ${activeFilter === c.slug ? styles.active : ''}`}
-                onClick={() => setFilter(c.slug)}
-                style={activeFilter === c.slug ? { '--chip-color': c.color } : {}}
-              >{tr.catNames[c.slug] || c.name}</button>
-            ))}
-          </ScrollRow>
-        </div>
-
-        {/* Axe sport */}
-        <div className={styles.filterRow}>
-          <span className={styles.filterLabel}>{tr.filterLabels.sport}</span>
-          <ScrollRow className={styles.filters}>
-            <button
-              className={`${styles.chip} ${activeSport === '' ? styles.active : ''}`}
-              onClick={() => setSport('')}
-            >{tr.all}</button>
-            <button
-              className={`${styles.chip} ${activeSport === 'wakeboard' ? styles.active : ''}`}
-              onClick={() => setSport('wakeboard')}
-            >Wakeboard</button>
-            <button
-              className={`${styles.chip} ${activeSport === 'wakeskate' ? styles.active : ''}`}
-              onClick={() => setSport('wakeskate')}
-            >Wakeskate</button>
-            <button
-              className={`${styles.chip} ${activeSport === 'seated' ? styles.active : ''}`}
-              onClick={() => setSport('seated')}
-            >{tr.sportNames?.seated || 'Seated'}</button>
-          </ScrollRow>
-        </div>
-
-        {/* Axe obstacle */}
-        <div className={styles.filterRow}>
-          <span className={styles.filterLabel}>{tr.filterLabels.obstacle}</span>
-          <ScrollRow className={styles.filters}>
-            {[
-              { value: '',          label: tr.all                          },
+        {/* Trois axes en menus déroulants mono-select */}
+        <div className={styles.filterBtns}>
+          <FilterDropdown
+            axisLabel={tr.filterLabels.category}
+            value={activeFilter}
+            allValue="tous"
+            columns={2}
+            onChange={setFilter}
+            accent={CATEGORIES.find(c => c.slug === activeFilter)?.color}
+            options={[
+              { value: 'tous', label: tr.all },
+              ...CATEGORIES.map(c => ({ value: c.slug, label: tr.catNames[c.slug] || c.name, color: c.color })),
+            ]}
+          />
+          <FilterDropdown
+            axisLabel={tr.filterLabels.sport}
+            value={activeSport}
+            onChange={setSport}
+            options={[
+              { value: '',          label: tr.all },
+              { value: 'wakeboard', label: 'Wakeboard' },
+              { value: 'wakeskate', label: 'Wakeskate' },
+              { value: 'seated',    label: tr.sportNames?.seated || 'Seated' },
+            ]}
+          />
+          <FilterDropdown
+            axisLabel={tr.filterLabels.obstacle}
+            value={activeContext}
+            onChange={setContext}
+            align="right"
+            options={[
+              { value: '',          label: tr.all },
               { value: 'kicker',    label: tr.ctxNames?.kicker    || 'Kicker'    },
               { value: 'air_trick', label: tr.ctxNames?.air_trick || 'Air Trick' },
               { value: 'feature',   label: tr.ctxNames?.feature   || 'Feature'   },
               { value: 'flat',      label: tr.ctxNames?.flat      || 'Flat'      },
-            ].map(ctx => (
-              <button
-                key={ctx.value}
-                className={`${styles.chip} ${activeContext === ctx.value ? styles.active : ''}`}
-                onClick={() => setContext(ctx.value)}
-              >{ctx.label}</button>
-            ))}
-          </ScrollRow>
+            ]}
+          />
         </div>
       </div>
 

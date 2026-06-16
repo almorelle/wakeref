@@ -1,0 +1,140 @@
+.root {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-lg);
+  background: var(--c-surface2);
+  color: var(--c-muted);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color var(--t-fast), color var(--t-fast);
+}
+.trigger:hover { color: var(--c-text); }
+.trigger.active {
+  color: var(--c-text);
+  border-color: var(--accent, var(--c-accent));
+}
+.triggerLabel {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent, var(--c-accent));
+  flex-shrink: 0;
+}
+/* chevron-right pivoté → flèche bas, qui se retourne à l'ouverture */
+.chevron {
+  flex-shrink: 0;
+  color: var(--c-faint);
+  transform: rotate(90deg);
+  transition: transform var(--t-fast);
+}
+.trigger[aria-expanded="true"] .chevron { transform: rotate(-90deg); }
+
+.menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  min-width: 180px;
+  max-width: calc(100vw - 32px);
+  padding: 6px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-lg);
+  box-shadow: 0 10px 28px #00000066;
+  animation: menuIn .12s ease;
+}
+.menuWide { min-width: 300px; }
+.alignRight { left: auto; right: 0; }
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.menuTitle {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  padding: 4px 8px 6px;
+}
+
+/* Liste scrollable : c'est elle (et non le menu) qui porte la hauteur max et
+   le fondu, pour que le titre d'axe reste fixe au-dessus. */
+.optionList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2px;
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.optionList::-webkit-scrollbar { display: none; }
+.cols2 { grid-template-columns: 1fr 1fr; }
+.optionAll { grid-column: 1 / -1; }
+/* fondu d'affordance : n'apparaît que si la liste déborde vraiment */
+.optionList[data-fade-bottom]:not([data-fade-top]) {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent);
+}
+.optionList[data-fade-top]:not([data-fade-bottom]) {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22px);
+  mask-image: linear-gradient(to bottom, transparent, #000 22px);
+}
+.optionList[data-fade-top][data-fade-bottom] {
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 22px, #000 calc(100% - 28px), transparent);
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border-radius: var(--r-md);
+  background: none;
+  color: var(--c-muted);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.option:hover,
+.option:focus-visible {
+  background: var(--c-surface2);
+  color: var(--c-text);
+  outline: none;
+}
+.optionSel { color: var(--c-text); }
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.optionLabel { flex: 1; }
+.checkIcon {
+  color: var(--c-accent);
+  flex-shrink: 0;
+}
