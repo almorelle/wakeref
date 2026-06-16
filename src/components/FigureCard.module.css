@@ -9,9 +9,11 @@
   cursor: pointer;
   transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
   user-select: none;
-  /* Révélation décalée à l'apparition (cap à 12 pour les longues listes). */
+  /* Révélation décalée à l'apparition. Les 13 premières cartes cascadent ;
+     au-delà, délai négatif → animation déjà terminée (fill: both), pas de pop
+     synchronisé pour les cartes hors écran des longues listes. */
   animation: cardRise .5s ease both;
-  animation-delay: calc(min(var(--i, 0), 12) * 40ms + .08s);
+  animation-delay: calc(var(--i, 0) * 40ms + .08s - max(var(--i, 0) - 12, 0) * 100s);
 }
 .card:hover {
   border-color: var(--c-border2);
