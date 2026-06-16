@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { searchFigures } from '../lib/searchFigures'
@@ -16,8 +16,25 @@ export default function Home() {
   const [mostViewed, setMostViewed] = useState([])
   const [videos, setVideos] = useState([])
   const [stats, setStats] = useState(null)
+  const searchRef = useRef(null)
   const navigate = useNavigate()
   const tr = useT()
+
+  // Sur mobile, la barre de recherche est placée bas dans le hero ; quand le
+  // clavier s'ouvre il masque les résultats affichés en dessous. Au focus, on
+  // remonte la barre juste sous la navbar pour libérer l'espace au-dessus du
+  // clavier. Le délai laisse le clavier amorcer son ouverture (sinon iOS
+  // recale la position après notre scroll).
+  const handleSearchFocus = () => {
+    if (window.innerWidth > 760) return
+    setTimeout(() => {
+      const el = searchRef.current
+      if (!el) return
+      const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'), 10) || 52
+      const top = el.getBoundingClientRect().top + window.scrollY - navH - 8
+      window.scrollTo({ top, behavior: 'smooth' })
+    }, 300)
+  }
 
   useEffect(() => {
     supabase.rpc('home_stats').then(({ data }) => {
@@ -76,7 +93,7 @@ export default function Home() {
             <h1 className={styles.title}>{tr.heroTitle}</h1>
             <p className={styles.sub}>{tr.appSubtitle}</p>
           </div>
-          <div className={styles.searchWrap}>
+          <div className={styles.searchWrap} ref={searchRef}>
             <Icon name="search" />
             <input
               className={styles.searchInput}
@@ -84,6 +101,7 @@ export default function Home() {
               placeholder={tr.searchPlaceholder}
               value={query}
               onChange={e => setQuery(e.target.value)}
+              onFocus={handleSearchFocus}
               autoComplete="off"
             />
             {query && (
