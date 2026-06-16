@@ -30,7 +30,9 @@ export default function Figures() {
       .select('*')
     if (activeFilter !== 'tous') q = q.eq('category_slug', activeFilter)
     if (activeContext) q = q.contains('contexts', [activeContext])
-    if (activeSport)  q = q.eq('sport', activeSport)
+    // Appartenance multi-discipline : une figure praticable en seated (sports
+    // contient 'seated') apparaît sous le filtre Seated, même si sport ≠ seated.
+    if (activeSport)  q = q.contains('sports', [activeSport])
     q.then(({ data }) => {
       // Tri naturel : les chiffres sont comparés numériquement (180 < 360 < 1080),
       // les noms textuels restent alphabétiques.
@@ -91,8 +93,8 @@ export default function Figures() {
       <SEO
         titleFr="Figures"
         titleEn="Tricks"
-        descriptionFr="Liste complète des figures de wakeboard et wakeskate, par catégorie."
-        descriptionEn="Complete list of wakeboard and wakeskate tricks, by category."
+        descriptionFr="Liste complète des figures de wakeboard, wakeskate et wakeboard assis, par catégorie."
+        descriptionEn="Complete list of wakeboard, wakeskate and seated wakeboard tricks, by category."
         path="/figures"
       />
       <div className={styles.searchBar}>
@@ -144,6 +146,10 @@ export default function Figures() {
           className={`${styles.chip} ${activeSport === 'wakeskate' ? styles.active : ''}`}
           onClick={() => setSport('wakeskate')}
         >Wakeskate</button>
+        <button
+          className={`${styles.chip} ${activeSport === 'seated' ? styles.active : ''}`}
+          onClick={() => setSport('seated')}
+        >{tr.sportNames?.seated || 'Seated'}</button>
 
         <span style={{ width: 1, background: 'var(--c-border)', margin: '0 4px', alignSelf: 'stretch' }} />
 

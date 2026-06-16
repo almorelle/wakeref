@@ -68,6 +68,30 @@
 }
 .empty { font-size: 14px; color: var(--c-muted); }
 
+.tipTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.tipTab {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface2);
+  color: var(--c-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.tipTab:hover { color: var(--c-text); }
+.tipTabActive {
+  background: var(--c-wake);
+  border-color: var(--c-wake);
+  color: #fff;
+}
+
 .tips {
   list-style: none;
   display: flex;
