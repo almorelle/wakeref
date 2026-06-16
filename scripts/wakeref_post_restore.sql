@@ -115,7 +115,14 @@ select
    select json_build_object('id', a.id, 'name', a.name, 'slug', a.slug)
    from anc a where a.built_on_id is null
    limit 1
-  ) as base_figure
+  ) as base_figure,
+  -- Appartenance multi-discipline + tips override par discipline (appendées en
+  -- fin de vue pour rester compatibles avec un CREATE OR REPLACE VIEW lors des
+  -- migrations). `sports` ⊇ {sport} pilote le filtre catalogue ; `tips_<d>` =
+  -- override des tips de la discipline (NULL/[] = hérite de `tips`).
+  f.tips_seated, f.tips_seated_en,
+  f.tips_wakeskate, f.tips_wakeskate_en,
+  f.sports
 from figures f
 left join categories c on c.id = f.category_id;
 
@@ -127,7 +134,8 @@ alter view figures_full set (security_invoker = true);
 drop view if exists figures_card cascade;
 create view figures_card as
 select f.id, f.slug, f.name, f.sport, f.difficulty, f.contexts,
-       c.name as category_name, c.slug as category_slug
+       c.name as category_name, c.slug as category_slug,
+       f.sports
 from figures f
 left join categories c on c.id = f.category_id;
 

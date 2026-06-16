@@ -77,6 +77,15 @@ const CheckGroup = ({ label, fieldKey, options, form, toggleArray }) => (
   </div>
 )
 
+const SPORT_LABELS = { wakeboard: 'Wakeboard', wakeskate: 'Wakeskate', seated: 'Wakeboard assis' }
+// Disciplines pouvant porter un override de tips (la native utilise `tips`).
+const OVERRIDE_SPORTS = ['seated', 'wakeskate']
+// Pré-remplit une liste de tips éditables : valeurs existantes + une ligne vide.
+const padTips = (arr) => {
+  const a = arr || []
+  return [...a, '', '', '', ''].slice(0, Math.max(4, a.length + 1))
+}
+
 export default function FigureForm() {
   const { id } = useParams()
   const isEdit = !!id
@@ -91,6 +100,7 @@ export default function FigureForm() {
 
   const [form, setForm] = useState({
     name: '', slug: '', category_id: '', sport: 'wakeboard',
+    sports: ['wakeboard'],
     difficulty: 2, published: true,
     contexts: [],
     approach: [],
@@ -103,6 +113,8 @@ export default function FigureForm() {
     inverts: 0,
     description: '', tips: ['', '', '', ''],
     description_en: '', tips_en: ['', '', '', ''],
+    tips_seated: ['', '', '', ''], tips_seated_en: ['', '', '', ''],
+    tips_wakeskate: ['', '', '', ''], tips_wakeskate_en: ['', '', '', ''],
   })
 
   const [prereqIds, setPrereqIds] = useState([])
@@ -149,6 +161,7 @@ export default function FigureForm() {
           slug: fig.slug,
           category_id: String(fig.category_id || ''),
           sport: fig.sport,
+          sports: (fig.sports && fig.sports.length) ? fig.sports : [fig.sport],
           difficulty: fig.difficulty,
           published: fig.published,
           contexts: fig.contexts || [],
@@ -164,6 +177,10 @@ export default function FigureForm() {
           tips: [...(fig.tips || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips || []).length + 1)),
           description_en: fig.description_en || '',
           tips_en: [...(fig.tips_en || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips_en || []).length + 1)),
+          tips_seated: padTips(fig.tips_seated),
+          tips_seated_en: padTips(fig.tips_seated_en),
+          tips_wakeskate: padTips(fig.tips_wakeskate),
+          tips_wakeskate_en: padTips(fig.tips_wakeskate_en),
         })
       }
       setLoading(false)
@@ -190,13 +207,23 @@ export default function FigureForm() {
     return { ...f, rotation_type: a }
   })
 
-  const setTip = (lang, i, v) => setForm(f => {
-    const key = lang === 'en' ? 'tips_en' : 'tips'
-    const tips = [...f[key]]
+  const setTip = (lang, i, v) => setTipList(lang === 'en' ? 'tips_en' : 'tips', i, v)
+
+  // Édite une liste de tips quelconque (tips, tips_en, tips_seated, …) et fait
+  // pousser une ligne vide quand on remplit la dernière.
+  const setTipList = (key, i, v) => setForm(f => {
+    const tips = [...(f[key] || [])]
     tips[i] = v
     if (v && i === tips.length - 1) tips.push('')
     return { ...f, [key]: tips }
   })
+
+  // Changer la discipline native : l'ancienne native était auto-incluse dans
+  // `sports` (pas un choix explicite) → on la retire, on garde les memberships
+  // cochés + la nouvelle native en tête. Évite un membership fantôme.
+  const setSport = (v) => setForm(f => ({
+    ...f, sport: v, sports: [v, ...(f.sports || []).filter(s => s !== f.sport && s !== v)],
+  }))
 
   const toggleArray = (key, value) => {
     setForm(f => {
@@ -217,6 +244,12 @@ export default function FigureForm() {
   const save = async (e) => {
     e.preventDefault()
     setSaving(true)
+    // Appartenance : la native est toujours incluse (contrainte DB).
+    const sports = Array.from(new Set([form.sport, ...(form.sports || [])]))
+    // Un override n'a de sens que pour une discipline MEMBRE et NON-native ;
+    // sinon on n'écrit rien → pas d'override orphelin si on décoche / bascule.
+    const overrideFor = (key, d) =>
+      (d !== form.sport && sports.includes(d)) ? form[key].filter(t => t.trim()) : []
     const payload = {
       ...form,
       slug: form.slug || genSlug(form.name),
@@ -237,6 +270,11 @@ export default function FigureForm() {
       rewind: form.rewind_degs.some(v => v > 0),   // legacy, dérivé de rewind_degs
       tips: form.tips.filter(t => t.trim()),
       tips_en: form.tips_en.filter(t => t.trim()),
+      sports,
+      tips_seated: overrideFor('tips_seated', 'seated'),
+      tips_seated_en: overrideFor('tips_seated_en', 'seated'),
+      tips_wakeskate: overrideFor('tips_wakeskate', 'wakeskate'),
+      tips_wakeskate_en: overrideFor('tips_wakeskate_en', 'wakeskate'),
     }
 
     let figureId = id ? parseInt(id) : null
@@ -310,7 +348,7 @@ export default function FigureForm() {
           </div>
           <div className="field">
             <label>Sport</label>
-            <select className="input" value={form.sport} onChange={e => set('sport', e.target.value)}>
+            <select className="input" value={form.sport} onChange={e => setSport(e.target.value)}>
               <option value="wakeboard">Wakeboard</option>
               <option value="wakeskate">Wakeskate</option>
               <option value="seated">Wakeboard assis</option>
@@ -322,6 +360,16 @@ export default function FigureForm() {
               onChange={e => set('difficulty', e.target.value)} />
           </div>
         </div>
+
+        <CheckGroup
+          label="Aussi praticable en"
+          fieldKey="sports"
+          options={['wakeboard', 'wakeskate', 'seated']
+            .filter(d => d !== form.sport)
+            .map(d => ({ value: d, label: SPORT_LABELS[d] }))}
+          form={form}
+          toggleArray={toggleArray}
+        />
 
         <div className={styles.tabs}>
           {tabs.map(t => (
@@ -347,6 +395,18 @@ export default function FigureForm() {
                   placeholder={`Conseil ${i + 1}…`} style={{ marginBottom: 6 }} />
               ))}
             </div>
+            {OVERRIDE_SPORTS
+              .filter(d => d !== form.sport && (form.sports || []).includes(d))
+              .map(d => (
+                <div className="field" key={d}>
+                  <label>Conseils {SPORT_LABELS[d]} (FR) — override</label>
+                  {form[`tips_${d}`].map((tip, i) => (
+                    <input key={i} className="input" value={tip}
+                      onChange={e => setTipList(`tips_${d}`, i, e.target.value)}
+                      placeholder="Vide → hérite des conseils par défaut" style={{ marginBottom: 6 }} />
+                  ))}
+                </div>
+              ))}
           </>
         )}
 
@@ -367,6 +427,18 @@ export default function FigureForm() {
                   style={{ marginBottom: 6 }} />
               ))}
             </div>
+            {OVERRIDE_SPORTS
+              .filter(d => d !== form.sport && (form.sports || []).includes(d))
+              .map(d => (
+                <div className="field" key={d}>
+                  <label>Tips {SPORT_LABELS[d]} (EN) — override</label>
+                  {form[`tips_${d}_en`].map((tip, i) => (
+                    <input key={i} className="input" value={tip}
+                      onChange={e => setTipList(`tips_${d}_en`, i, e.target.value)}
+                      placeholder="Empty → inherits default tips" style={{ marginBottom: 6 }} />
+                  ))}
+                </div>
+              ))}
           </>
         )}
 

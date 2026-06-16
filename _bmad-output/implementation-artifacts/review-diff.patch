@@ -1,0 +1,472 @@
+# Diff du chantier seated-discipline-facets (depuis 7cdeb906d9f5fe484e3bb86948c721615e2ee6b8)
+# Fichiers code suivis :
+diff --git a/scripts/wakeref_post_restore.sql b/scripts/wakeref_post_restore.sql
+index a84bd11..5fa3c5c 100644
+--- a/scripts/wakeref_post_restore.sql
++++ b/scripts/wakeref_post_restore.sql
+@@ -115,7 +115,14 @@ select
+    select json_build_object('id', a.id, 'name', a.name, 'slug', a.slug)
+    from anc a where a.built_on_id is null
+    limit 1
+-  ) as base_figure
++  ) as base_figure,
++  -- Appartenance multi-discipline + tips override par discipline (appendées en
++  -- fin de vue pour rester compatibles avec un CREATE OR REPLACE VIEW lors des
++  -- migrations). `sports` ⊇ {sport} pilote le filtre catalogue ; `tips_<d>` =
++  -- override des tips de la discipline (NULL/[] = hérite de `tips`).
++  f.tips_seated, f.tips_seated_en,
++  f.tips_wakeskate, f.tips_wakeskate_en,
++  f.sports
+ from figures f
+ left join categories c on c.id = f.category_id;
+ 
+@@ -127,7 +134,8 @@ alter view figures_full set (security_invoker = true);
+ drop view if exists figures_card cascade;
+ create view figures_card as
+ select f.id, f.slug, f.name, f.sport, f.difficulty, f.contexts,
+-       c.name as category_name, c.slug as category_slug
++       c.name as category_name, c.slug as category_slug,
++       f.sports
+ from figures f
+ left join categories c on c.id = f.category_id;
+ 
+diff --git a/scripts/wakeref_schema.sql b/scripts/wakeref_schema.sql
+index 5d6052f..4220135 100644
+--- a/scripts/wakeref_schema.sql
++++ b/scripts/wakeref_schema.sql
+@@ -35,7 +35,13 @@ CREATE TABLE public.figures (
+                                 rewind_degs ARRAY NOT NULL DEFAULT '{}'::smallint[],
+                                 built_on_id integer,
+                                 rotation_type ARRAY NOT NULL DEFAULT '{}'::text[] CHECK (rotation_type <@ ARRAY['ole'::text, 'handle_pass'::text]),
++                                sports ARRAY NOT NULL,
++                                tips_seated ARRAY,
++                                tips_seated_en ARRAY,
++                                tips_wakeskate ARRAY,
++                                tips_wakeskate_en ARRAY,
+                                 CONSTRAINT figures_pkey PRIMARY KEY (id),
++                                CONSTRAINT figures_sport_in_sports CHECK (sport = ANY (sports)),
+                                 CONSTRAINT figures_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id),
+                                 CONSTRAINT figures_switch_of_fkey FOREIGN KEY (switch_of) REFERENCES public.figures(id),
+                                 CONSTRAINT figures_built_on_id_fkey FOREIGN KEY (built_on_id) REFERENCES public.figures(id)
+diff --git a/src/pages/FigureDetail.jsx b/src/pages/FigureDetail.jsx
+index 35da8e9..3f7bc6c 100644
+--- a/src/pages/FigureDetail.jsx
++++ b/src/pages/FigureDetail.jsx
+@@ -66,6 +66,8 @@ export default function FigureDetail() {
+   const [takedownForm, setTakedownForm] = useState({ name: '', email: '', message: '' })
+   const [takedownSent, setTakedownSent] = useState(false)
+   const [copied, setCopied] = useState(false)
++  // Discipline d'onglet tips préférée, mémorisée comme la langue (wakeref_lang).
++  const [tipFacet, setTipFacet] = useState(() => localStorage.getItem('wakeref_facet') || '')
+ 
+   useEffect(() => {
+     let active = true
+@@ -198,7 +200,28 @@ export default function FigureDetail() {
+   const baseFigure      = figure.base_figure ? (typeof figure.base_figure === 'string' ? JSON.parse(figure.base_figure) : figure.base_figure) : null
+ 
+   const desc            = localize(figure, 'description')
+-  const tips            = localize(figure, 'tips') || []
++
++  // Tips facettés par discipline. `tips` (localisé) = jeu par défaut de la
++  // discipline native ; `tips_<d>` = override rempli seulement s'il diverge.
++  // Un onglet par discipline de `sports` qui est native OU a un override non
++  // vide ; onglets affichés uniquement s'il y a ≥2 jeux distincts à montrer.
++  const defaultTips = localize(figure, 'tips') || []
++  const figSports   = Array.isArray(figure.sports) && figure.sports.length
++    ? figure.sports : (figure.sport ? [figure.sport] : [])
++  const tipsOverride = (d) =>
++    d === 'seated'    ? (localize(figure, 'tips_seated')    || [])
++    : d === 'wakeskate' ? (localize(figure, 'tips_wakeskate') || [])
++    : []
++  const tipTabs = figSports
++    .map(d => {
++      const ov = tipsOverride(d)
++      return { sport: d, tips: ov.length ? ov : defaultTips, hasOwn: ov.length > 0, isNative: d === figure.sport }
++    })
++    .filter(t => (t.isNative || t.hasOwn) && t.tips.length > 0)
++  const showTipTabs    = tipTabs.length > 1
++  const activeTipSport = tipTabs.some(t => t.sport === tipFacet) ? tipFacet : tipTabs[0]?.sport
++  const activeTips     = (tipTabs.find(t => t.sport === activeTipSport) || tipTabs[0])?.tips || defaultTips
++  const tipsToShow     = showTipTabs ? activeTips : (tipTabs[0]?.tips || defaultTips)
+ 
+   // Décomposition du trick en composantes élémentaires (base → inverts → rotations).
+   const decomp     = decomposeTrick(figure)
+@@ -342,11 +365,25 @@ export default function FigureDetail() {
+           </section>
+         )}
+ 
+-        {tips.length > 0 && (
++        {tipsToShow.length > 0 && (
+           <section className={styles.section}>
+             <p className="section-title"><Icon name="bulb" /> {tr.tips}</p>
++            {showTipTabs && (
++              <div className={styles.tipTabs} role="tablist">
++                {tipTabs.map(t => (
++                  <button
++                    key={t.sport}
++                    type="button"
++                    role="tab"
++                    aria-selected={t.sport === activeTipSport}
++                    className={`${styles.tipTab} ${t.sport === activeTipSport ? styles.tipTabActive : ''}`}
++                    onClick={() => { setTipFacet(t.sport); localStorage.setItem('wakeref_facet', t.sport) }}
++                  >{tr.sportNames?.[t.sport] || t.sport}</button>
++                ))}
++              </div>
++            )}
+             <ul className={styles.tips}>
+-              {tips.map((tip, i) => <li key={i}>{tip}</li>)}
++              {tipsToShow.map((tip, i) => <li key={i}>{tip}</li>)}
+             </ul>
+           </section>
+         )}
+diff --git a/src/pages/FigureDetail.module.css b/src/pages/FigureDetail.module.css
+index f3bccb8..bd038b8 100644
+--- a/src/pages/FigureDetail.module.css
++++ b/src/pages/FigureDetail.module.css
+@@ -68,6 +68,30 @@
+ }
+ .empty { font-size: 14px; color: var(--c-muted); }
+ 
++.tipTabs {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++  margin-bottom: 12px;
++}
++.tipTab {
++  font-size: 13px;
++  font-weight: 600;
++  padding: 5px 12px;
++  border-radius: 999px;
++  border: 1px solid var(--c-border);
++  background: var(--c-surface2);
++  color: var(--c-muted);
++  cursor: pointer;
++  transition: background 0.15s, color 0.15s, border-color 0.15s;
++}
++.tipTab:hover { color: var(--c-text); }
++.tipTabActive {
++  background: var(--c-wake);
++  border-color: var(--c-wake);
++  color: #fff;
++}
++
+ .tips {
+   list-style: none;
+   display: flex;
+diff --git a/src/pages/Figures.jsx b/src/pages/Figures.jsx
+index 20a512a..4d5649b 100644
+--- a/src/pages/Figures.jsx
++++ b/src/pages/Figures.jsx
+@@ -30,7 +30,9 @@ export default function Figures() {
+       .select('*')
+     if (activeFilter !== 'tous') q = q.eq('category_slug', activeFilter)
+     if (activeContext) q = q.contains('contexts', [activeContext])
+-    if (activeSport)  q = q.eq('sport', activeSport)
++    // Appartenance multi-discipline : une figure praticable en seated (sports
++    // contient 'seated') apparaît sous le filtre Seated, même si sport ≠ seated.
++    if (activeSport)  q = q.contains('sports', [activeSport])
+     q.then(({ data }) => {
+       // Tri naturel : les chiffres sont comparés numériquement (180 < 360 < 1080),
+       // les noms textuels restent alphabétiques.
+@@ -91,8 +93,8 @@ export default function Figures() {
+       <SEO
+         titleFr="Figures"
+         titleEn="Tricks"
+-        descriptionFr="Liste complète des figures de wakeboard et wakeskate, par catégorie."
+-        descriptionEn="Complete list of wakeboard and wakeskate tricks, by category."
++        descriptionFr="Liste complète des figures de wakeboard, wakeskate et wakeboard assis, par catégorie."
++        descriptionEn="Complete list of wakeboard, wakeskate and seated wakeboard tricks, by category."
+         path="/figures"
+       />
+       <div className={styles.searchBar}>
+@@ -144,6 +146,10 @@ export default function Figures() {
+           className={`${styles.chip} ${activeSport === 'wakeskate' ? styles.active : ''}`}
+           onClick={() => setSport('wakeskate')}
+         >Wakeskate</button>
++        <button
++          className={`${styles.chip} ${activeSport === 'seated' ? styles.active : ''}`}
++          onClick={() => setSport('seated')}
++        >{tr.sportNames?.seated || 'Seated'}</button>
+ 
+         <span style={{ width: 1, background: 'var(--c-border)', margin: '0 4px', alignSelf: 'stretch' }} />
+ 
+diff --git a/src/pages/admin/FigureForm.jsx b/src/pages/admin/FigureForm.jsx
+index 7869a8d..ab9a943 100644
+--- a/src/pages/admin/FigureForm.jsx
++++ b/src/pages/admin/FigureForm.jsx
+@@ -77,6 +77,15 @@ const CheckGroup = ({ label, fieldKey, options, form, toggleArray }) => (
+   </div>
+ )
+ 
++const SPORT_LABELS = { wakeboard: 'Wakeboard', wakeskate: 'Wakeskate', seated: 'Wakeboard assis' }
++// Disciplines pouvant porter un override de tips (la native utilise `tips`).
++const OVERRIDE_SPORTS = ['seated', 'wakeskate']
++// Pré-remplit une liste de tips éditables : valeurs existantes + une ligne vide.
++const padTips = (arr) => {
++  const a = arr || []
++  return [...a, '', '', '', ''].slice(0, Math.max(4, a.length + 1))
++}
++
+ export default function FigureForm() {
+   const { id } = useParams()
+   const isEdit = !!id
+@@ -91,6 +100,7 @@ export default function FigureForm() {
+ 
+   const [form, setForm] = useState({
+     name: '', slug: '', category_id: '', sport: 'wakeboard',
++    sports: ['wakeboard'],
+     difficulty: 2, published: true,
+     contexts: [],
+     approach: [],
+@@ -103,6 +113,8 @@ export default function FigureForm() {
+     inverts: 0,
+     description: '', tips: ['', '', '', ''],
+     description_en: '', tips_en: ['', '', '', ''],
++    tips_seated: ['', '', '', ''], tips_seated_en: ['', '', '', ''],
++    tips_wakeskate: ['', '', '', ''], tips_wakeskate_en: ['', '', '', ''],
+   })
+ 
+   const [prereqIds, setPrereqIds] = useState([])
+@@ -149,6 +161,7 @@ export default function FigureForm() {
+           slug: fig.slug,
+           category_id: String(fig.category_id || ''),
+           sport: fig.sport,
++          sports: (fig.sports && fig.sports.length) ? fig.sports : [fig.sport],
+           difficulty: fig.difficulty,
+           published: fig.published,
+           contexts: fig.contexts || [],
+@@ -164,6 +177,10 @@ export default function FigureForm() {
+           tips: [...(fig.tips || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips || []).length + 1)),
+           description_en: fig.description_en || '',
+           tips_en: [...(fig.tips_en || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips_en || []).length + 1)),
++          tips_seated: padTips(fig.tips_seated),
++          tips_seated_en: padTips(fig.tips_seated_en),
++          tips_wakeskate: padTips(fig.tips_wakeskate),
++          tips_wakeskate_en: padTips(fig.tips_wakeskate_en),
+         })
+       }
+       setLoading(false)
+@@ -190,9 +207,12 @@ export default function FigureForm() {
+     return { ...f, rotation_type: a }
+   })
+ 
+-  const setTip = (lang, i, v) => setForm(f => {
+-    const key = lang === 'en' ? 'tips_en' : 'tips'
+-    const tips = [...f[key]]
++  const setTip = (lang, i, v) => setTipList(lang === 'en' ? 'tips_en' : 'tips', i, v)
++
++  // Édite une liste de tips quelconque (tips, tips_en, tips_seated, …) et fait
++  // pousser une ligne vide quand on remplit la dernière.
++  const setTipList = (key, i, v) => setForm(f => {
++    const tips = [...(f[key] || [])]
+     tips[i] = v
+     if (v && i === tips.length - 1) tips.push('')
+     return { ...f, [key]: tips }
+@@ -237,6 +257,12 @@ export default function FigureForm() {
+       rewind: form.rewind_degs.some(v => v > 0),   // legacy, dérivé de rewind_degs
+       tips: form.tips.filter(t => t.trim()),
+       tips_en: form.tips_en.filter(t => t.trim()),
++      // Appartenance : la discipline native est toujours incluse (contrainte DB).
++      sports: Array.from(new Set([form.sport, ...(form.sports || [])])),
++      tips_seated: form.tips_seated.filter(t => t.trim()),
++      tips_seated_en: form.tips_seated_en.filter(t => t.trim()),
++      tips_wakeskate: form.tips_wakeskate.filter(t => t.trim()),
++      tips_wakeskate_en: form.tips_wakeskate_en.filter(t => t.trim()),
+     }
+ 
+     let figureId = id ? parseInt(id) : null
+@@ -323,6 +349,16 @@ export default function FigureForm() {
+           </div>
+         </div>
+ 
++        <CheckGroup
++          label="Aussi praticable en"
++          fieldKey="sports"
++          options={['wakeboard', 'wakeskate', 'seated']
++            .filter(d => d !== form.sport)
++            .map(d => ({ value: d, label: SPORT_LABELS[d] }))}
++          form={form}
++          toggleArray={toggleArray}
++        />
++
+         <div className={styles.tabs}>
+           {tabs.map(t => (
+             <button key={t.id} type="button"
+@@ -347,6 +383,18 @@ export default function FigureForm() {
+                   placeholder={`Conseil ${i + 1}…`} style={{ marginBottom: 6 }} />
+               ))}
+             </div>
++            {OVERRIDE_SPORTS
++              .filter(d => d !== form.sport && (form.sports || []).includes(d))
++              .map(d => (
++                <div className="field" key={d}>
++                  <label>Conseils {SPORT_LABELS[d]} (FR) — override</label>
++                  {form[`tips_${d}`].map((tip, i) => (
++                    <input key={i} className="input" value={tip}
++                      onChange={e => setTipList(`tips_${d}`, i, e.target.value)}
++                      placeholder="Vide → hérite des conseils par défaut" style={{ marginBottom: 6 }} />
++                  ))}
++                </div>
++              ))}
+           </>
+         )}
+ 
+@@ -367,6 +415,18 @@ export default function FigureForm() {
+                   style={{ marginBottom: 6 }} />
+               ))}
+             </div>
++            {OVERRIDE_SPORTS
++              .filter(d => d !== form.sport && (form.sports || []).includes(d))
++              .map(d => (
++                <div className="field" key={d}>
++                  <label>Tips {SPORT_LABELS[d]} (EN) — override</label>
++                  {form[`tips_${d}_en`].map((tip, i) => (
++                    <input key={i} className="input" value={tip}
++                      onChange={e => setTipList(`tips_${d}_en`, i, e.target.value)}
++                      placeholder="Empty → inherits default tips" style={{ marginBottom: 6 }} />
++                  ))}
++                </div>
++              ))}
+           </>
+         )}
+ 
+
+# NOUVEAU FICHIER (non suivi) : scripts/migrations/0004-figure-sports-tips.sql
+```sql
+-- Migration 0004 — appartenance multi-discipline + tips override par discipline
+--
+-- Pourquoi : `figures.sport` (singulier) reste la discipline NATIVE (badge, SEO,
+-- sport par défaut des vidéos), mais une figure peut être PRATICABLE dans
+-- plusieurs disciplines même sans contenu (vidéo/tips) encore existant. On veut
+-- qu'un rider seated trouve toutes les figures possibles → appartenance EXPLICITE
+-- et curée `figures.sports` (jamais dérivée du contenu), source de vérité du
+-- filtre catalogue. Les tips deviennent facettables : `tips`/`tips_en` = jeu par
+-- défaut (discipline native), `tips_<discipline>` = OVERRIDE rempli uniquement
+-- s'il diverge.
+--
+-- À exécuter dans l'éditeur SQL Supabase, APRÈS la migration 0003, dans l'ordre
+-- des sections (autocommit) : l'étape 3 (check) suppose le backfill de l'étape 2.
+-- Mirroré dans :
+--   - scripts/wakeref_post_restore.sql  (les 2 vues — exécutable)
+--   - scripts/wakeref_schema.sql        (colonnes figures + check — référence)
+
+-- 1. Colonnes sur figures.
+--    sports             → disciplines où le trick est PRATICABLE (⊇ {sport})
+--    tips_<discipline>  → override des tips de la discipline (NULL/[] = hérite de tips)
+alter table public.figures
+  add column if not exists sports            sport_type[],
+  add column if not exists tips_seated        text[],
+  add column if not exists tips_seated_en     text[],
+  add column if not exists tips_wakeskate     text[],
+  add column if not exists tips_wakeskate_en  text[];
+
+-- 2. Backfill : appartenance initiale = la discipline native seule.
+update public.figures set sports = array[sport] where sports is null;
+
+-- 3. Intégrité : sports non null et contient toujours la discipline native.
+alter table public.figures
+  alter column sports set not null,
+  add constraint figures_sport_in_sports check (sport = any (sports));
+
+-- 4. Vues : exposer `sports` (filtre catalogue) + les 4 colonnes tips (fiche).
+--    Colonnes appendées en FIN → compatibles CREATE OR REPLACE malgré les
+--    fonctions qui retournent `setof figures_card` / `setof figures_full`.
+
+create or replace view public.figures_card as
+select f.id, f.slug, f.name, f.sport, f.difficulty, f.contexts,
+       c.name as category_name, c.slug as category_slug,
+       f.sports
+from figures f
+left join categories c on c.id = f.category_id;
+
+create or replace view public.figures_full as
+select
+  f.id, f.slug, f.name, f.sport, f.difficulty,
+  f.description, f.description_en,
+  f.tips, f.tips_en,
+  f.is_switch, f.switch_of,
+  f.built_on_id,
+  f.contexts,
+  f.approach,
+  f.rotation,
+  f.inverted,
+  f.rewind,
+  f.published, f.created_at, f.updated_at,
+  c.name  as category_name,
+  c.slug  as category_slug,
+  c.color as category_color,
+  case when f.switch_of is not null then
+    (select json_build_object('id', o.id, 'name', o.name, 'slug', o.slug)
+     from figures o where o.id = f.switch_of)
+  end as switch_of_figure,
+  case when f.built_on_id is not null then
+    (select json_build_object('id', b.id, 'name', b.name, 'slug', b.slug,
+              'switch_names', (select string_agg(x.name, ', ' order by x.name)
+                               from figures x where x.switch_of = b.id))
+     from figures b where b.id = f.built_on_id
+       and b.switch_of is null)
+  end as built_on_figure,
+  coalesce(
+    (select json_agg(json_build_object('id', s.id, 'name', s.name, 'slug', s.slug))
+     from figures s where s.switch_of = f.id),
+    '[]'
+  ) as switch_versions,
+  coalesce(
+    (select json_agg(json_build_object('id', p.id, 'name', p.name, 'slug', p.slug))
+     from prerequisites pr
+     join figures p on p.id = pr.requires_id
+     where pr.figure_id = f.id),
+    '[]'
+  ) as prerequisites,
+  coalesce(
+    (select json_agg(
+        json_build_object(
+          'id', v.id, 'title', v.title, 'file_path', v.file_path,
+          'source_type', v.source_type, 'source_url', v.source_url,
+          'creator_name', v.creator_name, 'creator_url', v.creator_url,
+          'caption', v.caption, 'performer_gender', v.performer_gender
+        ) order by v.sort_order)
+     from videos v
+     where v.takedown_requested = false
+       and v.figure_id in (
+         select g.id from figures g
+         where coalesce(g.switch_of, g.id) = coalesce(f.switch_of, f.id)
+       )),
+    '[]'
+  ) as videos,
+  coalesce(
+    (select json_agg(json_build_object('id', n.id, 'name', n.name, 'slug', n.slug,
+              'switch_names', (select string_agg(x.name, ', ' order by x.name)
+                               from figures x where x.switch_of = n.id))
+                     order by n.rotation, n.inverted, n.name)
+     from figures n where n.built_on_id = f.id
+       and n.switch_of is null),
+    '[]'
+  ) as built_on_children,
+  f.spin,
+  f.inverts,
+  f.rewind_degs,
+  f.rotation_type,
+  (with recursive anc as (
+     select b.id, b.name, b.slug, b.built_on_id
+     from figures b where b.id = f.built_on_id
+     union all
+     select p.id, p.name, p.slug, p.built_on_id
+     from figures p join anc a on p.id = a.built_on_id
+   )
+   select json_build_object('id', a.id, 'name', a.name, 'slug', a.slug)
+   from anc a where a.built_on_id is null
+   limit 1
+  ) as base_figure,
+  -- Appartenance multi-discipline + tips override (appendées en fin pour rester
+  -- compatibles avec un CREATE OR REPLACE VIEW lors des migrations).
+  f.tips_seated, f.tips_seated_en,
+  f.tips_wakeskate, f.tips_wakeskate_en,
+  f.sports
+from figures f
+left join categories c on c.id = f.category_id;
+
+alter view public.figures_full set (security_invoker = true);
+alter view public.figures_card set (security_invoker = true);
+```

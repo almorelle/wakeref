@@ -66,6 +66,8 @@ export default function FigureDetail() {
   const [takedownForm, setTakedownForm] = useState({ name: '', email: '', message: '' })
   const [takedownSent, setTakedownSent] = useState(false)
   const [copied, setCopied] = useState(false)
+  // Discipline d'onglet tips préférée, mémorisée comme la langue (wakeref_lang).
+  const [tipFacet, setTipFacet] = useState(() => localStorage.getItem('wakeref_facet') || '')
 
   useEffect(() => {
     let active = true
@@ -198,7 +200,35 @@ export default function FigureDetail() {
   const baseFigure      = figure.base_figure ? (typeof figure.base_figure === 'string' ? JSON.parse(figure.base_figure) : figure.base_figure) : null
 
   const desc            = localize(figure, 'description')
-  const tips            = localize(figure, 'tips') || []
+
+  // Tips facettés par discipline. `tips` (localisé) = jeu par défaut de la
+  // discipline native ; `tips_<d>` = override rempli seulement s'il diverge.
+  // Un onglet par discipline de `sports` qui est native OU a un override non
+  // vide ; onglets affichés uniquement s'il y a ≥2 jeux distincts à montrer.
+  const defaultTips = localize(figure, 'tips') || []
+  const figSports   = Array.isArray(figure.sports) && figure.sports.length
+    ? figure.sports : (figure.sport ? [figure.sport] : [])
+  // La native utilise TOUJOURS `tips` : on ignore un éventuel override résiduel
+  // sur elle (donnée orpheline d'une bascule de discipline côté admin).
+  const tipsOverride = (d) =>
+    d === figure.sport  ? []
+    : d === 'seated'    ? (localize(figure, 'tips_seated')    || [])
+    : d === 'wakeskate' ? (localize(figure, 'tips_wakeskate') || [])
+    : []
+  const tipTabs = figSports
+    .map(d => {
+      const ov = tipsOverride(d)
+      return { sport: d, tips: ov.length ? ov : defaultTips, hasOwn: ov.length > 0, isNative: d === figure.sport }
+    })
+    .filter(t => (t.isNative || t.hasOwn) && t.tips.length > 0)
+  // Onglets dès qu'il y a ≥2 jeux, OU un unique jeu non-natif (à étiqueter pour
+  // ne pas faire passer des conseils spécifiques pour les conseils par défaut).
+  const showTipTabs    = tipTabs.length > 1 || (tipTabs.length === 1 && !tipTabs[0].isNative)
+  const activeTipSport = tipTabs.some(t => t.sport === tipFacet)
+    ? tipFacet
+    : (tipTabs.some(t => t.sport === figure.sport) ? figure.sport : tipTabs[0]?.sport)
+  const activeTips     = (tipTabs.find(t => t.sport === activeTipSport) || tipTabs[0])?.tips || defaultTips
+  const tipsToShow     = showTipTabs ? activeTips : (tipTabs[0]?.tips || defaultTips)
 
   // Décomposition du trick en composantes élémentaires (base → inverts → rotations).
   const decomp     = decomposeTrick(figure)
@@ -342,11 +372,24 @@ export default function FigureDetail() {
           </section>
         )}
 
-        {tips.length > 0 && (
+        {tipsToShow.length > 0 && (
           <section className={styles.section}>
             <p className="section-title"><Icon name="bulb" /> {tr.tips}</p>
+            {showTipTabs && (
+              <div className={styles.tipTabs} role="group" aria-label={tr.tips}>
+                {tipTabs.map(t => (
+                  <button
+                    key={t.sport}
+                    type="button"
+                    aria-pressed={t.sport === activeTipSport}
+                    className={`${styles.tipTab} ${t.sport === activeTipSport ? styles.tipTabActive : ''}`}
+                    onClick={() => { setTipFacet(t.sport); localStorage.setItem('wakeref_facet', t.sport) }}
+                  >{tr.sportNames?.[t.sport] || t.sport}</button>
+                ))}
+              </div>
+            )}
             <ul className={styles.tips}>
-              {tips.map((tip, i) => <li key={i}>{tip}</li>)}
+              {tipsToShow.map((tip, i) => <li key={i}>{tip}</li>)}
             </ul>
           </section>
         )}
