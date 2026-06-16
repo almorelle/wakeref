@@ -31,6 +31,8 @@ export const t = {
 
     // Figures list
     all:     'Tous',
+    filterLabels: { category: 'Catégorie', sport: 'Sport', obstacle: 'Obstacle' },
+    figureCount: (n) => `${n} figure${n > 1 ? 's' : ''}`,
     noFiguresInCat: 'Aucune figure dans cette catégorie.',
 
     // Figure detail
@@ -275,6 +277,8 @@ export const t = {
 
     // Figures list
     all:     'All',
+    filterLabels: { category: 'Category', sport: 'Sport', obstacle: 'Obstacle' },
+    figureCount: (n) => `${n} trick${n > 1 ? 's' : ''}`,
     noFiguresInCat: 'No tricks in this category.',
 
     // Figure detail

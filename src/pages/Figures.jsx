@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { searchFigures } from '../lib/searchFigures'
 import FigureCard from '../components/FigureCard'
+import ScrollRow from '../components/ScrollRow'
 import { useT } from '../i18n/useT'
 import { CATEGORIES } from '../data/categories'
 import styles from './Figures.module.css'
@@ -97,12 +98,13 @@ export default function Figures() {
         descriptionEn="Complete list of wakeboard, wakeskate and seated wakeboard tricks, by category."
         path="/figures"
       />
-      <div className={styles.searchBar}>
+      <div className={styles.controls}>
         <div className={styles.searchWrap}>
           <Icon name="search" />
           <input
             className={styles.searchInput}
             type="text"
+            aria-label={tr.searchPlaceholder}
             placeholder={tr.searchPlaceholder}
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -114,58 +116,68 @@ export default function Figures() {
             </button>
           )}
         </div>
-      </div>
 
-      {/* Filtre catégories */}
-      <div className={styles.filters}>
-        <button
-          className={`${styles.chip} ${activeFilter === 'tous' ? styles.active : ''}`}
-          onClick={() => setFilter('tous')}
-        >{tr.all}</button>
-        {CATEGORIES.map(c => (
-          <button
-            key={c.id}
-            className={`${styles.chip} ${activeFilter === c.slug ? styles.active : ''}`}
-            onClick={() => setFilter(c.slug)}
-            style={activeFilter === c.slug ? { '--chip-color': c.color } : {}}
-          >{tr.catNames[c.slug] || c.name}</button>
-        ))}
-      </div>
+        {/* Axe catégorie */}
+        <div className={styles.filterRow}>
+          <span className={styles.filterLabel}>{tr.filterLabels.category}</span>
+          <ScrollRow className={styles.filters}>
+            <button
+              className={`${styles.chip} ${activeFilter === 'tous' ? styles.active : ''}`}
+              onClick={() => setFilter('tous')}
+            >{tr.all}</button>
+            {CATEGORIES.map(c => (
+              <button
+                key={c.id}
+                className={`${styles.chip} ${activeFilter === c.slug ? styles.active : ''}`}
+                onClick={() => setFilter(c.slug)}
+                style={activeFilter === c.slug ? { '--chip-color': c.color } : {}}
+              >{tr.catNames[c.slug] || c.name}</button>
+            ))}
+          </ScrollRow>
+        </div>
 
-      {/* Filtre sport + contexte */}
-      <div className={styles.filters} style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', borderBottom: 'none', borderTop: '1px solid var(--c-border)' }}>
-        <button
-          className={`${styles.chip} ${activeSport === '' ? styles.active : ''}`}
-          onClick={() => setSport('')}
-        >{tr.all}</button>
-        <button
-          className={`${styles.chip} ${activeSport === 'wakeboard' ? styles.active : ''}`}
-          onClick={() => setSport('wakeboard')}
-        >Wakeboard</button>
-        <button
-          className={`${styles.chip} ${activeSport === 'wakeskate' ? styles.active : ''}`}
-          onClick={() => setSport('wakeskate')}
-        >Wakeskate</button>
-        <button
-          className={`${styles.chip} ${activeSport === 'seated' ? styles.active : ''}`}
-          onClick={() => setSport('seated')}
-        >{tr.sportNames?.seated || 'Seated'}</button>
+        {/* Axe sport */}
+        <div className={styles.filterRow}>
+          <span className={styles.filterLabel}>{tr.filterLabels.sport}</span>
+          <ScrollRow className={styles.filters}>
+            <button
+              className={`${styles.chip} ${activeSport === '' ? styles.active : ''}`}
+              onClick={() => setSport('')}
+            >{tr.all}</button>
+            <button
+              className={`${styles.chip} ${activeSport === 'wakeboard' ? styles.active : ''}`}
+              onClick={() => setSport('wakeboard')}
+            >Wakeboard</button>
+            <button
+              className={`${styles.chip} ${activeSport === 'wakeskate' ? styles.active : ''}`}
+              onClick={() => setSport('wakeskate')}
+            >Wakeskate</button>
+            <button
+              className={`${styles.chip} ${activeSport === 'seated' ? styles.active : ''}`}
+              onClick={() => setSport('seated')}
+            >{tr.sportNames?.seated || 'Seated'}</button>
+          </ScrollRow>
+        </div>
 
-        <span style={{ width: 1, background: 'var(--c-border)', margin: '0 4px', alignSelf: 'stretch' }} />
-
-        {[
-          { value: '',          label: tr.all                          },
-          { value: 'kicker',    label: tr.ctxNames?.kicker    || 'Kicker'    },
-          { value: 'air_trick', label: tr.ctxNames?.air_trick || 'Air Trick' },
-          { value: 'feature',   label: tr.ctxNames?.feature   || 'Feature'   },
-          { value: 'flat',      label: tr.ctxNames?.flat      || 'Flat'      },
-        ].map(ctx => (
-          <button
-            key={ctx.value}
-            className={`${styles.chip} ${activeContext === ctx.value ? styles.active : ''}`}
-            onClick={() => setContext(ctx.value)}
-          >{ctx.label}</button>
-        ))}
+        {/* Axe obstacle */}
+        <div className={styles.filterRow}>
+          <span className={styles.filterLabel}>{tr.filterLabels.obstacle}</span>
+          <ScrollRow className={styles.filters}>
+            {[
+              { value: '',          label: tr.all                          },
+              { value: 'kicker',    label: tr.ctxNames?.kicker    || 'Kicker'    },
+              { value: 'air_trick', label: tr.ctxNames?.air_trick || 'Air Trick' },
+              { value: 'feature',   label: tr.ctxNames?.feature   || 'Feature'   },
+              { value: 'flat',      label: tr.ctxNames?.flat      || 'Flat'      },
+            ].map(ctx => (
+              <button
+                key={ctx.value}
+                className={`${styles.chip} ${activeContext === ctx.value ? styles.active : ''}`}
+                onClick={() => setContext(ctx.value)}
+              >{ctx.label}</button>
+            ))}
+          </ScrollRow>
+        </div>
       </div>
 
       <div className="page-container">
@@ -174,6 +186,9 @@ export default function Figures() {
             {searching && <span className="spinner" />}
             {!searching && searchResults?.length === 0 && (
               <p style={{ color: 'var(--c-muted)', fontSize: 14, paddingTop: '1rem' }}>{tr.noResults(query)}</p>
+            )}
+            {!searching && searchResults?.length > 0 && (
+              <p className={styles.count} aria-live="polite">{tr.figureCount(searchResults.length)}</p>
             )}
             <div className={styles.list}>
               {!searching && searchResults?.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
@@ -186,6 +201,9 @@ export default function Figures() {
               <p style={{ color: 'var(--c-muted)', fontSize: 14, paddingTop: '1rem' }}>
                 {tr.noFiguresInCat}
               </p>
+            )}
+            {!loading && figures.length > 0 && (
+              <p className={styles.count} aria-live="polite">{tr.figureCount(figures.length)}</p>
             )}
             <div className={styles.list}>
               {figures.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
