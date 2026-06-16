@@ -349,4 +349,10 @@
 
 @media (max-width: 760px) {
   .tiles { grid-template-columns: 1fr; }
+  /* Quand on tape, le contenu passe des tuiles/CTA (page haute) aux seuls
+     résultats (souvent un spinner ou peu de cartes) : la page se raccourcit et
+     le scroll qui épinglait la barre sous la navbar (handleSearchFocus) saute
+     vers le haut, ramenant le hero. On réserve une hauteur d'écran à la zone
+     de résultats pour garder la barre épinglée, clavier ouvert. */
+  .results { min-height: 100vh; }
 }
