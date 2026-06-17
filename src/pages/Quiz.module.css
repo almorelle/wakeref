@@ -142,6 +142,10 @@
   color: var(--c-danger) !important;
 }
 .optDim { opacity: .4; cursor: default; }
+/* indice de raccourci clavier, visible au desktop seulement */
+.optNum { font-size: 11px; font-weight: 700; opacity: .4; margin-right: 8px; }
+
+.loader { display: block; margin: 3rem auto 0; }
 
 .feedback {
   font-size: 14px;
@@ -164,6 +168,7 @@
 @media (max-width: 700px) {
   .quiz { padding-bottom: 84px; }
   .video { max-height: 320px; }
+  .optNum { display: none; }
   .nextBtn {
     position: fixed;
     bottom: calc(60px + 12px);
@@ -188,26 +193,29 @@
 .scoreCircle {
   width: 120px; height: 120px;
   border-radius: 50%;
-  border: 3px solid var(--c-accent);
+  border: 3px solid var(--score-color, var(--c-accent));
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  background: #3b82f615;
+  background: color-mix(in srgb, var(--score-color, var(--c-accent)) 12%, transparent);
+}
+/* number + « /N » alignés sur la même ligne de base → se lit comme un score */
+.scoreValue {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
 }
 .scoreNum {
   font-family: var(--font-display);
-  font-size: 48px;
+  font-size: 46px;
   font-weight: 800;
-  color: var(--c-accent);
+  color: var(--score-color, var(--c-accent));
   line-height: 1;
-  margin-top: -20px;
 }
 .scoreTotal {
   font-family: var(--font-display);
   font-size: 20px;
   color: var(--c-muted);
-  margin-top: 14px;
 }
 .scoreMsg { font-size: 15px; color: var(--c-muted); line-height: 1.6; }
 .scoreBreakdown {

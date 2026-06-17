@@ -83,6 +83,7 @@ export const t = {
 
     // Quiz
     quizQuestion:  'Quelle est cette figure ?',
+    quizVideoAlt:  'Vidéo de la figure à deviner',
     quizNext:      'Question suivante →',
     quizResult:    'Voir le résultat →',
     quizReplay:    'Rejouer',
@@ -329,6 +330,7 @@ export const t = {
 
     // Quiz
     quizQuestion:  'What trick is this?',
+    quizVideoAlt:  'Video of the trick to guess',
     quizNext:      'Next question →',
     quizResult:    'See result →',
     quizReplay:    'Play again',

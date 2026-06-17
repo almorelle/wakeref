@@ -114,6 +114,25 @@ export default function Quiz() {
     setIdx(i => i + 1); setAnswered(null); setChosen(null)
   }
 
+  // Raccourcis clavier (desktop) : 1–4 pour répondre, Entrée pour enchaîner.
+  useEffect(() => {
+    if (done || !questions.length) return
+    const onKey = (e) => {
+      const tag = e.target.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (!answered) {
+        const n = parseInt(e.key, 10)
+        const opt = n >= 1 && n <= 4 ? questions[idx]?.options[n - 1] : null
+        if (opt) { e.preventDefault(); answer(opt) }
+      } else if (e.key === 'Enter') {
+        e.preventDefault(); next()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [done, questions, idx, answered])
+
   const getVideoUrl = (figure) => {
     const v = mainVideo(figure)
     if (!v) return null
@@ -128,7 +147,7 @@ export default function Quiz() {
     return handle ? { handle, url: v.creator_url } : null
   }
 
-  if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
+  if (loading) return <span className={`spinner ${styles.loader}`} />
 
   if (noVideos) return (
     <div className="page-container">
@@ -144,12 +163,17 @@ export default function Quiz() {
 
   if (done) {
     const msgs = tr.quizScoreMsgs
+    // Couleur du cercle selon la performance : rouge → ambre → vert.
+    const ratio = questions.length ? score / questions.length : 0
+    const scoreColor = ratio >= 0.7 ? 'var(--c-success)' : ratio >= 0.4 ? 'var(--c-ws)' : 'var(--c-danger)'
     return (
       <div className="page-container">
         <div className={styles.scorePage}>
-          <div className={styles.scoreCircle}>
-            <span className={styles.scoreNum}>{score}</span>
-            <span className={styles.scoreTotal}>/ {questions.length}</span>
+          <div className={styles.scoreCircle} style={{ '--score-color': scoreColor }}>
+            <div className={styles.scoreValue}>
+              <span className={styles.scoreNum}>{score}</span>
+              <span className={styles.scoreTotal}>/ {questions.length}</span>
+            </div>
           </div>
           <p className={styles.scoreMsg}>{msgs[score]}</p>
           <div className={styles.scoreBreakdown}>
@@ -168,7 +192,7 @@ export default function Quiz() {
     )
   }
 
-  if (!questions.length) return <span className="spinner" style={{ marginTop: '3rem' }} />
+  if (!questions.length) return <span className={`spinner ${styles.loader}`} />
 
   const q = questions[idx]
   const videoUrl = getVideoUrl(q.correct)
@@ -198,7 +222,7 @@ export default function Quiz() {
           {videoUrl
             ? (
               <div className={styles.videoInner}>
-                <video src={videoUrl} autoPlay loop muted playsInline className={styles.video} />
+                <video src={videoUrl} autoPlay loop muted playsInline className={styles.video} aria-label={tr.quizVideoAlt} />
                 {creator && (
                   <a
                     href={externalUrl(creator.url, { ref: true })}
@@ -228,7 +252,7 @@ export default function Quiz() {
         <p className={styles.question}>{tr.quizQuestion}</p>
 
         <div className={styles.options}>
-          {q.options.map(opt => {
+          {q.options.map((opt, i) => {
             let cls = styles.opt
             if (answered) {
               if (opt.id === q.correct.id) cls += ` ${styles.optCorrect}`
@@ -236,7 +260,9 @@ export default function Quiz() {
               else cls += ` ${styles.optDim}`
             }
             return (
-              <button key={opt.id} className={cls} onClick={() => answer(opt)}>{opt.name}</button>
+              <button key={opt.id} className={cls} onClick={() => answer(opt)}>
+                <span className={styles.optNum} aria-hidden="true">{i + 1}</span>{opt.name}
+              </button>
             )
           })}
         </div>
