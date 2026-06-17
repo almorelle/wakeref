@@ -24,6 +24,8 @@ VITE_SUPABASE_ANON_KEY=...
 
 **WakeRef** is a complete wakeboard & wakeskate tricks reference app — a PWA built with React 19 + Vite, backed by Supabase (PostgreSQL + Auth + Storage), deployed on Vercel.
 
+**Scope: cable-only.** All three disciplines (wakeboard, wakeskate, seated/handiwake) target cable / téléski-nautique riding — never boat. Do not introduce boat/wave concepts or vocabulary (e.g. "wake-to-wake", "transfert", "passages de vague"); the cable equivalents are kickers / modules / features and the cable itself.
+
 ### Data layer
 
 All data fetching goes through the singleton Supabase client at `src/lib/supabase.js`. There is no intermediate API layer — components and pages query Supabase directly.
