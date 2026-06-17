@@ -145,8 +145,6 @@
 /* indice de raccourci clavier, visible au desktop seulement */
 .optNum { font-size: 11px; font-weight: 700; opacity: .4; margin-right: 8px; }
 
-.loader { display: block; margin: 3rem auto 0; }
-
 .feedback {
   font-size: 14px;
   padding: 10px 14px;

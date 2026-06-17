@@ -60,6 +60,26 @@
   justify-content: space-between;
   margin-bottom: 12px;
 }
+/* titre dans un sectionHeader : la marge basse est portée par le header */
+.videosTitle { margin-bottom: 0; }
+
+/* État « figure introuvable » */
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 4rem 0;
+  text-align: center;
+}
+.notFoundIcon { font-size: 48px; }
+.notFoundTitle {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 800;
+}
+.notFoundText { font-size: 14px; color: var(--c-muted); }
+.notFoundActions { display: flex; gap: 8px; margin-top: 8px; }
 
 .desc {
   font-size: 15px;
@@ -208,6 +228,19 @@
   background: var(--c-border2);
   flex-shrink: 0;
 }
+/* Fondu de bord quand l'arbre déborde (horizontal) : signale le scroll. */
+.tree[data-fade-right]:not([data-fade-left]) {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+.tree[data-fade-left]:not([data-fade-right]) {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 28px);
+  mask-image: linear-gradient(to right, transparent, #000 28px);
+}
+.tree[data-fade-left][data-fade-right] {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
 .treeNode {
   font-family: var(--font-display);
   font-size: 13px;
@@ -256,7 +289,9 @@ a.treeNode:hover {
   flex-direction: row;
   overflow-x: auto;
   justify-content: safe center;
+  scrollbar-width: none;            /* le fondu de bord sert d'affordance */
 }
+.treeHorizontal::-webkit-scrollbar { display: none; }
 .treeHorizontal .treeConnector { width: 22px; height: 2px; }
 .treeHorizontal .treeChildren {
   flex-direction: column;
@@ -413,6 +448,9 @@ a.treeNode:hover {
   font-weight: 700;
 }
 .takedownForm { display: flex; flex-direction: column; gap: 12px; }
+.takedownTextarea { resize: vertical; }
+.takedownSuccessIcon { color: var(--c-success); }
+.modalActions { display: flex; gap: 8px; justify-content: flex-end; }
 .takedownInfo { font-size: 13px; color: var(--c-muted); line-height: 1.6; }
 .takedownSuccess {
   display: flex;

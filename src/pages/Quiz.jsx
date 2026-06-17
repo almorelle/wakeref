@@ -147,7 +147,7 @@ export default function Quiz() {
     return handle ? { handle, url: v.creator_url } : null
   }
 
-  if (loading) return <span className={`spinner ${styles.loader}`} />
+  if (loading) return <span className="spinner" />
 
   if (noVideos) return (
     <div className="page-container">
@@ -192,7 +192,7 @@ export default function Quiz() {
     )
   }
 
-  if (!questions.length) return <span className={`spinner ${styles.loader}`} />
+  if (!questions.length) return <span className="spinner" />
 
   const q = questions[idx]
   const videoUrl = getVideoUrl(q.correct)

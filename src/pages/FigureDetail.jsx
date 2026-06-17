@@ -1,4 +1,4 @@
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { externalUrl } from '../lib/url'
@@ -69,6 +69,18 @@ export default function FigureDetail() {
   // Discipline d'onglet tips préférée, mémorisée comme la langue (wakeref_lang).
   const [tipFacet, setTipFacet] = useState(() => localStorage.getItem('wakeref_facet') || '')
 
+  // Arbre de progression : refs + fondu de bord pour gérer le débordement.
+  const treeRef = useRef(null)
+  const currentNodeRef = useRef(null)
+  const [treeFade, setTreeFade] = useState({ left: false, right: false })
+  const updateTreeFade = useCallback(() => {
+    const el = treeRef.current
+    if (!el) return
+    const left = el.scrollLeft > 1
+    const right = el.scrollLeft < el.scrollWidth - el.clientWidth - 1
+    setTreeFade(prev => (prev.left === left && prev.right === right) ? prev : { left, right })
+  }, [])
+
   useEffect(() => {
     let active = true
     ;(async () => {
@@ -95,6 +107,18 @@ export default function FigureDetail() {
     // on passe le handler d'erreur en 2e argument de .then().
     supabase.rpc('track_figure_view', { fig_id: figure.id }).then(() => {}, () => {})
   }, [figure?.id])
+
+  // Centre le nœud courant dans l'arbre au chargement : sinon, sur mobile,
+  // l'arbre déborde ancré à gauche et le nœud courant + ses « étapes suivantes »
+  // (enfants) restent hors-écran et invisibles.
+  useEffect(() => {
+    const tree = treeRef.current, cur = currentNodeRef.current
+    if (!tree || !cur || tree.scrollWidth <= tree.clientWidth) { updateTreeFade(); return }
+    const tr = tree.getBoundingClientRect(), cr = cur.getBoundingClientRect()
+    const center = (cr.left - tr.left) + tree.scrollLeft + cr.width / 2
+    tree.scrollLeft = center - tree.clientWidth / 2
+    updateTreeFade()
+  }, [figure, updateTreeFade])
 
   // Loading while the fetched figure doesn't match the current slug yet.
   const loading = loadedSlug !== slug
@@ -165,7 +189,7 @@ export default function FigureDetail() {
     return <div className={styles.videoPlaceholder}><Icon name="player-play" /></div>
   }
 
-  if (loading) return <span className="spinner" style={{ marginTop: '3rem' }} />
+  if (loading) return <span className="spinner" />
   if (!figure) return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -174,11 +198,11 @@ export default function FigureDetail() {
         </button>
       </div>
       <div className="page-container">
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '4rem 0', textAlign: 'center' }}>
-          <span style={{ fontSize: 48 }}>🤷</span>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800 }}>{tr.notFound}</h2>
-          <p style={{ fontSize: 14, color: 'var(--c-muted)' }}>{tr.notFoundSub}</p>
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+        <div className={styles.notFound}>
+          <span className={styles.notFoundIcon}>🤷</span>
+          <h2 className={styles.notFoundTitle}>{tr.notFound}</h2>
+          <p className={styles.notFoundText}>{tr.notFoundSub}</p>
+          <div className={styles.notFoundActions}>
             <button className="btn btn-primary" onClick={() => navigate('/figures')}>
               <Icon name="list" /> {tr.figures}
             </button>
@@ -282,17 +306,17 @@ export default function FigureDetail() {
     <div className={styles.page}>
       <div className={styles.header}>
         <nav className={styles.breadcrumb}>
-          <button onClick={() => navigate('/')} className={styles.breadcrumbLink} aria-label={tr.home}>
+          <Link to="/" className={styles.breadcrumbLink} aria-label={tr.home}>
             <Icon name="home" />
-          </button>
+          </Link>
           <Icon name="chevron-right" className={styles.breadcrumbSep} />
-          <button onClick={() => navigate('/figures')} className={styles.breadcrumbLink}>
+          <Link to="/figures" className={styles.breadcrumbLink}>
             {tr.figures}
-          </button>
+          </Link>
           <Icon name="chevron-right" className={styles.breadcrumbSep} />
-          <button onClick={() => navigate(`/figures?cat=${figure.category_slug}`)} className={styles.breadcrumbLink}>
+          <Link to={`/figures?cat=${figure.category_slug}`} className={styles.breadcrumbLink}>
             {tr.catNames[figure.category_slug] || figure.category_name}
-          </button>
+          </Link>
           <Icon name="chevron-right" className={styles.breadcrumbSep} />
           <span className={styles.breadcrumbCurrent}>{figure.name}</span>
         </nav>
@@ -321,8 +345,14 @@ export default function FigureDetail() {
       <div className="page-container">
         {(builtOn || builtOnChildren.length > 0) && (
           <section className={styles.section}>
-            <p className="section-title"><Icon name="binary-tree" /> {tr.progression}</p>
-            <div className={`${styles.tree} ${builtOn ? styles.treeHorizontal : styles.treeVertical}`}>
+            <h2 className="section-title"><Icon name="binary-tree" /> {tr.progression}</h2>
+            <div
+              ref={treeRef}
+              className={`${styles.tree} ${builtOn ? styles.treeHorizontal : styles.treeVertical}`}
+              data-fade-left={treeFade.left || undefined}
+              data-fade-right={treeFade.right || undefined}
+              onScroll={updateTreeFade}
+            >
               {builtOn && (
                 <>
                   <Link to={'/figures/' + builtOn.slug} className={styles.treeNode}>
@@ -332,7 +362,7 @@ export default function FigureDetail() {
                   <div className={styles.treeConnector} aria-hidden="true" />
                 </>
               )}
-              <span className={`${styles.treeNode} ${styles.treeNodeCurrent}`}>
+              <span ref={currentNodeRef} className={`${styles.treeNode} ${styles.treeNodeCurrent}`}>
                 {figure.name}
                 {switchVersions.length > 0 && <span className={styles.hasSwitch}>+ {switchVersions.map(s => s.name).join(', ')}</span>}
               </span>
@@ -354,13 +384,13 @@ export default function FigureDetail() {
         )}
 
         <section className={styles.section}>
-          <p className="section-title"><Icon name="file-description" /> {tr.description}</p>
+          <h2 className="section-title"><Icon name="file-description" /> {tr.description}</h2>
           <p className={styles.desc}>{desc}</p>
         </section>
 
         {hasDecomp && (
           <section className={styles.section}>
-            <p className="section-title"><Icon name="binary-tree" /> {tr.decomposition}</p>
+            <h2 className="section-title"><Icon name="binary-tree" /> {tr.decomposition}</h2>
             <div className={`${styles.decomp} ${approachClass}`}>
               {decompChips.map((c, i) => (
                 <Fragment key={c.key}>
@@ -374,7 +404,7 @@ export default function FigureDetail() {
 
         {tipsToShow.length > 0 && (
           <section className={styles.section}>
-            <p className="section-title"><Icon name="bulb" /> {tr.tips}</p>
+            <h2 className="section-title"><Icon name="bulb" /> {tr.tips}</h2>
             {showTipTabs && (
               <div className={styles.tipTabs} role="group" aria-label={tr.tips}>
                 {tipTabs.map(t => (
@@ -395,7 +425,7 @@ export default function FigureDetail() {
         )}
 
         <section className={styles.section}>
-          <p className="section-title"><Icon name="lock" /> {tr.prerequisites}</p>
+          <h2 className="section-title"><Icon name="lock" /> {tr.prerequisites}</h2>
           {prereqs.length === 0
             ? <p className={styles.empty}>{tr.noPrereqs}</p>
             : (
@@ -410,7 +440,7 @@ export default function FigureDetail() {
 
         {(switchOf || switchVersions.length > 0) && (
           <section className={styles.section}>
-            <p className="section-title"><Icon name="arrows-exchange" /> {switchOf ? tr.switchOf : tr.switchVersions}</p>
+            <h2 className="section-title"><Icon name="arrows-exchange" /> {switchOf ? tr.switchOf : tr.switchVersions}</h2>
             <div className={styles.prereqs}>
               {switchOf && (
                 <Link to={'/figures/' + switchOf.slug} className={styles.prereqChip}>
@@ -428,7 +458,7 @@ export default function FigureDetail() {
 
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
-            <p className="section-title" style={{ margin: 0 }}><Icon name="video" /> {tr.videos}</p>
+            <h2 className={`section-title ${styles.videosTitle}`}><Icon name="video" /> {tr.videos}</h2>
             <Link to={`/submit?figure=${figure.slug}`} className="btn btn-submit btn-sm">
               <Icon name="upload" /> {tr.submitCta}
             </Link>
@@ -480,7 +510,7 @@ export default function FigureDetail() {
             {takedownSent
               ? (
                 <div className={styles.takedownSuccess}>
-                  <Icon name="check" style={{ fontSize: 32, color: 'var(--c-success)' }} />
+                  <Icon name="check" size={32} className={styles.takedownSuccessIcon} />
                   <p>{tr.takedownSuccessMsg}</p>
                   <button className="btn btn-ghost" onClick={() => setTakedownVideo(null)}>{tr.close}</button>
                 </div>
@@ -500,10 +530,10 @@ export default function FigureDetail() {
                   </div>
                   <div className="field">
                     <label>{tr.takedownMessage}</label>
-                    <textarea className="input" rows={3} placeholder={tr.takedownMsgPh} style={{ resize: 'vertical' }}
+                    <textarea className={`input ${styles.takedownTextarea}`} rows={3} placeholder={tr.takedownMsgPh}
                       value={takedownForm.message} onChange={e => setTakedownForm(f => ({ ...f, message: e.target.value }))} />
                   </div>
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <div className={styles.modalActions}>
                     <button type="button" className="btn btn-ghost" onClick={() => setTakedownVideo(null)}>{tr.cancel}</button>
                     <button type="submit" className="btn btn-primary">{tr.takedownSend}</button>
                   </div>

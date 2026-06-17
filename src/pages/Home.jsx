@@ -151,7 +151,7 @@ export default function Home() {
                 vient consulter. Les CTA de contribution viennent après. */}
             {mostViewed.length > 0 && (
               <>
-                <p className={`section-title ${styles.sectionTitle}`}>{tr.mostViewedFigures}</p>
+                <h2 className={`section-title ${styles.sectionTitle}`}>{tr.mostViewedFigures}</h2>
                 <div className={styles.list}>
                   {mostViewed.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
                 </div>
@@ -160,7 +160,7 @@ export default function Home() {
 
             {videos.length > 0 && (
               <>
-                <p className={`section-title ${styles.sectionTitle}`}>{tr.recentVideos}</p>
+                <h2 className={`section-title ${styles.sectionTitle}`}>{tr.recentVideos}</h2>
                 <div className={styles.list}>
                   {videos.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
                 </div>
