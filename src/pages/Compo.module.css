@@ -263,20 +263,21 @@
 .moveBtn {
   width: 30px; height: 36px;
   border-radius: var(--r-sm);
-  color: var(--c-faint);
-  font-size: 11px;
+  color: var(--c-muted);
   display: flex; align-items: center; justify-content: center;
   transition: all var(--t-fast);
 }
 .moveBtn:hover:not(:disabled) { color: var(--c-accent); background: var(--c-surface3); }
 .moveBtn:disabled { opacity: .25; cursor: default; }
+/* chevron-right pivoté → flèches haut / bas */
+.moveUp { transform: rotate(-90deg); }
+.moveDown { transform: rotate(90deg); }
 
 .removeBtn {
   flex-shrink: 0;
   width: 36px; height: 36px;
   border-radius: var(--r-sm);
-  color: var(--c-faint);
-  font-size: 13px;
+  color: var(--c-muted);
   display: flex; align-items: center; justify-content: center;
   transition: all var(--t-fast);
 }

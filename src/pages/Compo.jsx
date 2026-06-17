@@ -224,7 +224,7 @@ function JibForm({ tr, onConfirm, onCancel }) {
 
       <div className={styles.questionRow}>
         <span className={styles.questionLabel}>{tr.compoJibFigures}</span>
-        <div className={styles.questionOptions} style={{ flexWrap: 'wrap' }}>
+        <div className={styles.questionOptions}>
           {JIB_FIGURES.map(f => (
             <OptBtn key={f.slug} active={pass.figures.includes(f.slug)} onClick={() => toggle('figures', f.slug)}>
               {f.labelKey ? tr[f.labelKey] : f.label}
@@ -539,11 +539,17 @@ export default function Compo() {
     <div className={styles.rowActions}>
       <div className={styles.moveGroup}>
         <button className={styles.moveBtn} disabled={index === 0}
-          onClick={() => moveItem(index, -1)} aria-label={tr.compoMoveUp}>▲</button>
+          onClick={() => moveItem(index, -1)} aria-label={tr.compoMoveUp}>
+          <Icon name="chevron-right" size={16} className={styles.moveUp} />
+        </button>
         <button className={styles.moveBtn} disabled={index === allItems.length - 1}
-          onClick={() => moveItem(index, 1)} aria-label={tr.compoMoveDown}>▼</button>
+          onClick={() => moveItem(index, 1)} aria-label={tr.compoMoveDown}>
+          <Icon name="chevron-right" size={16} className={styles.moveDown} />
+        </button>
       </div>
-      <button className={styles.removeBtn} onClick={() => removeItem(type, item)} aria-label={tr.compoRemove}>✕</button>
+      <button className={styles.removeBtn} onClick={() => removeItem(type, item)} aria-label={tr.compoRemove}>
+        <Icon name="x" size={16} />
+      </button>
     </div>
   )
 
