@@ -8,7 +8,7 @@ import styles from './AdminNoVideos.module.css'
 import Icon from '../../components/Icon'
 
 const PanelHead = ({ icon, title, desc, count, panelKey, open, toggle }) => (
-  <button className={styles.panelHead} onClick={() => toggle(panelKey)}>
+  <button className={styles.panelHead} onClick={() => toggle(panelKey)} aria-expanded={!!open[panelKey]}>
     <Icon name={icon} />
     <span className={styles.panelTitle}>{title}</span>
     <span className={styles.panelDesc}>{desc}</span>
@@ -145,6 +145,7 @@ export default function AdminNoVideos() {
                   key={v.id}
                   className={styles.item}
                   onClick={() => copyLink(v)}
+                  aria-label={copiedId === v.id ? 'Lien copié' : 'Copier le lien Instagram'}
                 >
                   <span className={styles.itemName}>{v.figures?.name || `Figure #${v.figure_id}`}</span>
                   <span className={styles.itemMeta}>
