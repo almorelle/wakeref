@@ -49,6 +49,20 @@ const parseFigure = (f) => ({
   rotation: parseArr(f.rotation),
 })
 
+// Slugs de figures référencés par la grille de score. Le slug étant un champ
+// éditable en admin, ces valeurs doivent correspondre exactement aux slugs en
+// base — sinon l'item ne se déclenche jamais, silencieusement. Source de vérité
+// unique (grille + JIB_FIGURES) ; le garde-fou dans <Compo> alerte en dev si
+// l'un d'eux a disparu de la table figures.
+const SCORING_SLUGS = {
+  frontLip:   'front-lip',
+  backBoard:  'back-board',
+  frontBoard: 'front-board',
+  backLip:    'back-lip',
+  fiftyFifty: '50-50',
+  press:      'press',
+}
+
 // Une passe jib génère des pseudo-entrées pour le moteur de score
 function jibPassToEntries(pass) {
   const entries = []
@@ -75,8 +89,8 @@ function jibPassToEntries(pass) {
   }
 
   // Press / 50-50
-  if (pass.press)  entries.push({ ...base, _key: `${pass._key}_press`, slug: 'press',  approach: [pass.approach] })
-  if (pass['5050']) entries.push({ ...base, _key: `${pass._key}_5050`, slug: '50-50', approach: [pass.approach] })
+  if (pass.press)  entries.push({ ...base, _key: `${pass._key}_press`, slug: SCORING_SLUGS.press,      approach: [pass.approach] })
+  if (pass['5050']) entries.push({ ...base, _key: `${pass._key}_5050`, slug: SCORING_SLUGS.fiftyFifty, approach: [pass.approach] })
 
   // Rotations (entrée/sortie)
   if (pass.entryRotation) entries.push({ ...base, _key: `${pass._key}_entryrot`, rotation: [pass.entryRotation], approach: [pass.approach] })
@@ -85,74 +99,85 @@ function jibPassToEntries(pass) {
   return entries
 }
 
-function computeScore(entries, jibPasses) {
-  // Aplatir les passes jib en pseudo-entrées
-  const jibEntries = jibPasses.flatMap(jibPassToEntries)
-  const all = [...entries, ...jibEntries]
+// ── Grilles de score par discipline ──────────────────────────
+//
+// Une grille = liste de sections ; une section = liste d'items ; un item porte
+// un `test(ctx)` renvoyant un booléen (« le run contient-il cet élément ? »).
+// `ctx` expose :
+//   - `entries` : les figures saisies individuellement (air / kicker / feature)
+//   - `all`     : `entries` + les pseudo-entrées issues des passes jib
+//
+// Le score est volontairement binaire et sans seuil de degrés : c'est un
+// référentiel de jugement, pas un barème de performance (cf. invariant
+// anti-perf). Ajouter une discipline = ajouter une entrée dans GRIDS.
 
-  const scored = {}
+// Prédicats élémentaires partagés par les tests
+const isAir    = e => e.contexts.includes('air_trick')
+const onModule = e => e.contexts.includes('kicker') || e.contexts.includes('feature')
+const hasTs    = e => e.approach.includes('ts')
+const hasHs    = e => e.approach.includes('hs')
 
-  // AIR TRICKS
-  scored['railey_air'] = entries.some(e => e.category_slug === 'railey' && e.contexts.includes('air_trick'))
-  scored['backroll_air'] = entries.some(e => e.category_slug === 'backroll' && e.contexts.includes('air_trick'))
-  scored['front_sbend_air'] = entries.some(e =>
-    e.contexts.includes('air_trick') && (
-      (e.category_slug === 'front' && e.approach.includes('hs')) ||
-      e.category_slug === 's-bend' || e.category_slug === 'hinterberger'
-    )
-  )
-  scored['ts_air'] = entries.some(e => e.contexts.includes('air_trick') && e.approach.includes('ts'))
-  const tsAirLeft  = entries.some(e => e.contexts.includes('air_trick') && e.approach.includes('ts') && e.side === 'left')
-  const tsAirRight = entries.some(e => e.contexts.includes('air_trick') && e.approach.includes('ts') && e.side === 'right')
-  scored['sw_ts_air'] = tsAirLeft && tsAirRight
-  scored['whip'] = entries.some(e => e.category_slug === 'whip')
+// Vrai si `pred` est satisfait des deux côtés (gauche ET droite) → switch
+const onBoth = (list, pred) =>
+  list.some(e => pred(e) && e.side === 'left') &&
+  list.some(e => pred(e) && e.side === 'right')
 
-  // GLISSE (kicker + feature)
-  scored['flip'] = all.some(e => e.inverted && (e.contexts.includes('kicker') || e.contexts.includes('feature')))
-  scored['spin'] = all.some(e => e.category_slug === 'spin' && (e.contexts.includes('kicker') || e.contexts.includes('feature')))
-  scored['fslip_bsboard'] = all.some(e => e.slug === 'front-lip' || e.slug === 'back-board')
-  scored['fsboard_bslip'] = all.some(e => e.slug === 'front-board' || e.slug === 'back-lip')
-
-  // ENTRIES (kicker/feature)
-  const jibKicker = all.filter(e => e.contexts.includes('kicker') || e.contexts.includes('feature'))
-  const tsLeft  = jibKicker.some(e => e.approach.includes('ts') && e.side === 'left')
-  const tsRight = jibKicker.some(e => e.approach.includes('ts') && e.side === 'right')
-  const hsLeft  = jibKicker.some(e => e.approach.includes('hs') && e.side === 'left')
-  const hsRight = jibKicker.some(e => e.approach.includes('hs') && e.side === 'right')
-  scored['ts_entry']    = tsLeft || tsRight
-  scored['sw_ts_entry'] = tsLeft && tsRight
-  scored['hs_entry']    = hsLeft || hsRight
-  scored['sw_hs_entry'] = hsLeft && hsRight
-  scored['5050']  = all.some(e => e.slug === '50-50')
-  scored['press'] = all.some(e => e.slug === 'press')
-
-  // ROTATIONS
-  const fsLeft  = all.some(e => e.rotation.includes('fs') && e.side === 'left')
-  const fsRight = all.some(e => e.rotation.includes('fs') && e.side === 'right')
-  const bsLeft  = all.some(e => e.rotation.includes('bs') && e.side === 'left')
-  const bsRight = all.some(e => e.rotation.includes('bs') && e.side === 'right')
-  scored['fs_rotation']    = fsLeft || fsRight
-  scored['sw_fs_rotation'] = fsLeft && fsRight
-  scored['bs_rotation']    = bsLeft || bsRight
-  scored['sw_bs_rotation'] = bsLeft && bsRight
-
-  return { scored, total: Object.values(scored).filter(Boolean).length }
+const GRIDS = {
+  wakeboard: [
+    { section: 'compo_sectionAir', items: [
+      { key: 'railey_air',      test: ({ entries }) => entries.some(e => isAir(e) && e.category_slug === 'railey') },
+      { key: 'backroll_air',    test: ({ entries }) => entries.some(e => isAir(e) && e.category_slug === 'backroll') },
+      { key: 'front_sbend_air', test: ({ entries }) => entries.some(e => isAir(e) && (
+        (e.category_slug === 'front' && hasHs(e)) || e.category_slug === 's-bend' || e.category_slug === 'hinterberger')) },
+      { key: 'ts_air',          test: ({ entries }) => entries.some(e => isAir(e) && hasTs(e)) },
+      { key: 'sw_ts_air',       test: ({ entries }) => onBoth(entries, e => isAir(e) && hasTs(e)) },
+      { key: 'whip',            test: ({ entries }) => entries.some(e => e.category_slug === 'whip') },
+    ] },
+    { section: 'compo_sectionGlisse', items: [
+      { key: 'flip',          test: ({ all }) => all.some(e => e.inverted && onModule(e)) },
+      { key: 'spin',          test: ({ all }) => all.some(e => e.category_slug === 'spin' && onModule(e)) },
+      { key: 'fslip_bsboard', test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.frontLip || e.slug === SCORING_SLUGS.backBoard) },
+      { key: 'fsboard_bslip', test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.frontBoard || e.slug === SCORING_SLUGS.backLip) },
+      { key: '5050',          test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.fiftyFifty) },
+      { key: 'press',         test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.press) },
+    ] },
+    { section: 'compo_sectionEntries', items: [
+      { key: 'ts_entry',    test: ({ all }) => all.some(e => onModule(e) && hasTs(e)) },
+      { key: 'sw_ts_entry', test: ({ all }) => onBoth(all.filter(onModule), hasTs) },
+      { key: 'hs_entry',    test: ({ all }) => all.some(e => onModule(e) && hasHs(e)) },
+      { key: 'sw_hs_entry', test: ({ all }) => onBoth(all.filter(onModule), hasHs) },
+    ] },
+    { section: 'compo_sectionRota', items: [
+      { key: 'fs_rotation',    test: ({ all }) => all.some(e => e.rotation.includes('fs')) },
+      { key: 'sw_fs_rotation', test: ({ all }) => onBoth(all, e => e.rotation.includes('fs')) },
+      { key: 'bs_rotation',    test: ({ all }) => all.some(e => e.rotation.includes('bs')) },
+      { key: 'sw_bs_rotation', test: ({ all }) => onBoth(all, e => e.rotation.includes('bs')) },
+    ] },
+  ],
 }
 
-const SCORE_KEYS = [
-  { section: 'compo_sectionAir',     items: ['railey_air','backroll_air','front_sbend_air','ts_air','sw_ts_air','whip'] },
-  { section: 'compo_sectionGlisse',  items: ['flip','spin','fslip_bsboard','fsboard_bslip','5050','press'] },
-  { section: 'compo_sectionEntries', items: ['ts_entry','sw_ts_entry','hs_entry','sw_hs_entry'] },
-  { section: 'compo_sectionRota',    items: ['fs_rotation','sw_fs_rotation','bs_rotation','sw_bs_rotation'] },
-]
+function computeScore(entries, jibPasses, discipline = 'wakeboard') {
+  // Aplatir les passes jib en pseudo-entrées
+  const all = [...entries, ...jibPasses.flatMap(jibPassToEntries)]
+  const ctx = { entries, all }
+  const grid = GRIDS[discipline] || GRIDS.wakeboard
+
+  const scored = {}
+  for (const { items } of grid)
+    for (const { key, test } of items)
+      scored[key] = test(ctx)
+
+  const max = grid.reduce((n, s) => n + s.items.length, 0)
+  return { scored, total: Object.values(scored).filter(Boolean).length, max, grid }
+}
 
 const JIB_FIGURES = [
-  { slug: '50-50',         label: '50-50'          },
-  { slug: 'front-board',   label: 'Front Board'    },
-  { slug: 'front-lip',     label: 'Front Lip'      },
-  { slug: 'back-board',    label: 'Back Board'     },
-  { slug: 'back-lip',      label: 'Back Lip'       },
-  { slug: 'press',         label: 'Press'          },
+  { slug: SCORING_SLUGS.fiftyFifty, label: '50-50'        },
+  { slug: SCORING_SLUGS.frontBoard, label: 'Front Board'  },
+  { slug: SCORING_SLUGS.frontLip,   label: 'Front Lip'    },
+  { slug: SCORING_SLUGS.backBoard,  label: 'Back Board'   },
+  { slug: SCORING_SLUGS.backLip,    label: 'Back Lip'     },
+  { slug: SCORING_SLUGS.press,      label: 'Press'        },
   { slug: 'transfer',      label: 'Transfer'       },
   { slug: 'rail-to-rail',  label: 'Rail to Rail'   },
   { slug: 'gap',           label: 'Gap'            },
@@ -354,6 +379,20 @@ export default function Compo() {
     return () => { cancelled = true }
   }, [id, toast, tr])
 
+  // Garde-fou dev : alerte si un slug référencé par la grille a dérivé en base
+  // (renommage admin) — l'item de score deviendrait sinon muet sans erreur.
+  // Réservé au dev : ne rentre pas dans le bundle de prod.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const slugs = Object.values(SCORING_SLUGS)
+    ;(async () => {
+      const { data } = await supabase.from('figures').select('slug').in('slug', slugs)
+      const present = new Set((data || []).map(f => f.slug))
+      const missing = slugs.filter(s => !present.has(s))
+      if (missing.length) console.warn('[compo] slugs de scoring absents en base:', missing)
+    })()
+  }, [])
+
   const resetCompo = () => {
     setName('')
     setEntries([])
@@ -375,7 +414,13 @@ export default function Compo() {
     setSearching(true)
     const data = await searchFigures(q.trim())
     let results = data.map(parseFigure)
-    if (addMode) results = results.filter(f => f.contexts.includes(addMode))
+    // La compo est wakeboard pour l'instant : on restreint l'ajout d'un air
+    // trick / kicker aux figures wakeboard, en plus du filtre de contexte.
+    if (addMode) {
+      results = results.filter(f =>
+        f.contexts.includes(addMode) && parseArr(f.sports).includes('wakeboard')
+      )
+    }
     setSuggestions(results.slice(0, 8))
     setSearching(false)
   }
@@ -450,7 +495,7 @@ export default function Compo() {
     ? pendingFigure.questions.every(q => pendingAnswers[q.id])
     : false
 
-  const { scored, total } = computeScore(entries, jibPasses)
+  const { scored, total, max, grid } = computeScore(entries, jibPasses)
 
   const saveRun = async () => {
     setSaving(true)
@@ -797,17 +842,17 @@ export default function Compo() {
             aria-expanded={detailsOpen}
           >
             <span className={styles.scoreTotal}>{total}</span>
-            <span className={styles.scoreMax}>/20</span>
+            <span className={styles.scoreMax}>/{max}</span>
             <Icon
               name="chevron-right"
               className={`${styles.scoreToggle} ${detailsOpen ? styles.scoreToggleOpen : ''}`}
             />
           </button>
           <div className={`${styles.scoreDetails} ${detailsOpen ? '' : styles.scoreDetailsCollapsed}`}>
-            {SCORE_KEYS.map(({ section, items }) => (
+            {grid.map(({ section, items }) => (
               <div key={section} className={styles.scoreSection}>
                 <p className={styles.scoreSectionTitle}>{tr[section]}</p>
-                {items.map(key => (
+                {items.map(({ key }) => (
                   <div key={key} className={`${styles.scoreItem} ${scored[key] ? styles.scoreItemOn : ''}`}>
                     <span className={styles.scoreItemDot} />
                     <span className={styles.scoreItemLabel}>{tr.compoItems?.[key] || key}</span>
