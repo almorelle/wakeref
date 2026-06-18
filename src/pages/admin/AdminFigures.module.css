@@ -4,7 +4,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   gap: 1rem;
 }
 .title {
@@ -14,42 +14,68 @@
 }
 .sub { font-size: 13px; color: var(--c-muted); margin-top: 2px; }
 
-.filters {
+/* Contrôles : recherche + 3 axes de filtres, alignés sur la page publique. */
+.controls {
   display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 1.25rem;
 }
-.chip {
-  font-family: var(--font-display);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 12px;
-  border-radius: 100px;
-  border: 1px solid var(--c-border2);
-  color: var(--c-muted);
-  cursor: pointer;
-  transition: all var(--t-fast);
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-lg);
+  padding: 8px 14px;
+  transition: border-color var(--t-fast);
 }
-.chip:hover { color: var(--c-text); }
-.chip.active { background: var(--c-accent); border-color: transparent; color: #fff; }
+.searchWrap:focus-within { border-color: var(--c-accent); }
+.searchWrap i { color: var(--c-muted); font-size: 18px; flex-shrink: 0; }
+.searchInput {
+  flex: 1;
+  font-size: 15px;
+  color: var(--c-text);
+  background: none;
+  border: none;
+  outline: none;
+}
+.searchInput::placeholder { color: var(--c-muted); }
+.clearBtn { color: var(--c-muted); padding: 2px; display: flex; align-items: center; }
+.clearBtn:hover { color: var(--c-text); }
+.filterBtns { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .table { display: flex; flex-direction: column; gap: 6px; }
 .row {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: var(--r-lg);
-  padding: 12px 14px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
-.rowBody { flex: 1; min-width: 0; }
 .rowName {
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 600;
-  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 }
-.rowMeta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
-.rowActions { display: flex; gap: 4px; }
+.unpub {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 100px;
+  background: #ef444420;
+  color: var(--c-danger);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-family: var(--font-display);
+  flex-shrink: 0;
+}
+.rowActions { display: flex; gap: 4px; flex-shrink: 0; }

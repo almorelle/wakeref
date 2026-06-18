@@ -1,15 +1,35 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import FilterDropdown from '../../components/FilterDropdown'
 import styles from './AdminFigures.module.css'
-import { ContextBadge, SportBadge } from '../../components/Badges'
 import Icon from '../../components/Icon'
+
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+
+// Mêmes axes que la page publique (catégorie via les catégories DB, sport, obstacle).
+const SPORTS = [
+  { value: '',          label: 'Tous'             },
+  { value: 'wakeboard', label: 'Wakeboard'        },
+  { value: 'wakeskate', label: 'Wakeskate'        },
+  { value: 'seated',    label: 'Wakeboard assis'  },
+]
+const OBSTACLES = [
+  { value: '',          label: 'Tous'      },
+  { value: 'kicker',    label: 'Kicker'    },
+  { value: 'air_trick', label: 'Air Trick' },
+  { value: 'feature',   label: 'Module'    },
+  { value: 'flat',      label: 'Flat'      },
+]
 
 export default function AdminFigures() {
   const [figures, setFigures] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState('tous')
+  const [query, setQuery] = useState('')
+  const [cat, setCat] = useState('tous')
+  const [sport, setSport] = useState('')
+  const [ctx, setCtx] = useState('')
   const navigate = useNavigate()
 
   const load = async () => {
@@ -31,30 +51,66 @@ export default function AdminFigures() {
     setFigures(prev => prev.filter(f => f.id !== id))
   }
 
-  const filtered = filter === 'tous' ? figures : figures.filter(f => f.category_slug === filter)
+  // Filtrage client-side : la liste complète est déjà chargée (212 lignes).
+  // Appartenance multi-discipline : `sports` ⊇ {sport}, fallback sur [sport].
+  const q = norm(query.trim())
+  const filtered = figures.filter(f => {
+    if (cat !== 'tous' && f.category_slug !== cat) return false
+    if (sport && !(f.sports || [f.sport]).includes(sport)) return false
+    if (ctx && !(f.contexts || []).includes(ctx)) return false
+    if (q && !norm(f.name).includes(q)) return false
+    return true
+  })
+
+  const catOptions = [
+    { value: 'tous', label: 'Toutes' },
+    ...categories.map(c => ({ value: c.slug, label: c.name, color: c.color })),
+  ]
 
   return (
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Figures</h1>
-          <p className={styles.sub}>{figures.length} figures au total</p>
+          <p className={styles.sub} aria-live="polite">{filtered.length} figure{filtered.length > 1 ? 's' : ''}</p>
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/admin/figures/new')}>
           <Icon name="plus" /> Nouvelle figure
         </button>
       </div>
 
-      {/* Filtres */}
-      <div className={styles.filters}>
-        <button className={`${styles.chip} ${filter === 'tous' ? styles.active : ''}`} onClick={() => setFilter('tous')}>Tous</button>
-        {categories.map(c => (
-          <button
-            key={c.id}
-            className={`${styles.chip} ${filter === c.slug ? styles.active : ''}`}
-            onClick={() => setFilter(c.slug)}
-          >{c.name}</button>
-        ))}
+      <div className={styles.controls}>
+        <div className={styles.searchWrap}>
+          <Icon name="search" />
+          <input
+            className={styles.searchInput}
+            type="text"
+            aria-label="Rechercher une figure"
+            placeholder="Rechercher une figure…"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            autoComplete="off"
+          />
+          {query && (
+            <button onClick={() => setQuery('')} className={styles.clearBtn} aria-label="Effacer la recherche">
+              <Icon name="x" />
+            </button>
+          )}
+        </div>
+
+        <div className={styles.filterBtns}>
+          <FilterDropdown
+            axisLabel="Catégorie"
+            value={cat}
+            allValue="tous"
+            columns={2}
+            onChange={setCat}
+            accent={categories.find(c => c.slug === cat)?.color}
+            options={catOptions}
+          />
+          <FilterDropdown axisLabel="Sport"    value={sport} onChange={setSport} options={SPORTS} />
+          <FilterDropdown axisLabel="Obstacle" value={ctx}   onChange={setCtx} align="right" options={OBSTACLES} />
+        </div>
       </div>
 
       {loading && <span className="spinner" />}
@@ -62,24 +118,18 @@ export default function AdminFigures() {
       <div className={styles.table}>
         {filtered.map(f => (
           <div key={f.id} className={styles.row}>
-            <div className={styles.rowBody}>
-              <div className={styles.rowName}>{f.name}</div>
-              <div className={styles.rowMeta}>
-                <span className={`badge badge-${f.category_slug}`}>{f.category_name}</span>
-                <SportBadge sport={f.sport} />
-                {f.contexts?.map(ctx => <ContextBadge key={ctx} context={ctx} />)}
-                <span style={{ fontSize: 12, color: 'var(--c-muted)' }}>Difficulté {f.difficulty}/5</span>
-                {!f.published && <span className="badge" style={{ background: '#ef444420', color: 'var(--c-danger)' }}>Non publié</span>}
-              </div>
+            <div className={styles.rowName}>
+              {f.name}
+              {!f.published && <span className={styles.unpub}>Non publié</span>}
             </div>
             <div className={styles.rowActions}>
-              <button className="btn btn-ghost btn-sm btn-icon" title="Vidéos" onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
+              <button className="btn btn-ghost btn-sm btn-icon" title="Vidéos" aria-label={`Vidéos de ${f.name}`} onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
                 <Icon name="video" />
               </button>
-              <button className="btn btn-ghost btn-sm btn-icon" title="Modifier" onClick={() => navigate(`/admin/figures/${f.id}/edit`, {state: { figureIds: filtered.map(f => f.id) }})}>
+              <button className="btn btn-ghost btn-sm btn-icon" title="Modifier" aria-label={`Modifier ${f.name}`} onClick={() => navigate(`/admin/figures/${f.id}/edit`, { state: { figureIds: filtered.map(x => x.id) } })}>
                 <Icon name="pencil" />
               </button>
-              <button className="btn btn-ghost btn-sm btn-icon" title="Supprimer" style={{ color: 'var(--c-danger)' }} onClick={() => deleteFigure(f.id, f.name)}>
+              <button className="btn btn-ghost btn-sm btn-icon" title="Supprimer" aria-label={`Supprimer ${f.name}`} style={{ color: 'var(--c-danger)' }} onClick={() => deleteFigure(f.id, f.name)}>
                 <Icon name="trash" />
               </button>
             </div>
