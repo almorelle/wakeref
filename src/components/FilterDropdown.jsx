@@ -77,7 +77,10 @@ export default function FilterDropdown({ axisLabel, value, allValue = '', option
           aria-label={axisLabel}
           onKeyDown={onMenuKey}
         >
-          <p className={styles.menuTitle}>{axisLabel}</p>
+          {/* Le déclencheur affiche déjà le nom de l'axe au repos : on ne
+              répète le titre que lorsqu'un filtre est actif (le bouton montre
+              alors la valeur choisie, le titre apporte le contexte de l'axe). */}
+          {active && <p className={styles.menuTitle}>{axisLabel}</p>}
           <div
             ref={listRef}
             className={`${styles.optionList} ${columns === 2 ? styles.cols2 : ''}`}
