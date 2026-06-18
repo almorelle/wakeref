@@ -31,7 +31,7 @@ VITE_SUPABASE_ANON_KEY=...
 All data fetching goes through the singleton Supabase client at `src/lib/supabase.js`. There is no intermediate API layer — components and pages query Supabase directly.
 
 **Key tables** (defined in `init/wakeref_schema.sql`):
-- `figures` — trick entries; `sport` enum (`wakeboard` | `wakeskate`), `difficulty` 1–5, `is_switch` + `switch_of` self-reference, bilingual fields (`description` / `description_en`, `tips[]` / `tips_en[]`)
+- `figures` — trick entries; `sport` enum (`wakeboard` | `wakeskate` | `seated`), `difficulty` 1–5, `is_switch` + `switch_of` self-reference, bilingual fields (`description` / `description_en`, `tips[]` / `tips_en[]`). Multi-discipline membership lives in `sports[]` (⊇ `{sport}`); per-discipline tip overrides in `tips_<discipline>[]` (`tips_seated`, `tips_wakeskate`) fall back to `tips` when empty
 - `categories` — 12 fixed trick categories (spin, railey, s-bend, …) with color and sort order
 - `prerequisites` — many-to-many self-join on figures
 - `videos` — references to video files stored in Supabase Storage
@@ -39,6 +39,14 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
 - `compositions` — saved runs from the Compo page (no auth); short text `id` used in the share URL, minimal JSONB snapshot in `data`, denormalized `score`. Public can insert + load one by id via the `get_composition(cid)` function; only admin can list/delete (RLS)
 
 Full-text search on figures uses a GIN index with French `unaccent`.
+
+### Seated (wakeboard assis) conventions
+
+Decisions taken when adding the seated spins/shifty/boardslide catalogue (see `scripts/seed-seated-figures.sql`):
+
+- **`approach[]` is the entry-stance axis, per discipline.** Standing uses `hs` / `ts` (heelside/toeside); **seated uses `regular` / `fakie`** — `regular` = forward entry (facing the direction of travel), `fakie` = backward entry. `fakie` is the seated peer of the standing `ts` slot. There is **no** DB CHECK on this column, so the front carries the valid set: `FigureForm` shows hs/ts vs regular/fakie options conditionally on the figure's disciplines; `FigureDetail` maps all four to labels + decomp accent colors (hs=ambre, ts=violet, regular=cyan, fakie=rose). Add any new approach value in both places.
+- **Seated figure names leave the default implicit, mark only the variant.** Mirroring how "un 180" implies `hs fs` in standing, a seated spin is named bare (`FS 180`, `BS 360`) for `regular`, and prefixed `Fakie …` (`Fakie FS 180`) for `fakie`. **Never** prefix names with "Seated"/"Handi" — discipline is conveyed by the badge + filter, not the name (product invariant: *inclusion by filling, not labeling*).
+- **Seated figures are native (`sport='seated'`)**, so their `tips`/`description` already are the seated content (no `tips_seated` override needed). Conversely, a trick shared with standing (e.g. railey) stays native to its standing discipline and gains seated reach via `sports += 'seated'` + a `tips_seated` override — not a duplicate figure.
 
 ### i18n
 
