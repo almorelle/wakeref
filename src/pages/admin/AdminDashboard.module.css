@@ -4,6 +4,8 @@
 .tile {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
+  /* filet gauche = rail d'accent : couleur portée par l'état (alert/ok) */
+  border-left-width: 3px;
   border-radius: var(--r-lg);
   padding: 1.5rem 1rem;
   display: flex;
@@ -15,10 +17,25 @@
   text-align: left;
   color: var(--c-text);
 }
-.tile:hover { border-color: var(--tile-color); }
+.tile:hover { border-color: var(--c-accent); }
+.tileIcon { color: var(--c-muted); font-size: 18px; }
 .tileValue { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--c-text); }
 .tileLabel { font-size: 12px; color: var(--c-muted); }
-.shortcuts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* À traiter — il y a du travail : rouge appuyé (icône + chiffre + rail) */
+.tileAlert { border-left-color: var(--c-danger); }
+.tileAlert .tileIcon,
+.tileAlert .tileValue { color: var(--c-danger); }
+.tileAlert:hover { border-color: var(--c-danger); }
+
+/* À traiter — rien à faire : vert discret (rail + icône), le « 0 » reste atténué */
+.tileOk { border-left-color: var(--c-success); }
+.tileOk .tileIcon { color: var(--c-success); }
+.tileOk .tileValue { color: var(--c-muted); }
+.tileOk:hover { border-color: var(--c-success); }
+
+.shortcuts { display: flex; flex-direction: column; }
+.shortcutBtns { display: flex; gap: 8px; flex-wrap: wrap; }
 
 @media (max-width: 700px) {
   .grid { grid-template-columns: 1fr 1fr; }

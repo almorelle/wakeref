@@ -16,6 +16,14 @@ export default function AdminLayout() {
     if (!loading && !session) navigate('/admin/login')
   }, [session, loading, navigate])
 
+  // Échap ferme le drawer mobile (le clic sur le backdrop le fait déjà).
+  useEffect(() => {
+    if (!menuOpen) return
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [menuOpen])
+
   // Close the mobile menu on navigation (adjust state during render rather than
   // in an effect, which avoids an extra render pass).
   if (prevPath !== location.pathname) {
@@ -70,7 +78,7 @@ export default function AdminLayout() {
         <NavLink to="/" className={styles.logo}>
           {logo}
         </NavLink>
-        <button className="btn-icon" onClick={() => setMenuOpen(o => !o)} aria-label="Menu">
+        <button className="btn-icon" onClick={() => setMenuOpen(o => !o)} aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'} aria-expanded={menuOpen}>
           <Icon name={menuOpen ? 'x' : 'menu-2'} />
         </button>
       </header>
@@ -78,7 +86,7 @@ export default function AdminLayout() {
       {/* Mobile drawer */}
       {menuOpen && (
         <div className={styles.backdrop} onClick={() => setMenuOpen(false)}>
-          <aside className={styles.drawer} onClick={e => e.stopPropagation()}>
+          <aside className={styles.drawer} onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Menu de navigation">
             {sidebarContent}
           </aside>
         </div>

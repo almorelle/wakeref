@@ -73,7 +73,7 @@
   border-radius: var(--r-md);
   font-size: 13px;
   font-family: var(--font-display);
-  color: var(--c-faint);
+  color: var(--c-muted);
   transition: all var(--t-fast);
   margin-top: auto;
 }
