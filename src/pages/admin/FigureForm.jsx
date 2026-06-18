@@ -41,19 +41,22 @@ function rotationSlots(spin, rewindDegs, rotation) {
   return slots
 }
 
-function Stepper({ label, value, min, max, step, suffix = '', onChange }) {
+function Stepper({ label, value, min, max, step, suffix = '', onChange, ariaLabel }) {
   const clamp = v => Math.max(min, Math.min(max, v))
+  const name = ariaLabel || label
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-      {label ? <span style={{ fontSize: 12, color: '#888' }}>{label}</span> : null}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button type="button" className="btn btn-ghost" style={{ padding: '4px 11px' }}
-          onClick={() => onChange(clamp(value - step))} disabled={value <= min}>−</button>
-        <span style={{ minWidth: 54, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+    <div className={styles.stepper}>
+      {label ? <span className={styles.stepperLabel}>{label}</span> : null}
+      <div className={styles.stepperRow}>
+        <button type="button" className={`btn btn-ghost ${styles.stepperBtn}`}
+          onClick={() => onChange(clamp(value - step))} disabled={value <= min}
+          aria-label={name ? `Diminuer ${name}` : 'Diminuer'}>−</button>
+        <span className={styles.stepperValue}>
           {value}{suffix}
         </span>
-        <button type="button" className="btn btn-ghost" style={{ padding: '4px 11px' }}
-          onClick={() => onChange(clamp(value + step))} disabled={value >= max}>+</button>
+        <button type="button" className={`btn btn-ghost ${styles.stepperBtn}`}
+          onClick={() => onChange(clamp(value + step))} disabled={value >= max}
+          aria-label={name ? `Augmenter ${name}` : 'Augmenter'}>+</button>
       </div>
     </div>
   )
@@ -62,9 +65,9 @@ function Stepper({ label, value, min, max, step, suffix = '', onChange }) {
 const CheckGroup = ({ label, fieldKey, options, form, toggleArray }) => (
   <div className="field">
     <label>{label}</label>
-    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+    <div className={styles.checkRow}>
       {options.map(opt => (
-        <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 14 }}>
+        <label key={opt.value} className={styles.checkOption}>
           <input
             type="checkbox"
             checked={(form[fieldKey] || []).includes(opt.value)}
@@ -188,7 +191,7 @@ export default function FigureForm() {
   }, [id, isEdit])
 
   const genSlug = (name) =>
-    name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }))
@@ -307,39 +310,45 @@ export default function FigureForm() {
     <div className={styles.page}>
       <ToastContainer toasts={toasts} />
       <div className={styles.header}>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/figures')}>
-          <Icon name="arrow-left" /> Retour
-        </button>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-ghost btn-sm" disabled={!prevId}
-            onClick={() => navigate(`/admin/figures/${prevId}/edit`, { state: location.state })}>
-            <Icon name="arrow-left" /> Précédent
+        <div className={styles.headerTop}>
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/figures')}>
+            <Icon name="arrow-left" /> Retour
           </button>
-          <button className="btn btn-ghost btn-sm" disabled={!nextId}
-            onClick={() => navigate(`/admin/figures/${nextId}/edit`, { state: location.state })}>
-            Suivant <Icon name="arrow-right" />
-          </button>
+          {/* Précédent / Suivant : pertinents seulement en édition depuis une liste. */}
+          {isEdit && figureIds.length > 0 && (
+            <div className={styles.headerNav}>
+              <button className="btn btn-ghost btn-sm" disabled={!prevId}
+                onClick={() => navigate(`/admin/figures/${prevId}/edit`, { state: location.state })}>
+                <Icon name="arrow-left" /> Précédent
+              </button>
+              <button className="btn btn-ghost btn-sm" disabled={!nextId}
+                onClick={() => navigate(`/admin/figures/${nextId}/edit`, { state: location.state })}>
+                Suivant <Icon name="arrow-right" />
+              </button>
+            </div>
+          )}
         </div>
         <h1 className={styles.title}>{isEdit ? 'Modifier la figure' : 'Nouvelle figure'}</h1>
       </div>
 
       <form onSubmit={save} className={styles.form}>
+        <p className={`${styles.groupTitle} ${styles.groupTitleFirst}`}>Identité</p>
         <div className={styles.row2}>
           <div className="field">
-            <label>Nom *</label>
-            <input className="input" required value={form.name}
+            <label htmlFor="figure-name">Nom *</label>
+            <input id="figure-name" className="input" required value={form.name}
               onChange={e => { set('name', e.target.value); if (!isEdit) set('slug', genSlug(e.target.value)) }} />
           </div>
           <div className="field">
-            <label>Slug</label>
-            <input className="input" value={form.slug} onChange={e => set('slug', e.target.value)} placeholder="auto-généré" />
+            <label htmlFor="figure-slug">Slug</label>
+            <input id="figure-slug" className="input" value={form.slug} onChange={e => set('slug', e.target.value)} placeholder="auto-généré" />
           </div>
         </div>
 
         <div className={styles.row3}>
           <div className="field">
-            <label>Catégorie</label>
-            <select key={form.category_id} className="input" value={form.category_id} onChange={e => set('category_id', e.target.value)}>
+            <label htmlFor="figure-category">Catégorie</label>
+            <select id="figure-category" key={form.category_id} className="input" value={form.category_id} onChange={e => set('category_id', e.target.value)}>
               <option value="">— Choisir —</option>
               {categories.map(c => (
                 <option key={c.id} value={String(c.id)}>{c.name}</option>
@@ -347,16 +356,16 @@ export default function FigureForm() {
             </select>
           </div>
           <div className="field">
-            <label>Sport</label>
-            <select className="input" value={form.sport} onChange={e => setSport(e.target.value)}>
+            <label htmlFor="figure-sport">Sport</label>
+            <select id="figure-sport" className="input" value={form.sport} onChange={e => setSport(e.target.value)}>
               <option value="wakeboard">Wakeboard</option>
               <option value="wakeskate">Wakeskate</option>
               <option value="seated">Wakeboard assis</option>
             </select>
           </div>
           <div className="field">
-            <label>Difficulté (1-5)</label>
-            <input className="input" type="number" min={1} max={5} value={form.difficulty}
+            <label htmlFor="figure-difficulty">Difficulté (1-5)</label>
+            <input id="figure-difficulty" className="input" type="number" min={1} max={5} value={form.difficulty}
               onChange={e => set('difficulty', e.target.value)} />
           </div>
         </div>
@@ -371,6 +380,7 @@ export default function FigureForm() {
           toggleArray={toggleArray}
         />
 
+        <p className={styles.groupTitle}>Contenu</p>
         <div className={styles.tabs}>
           {tabs.map(t => (
             <button key={t.id} type="button"
@@ -383,16 +393,17 @@ export default function FigureForm() {
         {activeTab === 'fr' && (
           <>
             <div className="field">
-              <label>Description (FR)</label>
-              <textarea className="input" rows={4} value={form.description}
-                onChange={e => set('description', e.target.value)} style={{ resize: 'vertical' }} />
+              <label htmlFor="figure-desc-fr">Description (FR)</label>
+              <textarea id="figure-desc-fr" className={`input ${styles.textarea}`} rows={4} value={form.description}
+                onChange={e => set('description', e.target.value)} />
             </div>
             <div className="field">
               <label>Conseils (FR)</label>
               {form.tips.map((tip, i) => (
-                <input key={i} className="input" value={tip}
+                <input key={i} className={`input ${styles.tipInput}`} value={tip}
                   onChange={e => setTip('fr', i, e.target.value)}
-                  placeholder={`Conseil ${i + 1}…`} style={{ marginBottom: 6 }} />
+                  aria-label={`Conseil ${i + 1} (FR)`}
+                  placeholder={`Conseil ${i + 1}…`} />
               ))}
             </div>
             {OVERRIDE_SPORTS
@@ -401,9 +412,10 @@ export default function FigureForm() {
                 <div className="field" key={d}>
                   <label>Conseils {SPORT_LABELS[d]} (FR) — override</label>
                   {form[`tips_${d}`].map((tip, i) => (
-                    <input key={i} className="input" value={tip}
+                    <input key={i} className={`input ${styles.tipInput}`} value={tip}
                       onChange={e => setTipList(`tips_${d}`, i, e.target.value)}
-                      placeholder="Vide → hérite des conseils par défaut" style={{ marginBottom: 6 }} />
+                      aria-label={`Conseil ${i + 1} ${SPORT_LABELS[d]} (FR)`}
+                      placeholder="Vide → hérite des conseils par défaut" />
                   ))}
                 </div>
               ))}
@@ -413,18 +425,18 @@ export default function FigureForm() {
         {activeTab === 'en' && (
           <>
             <div className="field">
-              <label>Description (EN)</label>
-              <textarea className="input" rows={4} value={form.description_en}
-                onChange={e => set('description_en', e.target.value)} style={{ resize: 'vertical' }}
+              <label htmlFor="figure-desc-en">Description (EN)</label>
+              <textarea id="figure-desc-en" className={`input ${styles.textarea}`} rows={4} value={form.description_en}
+                onChange={e => set('description_en', e.target.value)}
                 placeholder="Leave empty to fallback to French" />
             </div>
             <div className="field">
               <label>Tips (EN)</label>
               {form.tips_en.map((tip, i) => (
-                <input key={i} className="input" value={tip}
+                <input key={i} className={`input ${styles.tipInput}`} value={tip}
                   onChange={e => setTip('en', i, e.target.value)}
-                  placeholder={`Tip ${i + 1}… (leave empty to fallback to French)`}
-                  style={{ marginBottom: 6 }} />
+                  aria-label={`Tip ${i + 1} (EN)`}
+                  placeholder={`Tip ${i + 1}… (leave empty to fallback to French)`} />
               ))}
             </div>
             {OVERRIDE_SPORTS
@@ -433,17 +445,19 @@ export default function FigureForm() {
                 <div className="field" key={d}>
                   <label>Tips {SPORT_LABELS[d]} (EN) — override</label>
                   {form[`tips_${d}_en`].map((tip, i) => (
-                    <input key={i} className="input" value={tip}
+                    <input key={i} className={`input ${styles.tipInput}`} value={tip}
                       onChange={e => setTipList(`tips_${d}_en`, i, e.target.value)}
-                      placeholder="Empty → inherits default tips" style={{ marginBottom: 6 }} />
+                      aria-label={`Tip ${i + 1} ${SPORT_LABELS[d]} (EN)`}
+                      placeholder="Empty → inherits default tips" />
                   ))}
                 </div>
               ))}
           </>
         )}
 
+        <p className={styles.groupTitle}>Liens</p>
         <div className="field">
-          <label>Prérequis</label>
+          <label htmlFor="figure-prereq">Prérequis</label>
           {prereqIds.length > 0 && (
             <div className={styles.prereqChips}>
               {prereqIds.map(pid => {
@@ -459,7 +473,7 @@ export default function FigureForm() {
             </div>
           )}
           <div className={styles.prereqSearch}>
-            <input className="input" value={prereqSearch}
+            <input id="figure-prereq" className="input" value={prereqSearch}
               onChange={e => setPrereqSearch(e.target.value)}
               placeholder="Rechercher une figure à ajouter…" />
             {prereqSearch.trim() && (() => {
@@ -485,7 +499,7 @@ export default function FigureForm() {
         </div>
 
         <div className="field">
-          <label>Précédent</label>
+          <label htmlFor="figure-builton">Précédent</label>
           {builtOnId ? (
             <div className={styles.prereqChips}>
               <span className={styles.prereqChip}>
@@ -496,7 +510,7 @@ export default function FigureForm() {
             </div>
           ) : (
             <div className={styles.prereqSearch}>
-              <input className="input" value={builtOnSearch}
+              <input id="figure-builton" className="input" value={builtOnSearch}
                 onChange={e => setBuiltOnSearch(e.target.value)}
                 placeholder="Rechercher la figure précédente…" />
               {builtOnSearch.trim() && (() => {
@@ -521,8 +535,9 @@ export default function FigureForm() {
           )}
         </div>
 
-        {/* ── Métadonnées ── */}
-        <div style={{ borderTop: '1px solid var(--c-border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* ── Mécanique ── */}
+        <p className={styles.groupTitle}>Mécanique</p>
+        <div className={styles.metaSection}>
 
           <CheckGroup
             label="Contextes"
@@ -569,21 +584,21 @@ export default function FigureForm() {
 
           <div className="field">
             <label>Rotation &amp; invert</label>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'flex-start' }}>
+            <div className={styles.rotaCol}>
               <Stepper label="Spin" value={form.spin} min={0} max={1440} step={180} suffix="°" onChange={v => set('spin', v)} />
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <span style={{ fontSize: 12, color: '#888' }}>Rewind</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <div className={styles.rotaGroup}>
+                <span className={styles.rotaGroupLabel}>Rewind</span>
+                <div className={styles.rotaRow}>
                   {form.rewind_degs.map((v, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <Stepper label="" value={v} min={0} max={1080} step={180} suffix="°" onChange={nv => setRewind(i, nv)} />
+                    <div key={i} className={styles.rewindEntry}>
+                      <Stepper label="" ariaLabel="Rewind" value={v} min={0} max={1080} step={180} suffix="°" onChange={nv => setRewind(i, nv)} />
                       {form.rewind_degs.length > 1 && (
-                        <button type="button" className={styles.rewindRemove} onClick={() => removeRewind(i)}>×</button>
+                        <button type="button" className={styles.rewindRemove} onClick={() => removeRewind(i)} aria-label="Retirer ce rewind">×</button>
                       )}
                     </div>
                   ))}
-                  <button type="button" className="btn btn-ghost" style={{ padding: '3px 10px', fontSize: 12 }} onClick={addRewind}>+ rewind</button>
+                  <button type="button" className={`btn btn-ghost ${styles.rewindAdd}`} onClick={addRewind}>+ rewind</button>
                 </div>
               </div>
 
@@ -591,15 +606,16 @@ export default function FigureForm() {
                 const slots = rotationSlots(form.spin, form.rewind_degs, form.rotation)
                 if (!slots.length) return null
                 return (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <span style={{ fontSize: 12, color: '#888' }}>Type de rotation (par 360°)</span>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+                  <div className={styles.rotaGroup}>
+                    <span className={styles.rotaGroupLabel}>Type de rotation (par 360°)</span>
+                    <div className={styles.rotaRowEnd}>
                       {slots.map((slot, i) => (
-                        <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                          <span style={{ fontSize: 11, color: '#888' }}>{slot.label}</span>
-                          <select className="input" style={{ minWidth: 130 }}
+                        <div key={i} className={styles.rotaSlot}>
+                          <span className={styles.rotaSlotLabel}>{slot.label}</span>
+                          <select className={`input ${styles.rotaSelect}`}
                             value={slot.forced || form.rotation_type[i] || ''}
                             disabled={!!slot.forced}
+                            aria-label={`Type de rotation — ${slot.label}`}
                             onChange={e => setRotationType(i, e.target.value)}>
                             <option value="">—</option>
                             <option value="ole">Ole</option>
@@ -618,8 +634,8 @@ export default function FigureForm() {
 
         </div>
 
-        <div className="field" style={{ marginTop: 8 }}>
-          <label style={{ flexDirection: 'row', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="field">
+          <label className={styles.publishLabel}>
             <input type="checkbox" checked={form.published} onChange={e => set('published', e.target.checked)} />
             Publié (visible sur le site)
           </label>

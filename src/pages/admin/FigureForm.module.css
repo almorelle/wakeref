@@ -1,9 +1,57 @@
 .page { max-width: 700px; }
-.header { display: flex; align-items: center; gap: 12px; margin-bottom: 2rem; }
+/* En-tête en colonne : la nav (Retour + Précédent/Suivant) au-dessus, le titre
+   dominant en dessous. Évite que le titre soit poussé hors écran sur mobile. */
+.header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 2rem; }
+.headerTop { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.headerNav { display: flex; gap: 8px; }
 .title { font-family: var(--font-display); font-size: 22px; font-weight: 800; }
 .form { display: flex; flex-direction: column; gap: 18px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+
+/* Titres de section : repères pour scanner un formulaire long (Identité /
+   Contenu / Liens / Mécanique). Filet bas = séparateur. */
+.groupTitle {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  margin-top: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c-border);
+}
+.groupTitleFirst { margin-top: 0; }
+
+/* Steppers (Spin / Rewind / Inverts) */
+.stepper { display: flex; flex-direction: column; gap: 4px; }
+.stepperLabel { font-size: 12px; color: var(--c-muted); }
+.stepperRow { display: flex; align-items: center; gap: 8px; }
+.stepperBtn { padding: 4px 11px; }
+.stepperValue { min-width: 54px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* Groupes de cases à cocher (contextes, approche, sens, disciplines) */
+.checkRow { display: flex; gap: 12px; flex-wrap: wrap; }
+.checkOption { display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 14px; }
+
+/* Champs divers sortis de l'inline */
+.textarea { resize: vertical; }
+.tipInput { margin-bottom: 6px; }
+.publishLabel { flex-direction: row; display: flex; align-items: center; gap: 8px; }
+
+/* Bloc mécanique + sous-blocs rotation */
+.metaSection { display: flex; flex-direction: column; gap: 16px; }
+.rotaCol { display: flex; flex-direction: column; gap: 16px; align-items: flex-start; }
+.rotaGroup { display: flex; flex-direction: column; gap: 6px; }
+.rotaGroupLabel { font-size: 12px; color: var(--c-muted); }
+.rotaRow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.rotaRowEnd { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.rotaSlot { display: flex; flex-direction: column; gap: 4px; }
+.rotaSlotLabel { font-size: 11px; color: var(--c-muted); }
+.rotaSelect { min-width: 130px; }
+.rewindEntry { display: flex; align-items: center; gap: 6px; }
+.rewindAdd { padding: 3px 10px; font-size: 12px; }
 .prereqChips {
   display: flex;
   flex-wrap: wrap;
