@@ -18,6 +18,55 @@
 .form { display: flex; flex-direction: column; gap: 14px; }
 .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
+/* ── Combobox de recherche de figure ── */
+.picker { position: relative; }
+.pickerResults {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-md, 0 6px 20px rgba(0, 0, 0, 0.25));
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.pickerResult {
+  text-align: left;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--c-text);
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+/* surlignage : survol souris ET navigation clavier (option active) */
+.pickerResult:hover,
+.pickerResultActive { background: var(--c-surface2); }
+.pickerNoResult { font-size: 13px; padding: 8px 10px; color: var(--c-muted); }
+
+/* place pour la croix d'effacement inline */
+.pickerInput { padding-right: 38px; }
+.pickerClearInline {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px; height: 24px;
+  border-radius: 100px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--c-muted);
+  transition: all var(--t-fast);
+}
+.pickerClearInline:hover { color: var(--c-text); background: var(--c-surface3); }
+
+/* ── Liste des vidéos ── */
 .videoList {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
@@ -29,9 +78,9 @@
 }
 .videoRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
-  padding: 10px 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--c-border);
 }
 .videoRow:last-child { border-bottom: none; }
@@ -46,10 +95,31 @@
   color: var(--c-wake);
   font-size: 18px;
 }
-.videoMeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.videoFigure { font-family: var(--font-display); font-size: 14px; font-weight: 700; }
+.videoMeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.videoHead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.videoFigure { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--c-text); }
 .videoTitle { font-size: 13px; color: var(--c-muted); }
-.videoCreator { font-size: 11px; color: var(--c-faint); }
+
+/* Ligne secondaire compacte : créateur · sport · genre (séparés par des points) */
+.videoSub { display: flex; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--c-muted); }
+.videoSub span:not(:last-child)::after {
+  content: '·';
+  margin: 0 7px;
+  color: var(--c-faint);
+}
+
+/* Source + profil en texte brut (non cliquable) : un clic sélectionne toute la
+   valeur (user-select:all) pour la copier rapidement lors d'uploads à la chaîne. */
+.videoUrls { display: flex; flex-direction: column; gap: 2px; margin-top: 2px; min-width: 0; }
+.videoUrl {
+  font-size: 12px;
+  color: var(--c-muted);
+  word-break: break-all;
+  user-select: all;
+}
+
+/* Actions de ligne : réutiliser dans le formulaire + supprimer */
+.videoActions { display: flex; gap: 4px; flex-shrink: 0; }
 
 @media (max-width: 500px) {
   .row2 { grid-template-columns: 1fr; }
