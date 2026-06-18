@@ -540,10 +540,18 @@ export default function FigureForm() {
           <CheckGroup
             label="Approche"
             fieldKey="approach"
-            options={[
-              { value: 'hs', label: 'Heelside' },
-              { value: 'ts', label: 'Toeside'  },
-            ]}
+            options={(() => {
+              // hs/ts = axe d'entrée standing, regular/fakie = pendant seated.
+              const disc = new Set([form.sport, ...(form.sports || [])])
+              const opts = []
+              if (disc.has('wakeboard') || disc.has('wakeskate')) {
+                opts.push({ value: 'hs', label: 'Heelside' }, { value: 'ts', label: 'Toeside' })
+              }
+              if (disc.has('seated')) {
+                opts.push({ value: 'regular', label: 'Regular' }, { value: 'fakie', label: 'Fakie' })
+              }
+              return opts
+            })()}
             form={form}
             toggleArray={toggleArray}
           />

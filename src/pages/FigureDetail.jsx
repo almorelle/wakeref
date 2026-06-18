@@ -258,17 +258,21 @@ export default function FigureDetail() {
   const decomp     = decomposeTrick(figure)
   // Section masquée pour les tricks sans invert ni spin (rien à décomposer).
   const hasDecomp  = decomp.inverts > 0 || (figure.spin || 0) > 0
-  const approachLabel = decomp.approach.map(a => (a === 'ts' ? tr.approachTs : tr.approachHs)).join(' / ')
+  const approachLabels = { ts: tr.approachTs, hs: tr.approachHs, regular: tr.approachRegular, fakie: tr.approachFakie }
+  const approachLabel = decomp.approach.map(a => approachLabels[a] || a).join(' / ')
   const dirLabel   = (dir, long) =>
     dir === 'fs' ? (long ? tr.dirFsLong : tr.dirFsShort)
     : dir === 'bs' ? (long ? tr.dirBsLong : tr.dirBsShort)
     : ''
   const typeLabel  = type => (type === 'ole' ? tr.rotTypeOle : type === 'handle_pass' ? tr.rotTypeHandlePass : '')
 
-  // Couleur d'identité selon l'approche : ambre (Heelside) / violet (Toeside).
+  // Couleur d'identité selon l'approche : ambre (Heelside) / violet (Toeside)
+  // côté standing, cyan (Regular) / rose (Fakie) côté seated.
   const approachSide  = decomp.approach[0]
   const approachClass = approachSide === 'hs' ? styles.decompHs
-    : approachSide === 'ts' ? styles.decompTs : ''
+    : approachSide === 'ts' ? styles.decompTs
+    : approachSide === 'regular' ? styles.decompRegular
+    : approachSide === 'fakie' ? styles.decompFakie : ''
 
   const DecompChip = ({ icon, label, sub }) => (
     <div className={styles.decompChip}>
