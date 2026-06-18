@@ -32,5 +32,5 @@
 .detail a { color: var(--c-accent); text-decoration: none; }
 .detail a:hover { text-decoration: underline; }
 .caption { font-size: 13px; color: var(--c-text); font-style: italic; }
-.date { font-size: 11px; color: var(--c-faint); }
+.date { font-size: 11px; color: var(--c-muted); }
 .actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }

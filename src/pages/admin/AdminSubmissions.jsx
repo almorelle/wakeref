@@ -40,7 +40,7 @@ export default function AdminSubmissions() {
 
       {!loading && pending.length === 0 && (
         <div className={styles.empty}>
-          <Icon name="check" style={{ fontSize: 32, color: 'var(--c-success)' }} />
+          <Icon name="check" size={32} style={{ color: 'var(--c-success)' }} />
           <p>Aucune soumission en attente.</p>
         </div>
       )}

@@ -42,7 +42,7 @@ export default function AdminCompositions() {
 
       {!loading && runs.length === 0 && (
         <div className={styles.empty}>
-          <Icon name="inbox" style={{ fontSize: 32 }} />
+          <Icon name="inbox" size={32} />
           <p>Aucun run sauvegardé pour l&apos;instant.</p>
         </div>
       )}

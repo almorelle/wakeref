@@ -17,5 +17,5 @@
 .figure { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
 .detail { font-size: 13px; color: var(--c-muted); }
 .message { font-size: 13px; color: var(--c-text); font-style: italic; }
-.date { font-size: 11px; color: var(--c-faint); }
+.date { font-size: 11px; color: var(--c-muted); }
 .actions { display: flex; gap: 6px; align-items: center; }
