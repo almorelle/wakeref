@@ -41,6 +41,7 @@ export default function AdminLayout() {
     { to: '/admin/takedowns',     icon: 'flag',              label: 'Retraits'              },
     { to: '/admin/submissions',   icon: 'inbox',             label: 'Soumissions'           },
     { to: '/admin/compositions',  icon: 'list',              label: 'Runs'                  },
+    { to: '/admin/judge-runs',    icon: 'star',              label: 'Runs juge'             },
     { to: '/admin/no-videos',     icon: 'video-off',         label: 'À compléter'           },
   ]
 

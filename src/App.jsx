@@ -25,6 +25,8 @@ const AdminTakedowns = lazy(() => import('./pages/admin/AdminTakedowns'))
 const AdminNoVideos = lazy(() => import('./pages/admin/AdminNoVideos'))
 const AdminSubmissions = lazy(() => import('./pages/admin/AdminSubmissions'))
 const AdminCompositions = lazy(() => import('./pages/admin/AdminCompositions'))
+const AdminJudgeRuns = lazy(() => import('./pages/admin/AdminJudgeRuns'))
+const JudgeRunForm = lazy(() => import('./pages/admin/JudgeRunForm'))
 
 export default function App() {
   return (
@@ -55,6 +57,9 @@ export default function App() {
             <Route path="no-videos" element={<AdminNoVideos />} />
             <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="compositions" element={<AdminCompositions />} />
+            <Route path="judge-runs" element={<AdminJudgeRuns />} />
+            <Route path="judge-runs/new" element={<JudgeRunForm />} />
+            <Route path="judge-runs/:id/edit" element={<JudgeRunForm />} />
           </Route>
           <Route path='*' element={<NotFound />} />
         </Routes>

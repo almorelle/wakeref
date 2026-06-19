@@ -4,7 +4,7 @@ baseline_commit: 170243d6d47ad1585177b3619852a61a66ad0f9c
 
 # Story 1.1: Extraire `<RunSaisie>` de Compo à comportement constant
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -43,7 +43,7 @@ so that both Compo and the upcoming judge-training module can capture a run with
 - [x] Task 4 — Verify parity + lint (AC: 6, 7, 8)
   - [x] `npm run lint` → no errors introduced by this story. (3 errors remain in unrelated, untouched files — `useInView`, `AdminDashboard.jsx`, `AdminVideos.jsx` — confirmed pre-existing on baseline commit 170243d.)
   - [x] `npx vite build` → builds clean (no import/compile errors).
-  - [ ] `npm run dev` manual parity walk (desktop + mobile, FR + EN) — **pending human verification** (no test runner in this project; cannot drive interactive dev headlessly).
+  - [x] `npm run dev` manual parity walk — confirmed OK by the user (2026-06-19).
 
 ## Dev Notes
 

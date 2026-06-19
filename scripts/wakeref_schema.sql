@@ -111,3 +111,19 @@ CREATE TABLE public.figure_views (
                                      CONSTRAINT figure_views_pkey PRIMARY KEY (figure_id, day),
                                      CONSTRAINT figure_views_figure_id_fkey FOREIGN KEY (figure_id) REFERENCES public.figures(id)
 );
+CREATE TABLE public.judge_runs (
+                                     id bigint NOT NULL GENERATED ALWAYS AS IDENTITY,
+                                     name text NOT NULL CHECK (char_length(name) <= 120),
+                                     discipline public.sport_type NOT NULL,
+                                     grid_key text NOT NULL,
+                                     difficulty text NOT NULL CHECK (difficulty IN ('easy','medium','hard')),
+                                     category text,
+                                     source_type public.video_source NOT NULL DEFAULT 'upload'::public.video_source,
+                                     video_path text,
+                                     video_url text,
+                                     solution jsonb NOT NULL CHECK (pg_column_size(solution) <= 51200),
+                                     published boolean NOT NULL DEFAULT false,
+                                     created_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     updated_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     CONSTRAINT judge_runs_pkey PRIMARY KEY (id)
+);

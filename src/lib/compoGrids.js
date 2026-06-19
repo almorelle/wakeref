@@ -232,6 +232,20 @@ export const GRIDS = {
 // Ordre d'affichage des grilles dans le sélecteur (libellés via tr.compoGrids).
 export const GRID_OPTIONS = ['wakeboard', 'wakeskate', 'seated_mp1', 'seated_mp5']
 
+// Snapshot minimal d'une figure saisie — ne garde que ce qui sert à scorer et
+// afficher un run (drop les grosses lignes figure). Partagé par la sauvegarde de
+// Compo (compositions.data) ET l'authoring de runs de référence (judge_runs.solution)
+// pour que les deux snapshots aient EXACTEMENT la même forme.
+export const serializeEntry = (e) => ({
+  slug: e.slug, name: e.name, category_slug: e.category_slug,
+  side: e.side, contexts: e.contexts, approach: e.approach,
+  rotation: e.rotation, inverted: e.inverted,
+  // Champs de décompo nécessaires aux grilles seated/wakeskate (handle pass,
+  // rewind, ollie 180). Absents sur les vieux runs sauvegardés → traités falsy.
+  rotation_type: e.rotation_type, rewind: e.rewind, spin: e.spin,
+  _seq: e._seq, _key: e._key,
+})
+
 export function computeScore(entries, jibPasses, gridKey = 'wakeboard') {
   // Aplatir les passes jib en pseudo-entrées
   const all = [...entries, ...jibPasses.flatMap(jibPassToEntries)]

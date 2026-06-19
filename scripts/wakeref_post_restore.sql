@@ -205,6 +205,36 @@ set search_path = public as $$
   select name, data from compositions where id = cid;
 $$;
 
+-- Module juge — catalogue public : runs PUBLIÉS filtrés par discipline/niveau,
+-- métadonnées SEULES (jamais la colonne solution). security definer pour lire
+-- sans grant table anon. Comparaison discipline en texte → pas d'erreur de cast
+-- enum si le paramètre est libre ; paramètre null = pas de filtre sur cet axe.
+create or replace function public.list_judge_runs(p_discipline text default null, p_difficulty text default null)
+returns table(
+  id bigint, name text, discipline public.sport_type, grid_key text,
+  difficulty text, category text, source_type public.video_source,
+  video_path text, video_url text
+)
+language sql stable security definer
+set search_path = public as $$
+  select id, name, discipline, grid_key, difficulty, category, source_type, video_path, video_url
+  from judge_runs
+  where published = true
+    and (p_discipline is null or discipline::text = p_discipline)
+    and (p_difficulty is null or difficulty = p_difficulty)
+  order by created_at desc;
+$$;
+
+-- Module juge — récupération de la solution d'UN run publié, à la demande (au
+-- clic « Évaluer »). C'est le seul chemin vers la colonne solution. No-peek soft
+-- assumé (AD-1) : appelable tôt, mais la solution n'est jamais embarquée ni listée.
+create or replace function public.get_judge_run_solution(p_id bigint)
+returns table(grid_key text, solution jsonb)
+language sql stable security definer
+set search_path = public as $$
+  select grid_key, solution from judge_runs where id = p_id and published = true;
+$$;
+
 -- Anti-spam : plafond global d'insertions de runs par minute. security definer
 -- pour compter les lignes récentes malgré l'absence de policy SELECT pour anon.
 create or replace function public.compositions_rate_limit()
@@ -360,6 +390,26 @@ create table if not exists public.figure_views (
 -- Fenêtre glissante de most_viewed_figures (filtre sur day).
 create index if not exists figure_views_day_idx on figure_views (day);
 
+-- Runs de référence du module d'entraînement juge. Une vidéo de run = une
+-- solution fixe (snapshot Compo : entries + jibPasses + otherEntries + gridKey).
+-- Authoré en admin, taggé par niveau (easy/medium/hard) ; l'anon n'y accède
+-- JAMAIS en direct (pas de grant) — seulement via les RPC de lecture (story 2.2).
+create table if not exists public.judge_runs (
+  id           bigint generated always as identity primary key,
+  name         text not null check (char_length(name) <= 120),
+  discipline   public.sport_type not null,
+  grid_key     text not null,
+  difficulty   text not null check (difficulty in ('easy','medium','hard')),
+  category     text,
+  source_type  public.video_source not null default 'upload',
+  video_path   text,
+  video_url    text,
+  solution     jsonb not null check (pg_column_size(solution) <= 51200),
+  published    boolean not null default false,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
 -- ────────────────────────────────────────────────────────────
 -- 4. TRIGGER
 -- ────────────────────────────────────────────────────────────
@@ -379,6 +429,11 @@ create trigger compositions_rate_limit
   before insert on compositions
   for each row execute function compositions_rate_limit();
 
+drop trigger if exists judge_runs_updated_at on judge_runs;
+create trigger judge_runs_updated_at
+  before update on judge_runs
+  for each row execute procedure set_updated_at();
+
 -- ────────────────────────────────────────────────────────────
 -- 5. VUE figures_full → déplacée en section 2 (avant les fonctions
 --    qui retournent `setof figures_full`, pour survivre au drop cascade).
@@ -395,6 +450,7 @@ alter table takedown_requests enable row level security;
 alter table video_submissions enable row level security;
 alter table compositions      enable row level security;
 alter table figure_views      enable row level security;
+alter table judge_runs        enable row level security;
 
 -- Supprime les policies existantes avant de les recréer
 drop policy if exists "Lecture publique categories"    on categories;
@@ -435,6 +491,9 @@ create policy "Lecture admin compositions"      on compositions for select using
 create policy "Suppression admin compositions"  on compositions for delete using ((select auth.role()) = 'authenticated');
 -- figure_views : pas d'accès direct anon (écritures/top via RPC security definer) ; lecture admin seule.
 create policy "Lecture admin figure_views"      on figure_views  for select using ((select auth.role()) = 'authenticated');
+-- judge_runs : accès admin total ; pas de policy anon (l'anon lit via les RPC story 2.2).
+drop policy if exists "Ecriture admin judge_runs" on judge_runs;
+create policy "Ecriture admin judge_runs"       on judge_runs    for all using ((select auth.role()) = 'authenticated') with check ((select auth.role()) = 'authenticated');
 
 
 -- ────────────────────────────────────────────────────────────
@@ -480,12 +539,16 @@ grant execute on function public.figures_without_videos() to authenticated;
 grant execute on function public.figures_without_uploaded_videos() to authenticated;
 grant execute on function public.home_stats()             to anon, authenticated;
 grant execute on function public.get_composition(text)    to anon, authenticated;
+grant execute on function public.list_judge_runs(text, text)        to anon, authenticated;
+grant execute on function public.get_judge_run_solution(bigint)     to anon, authenticated;
 grant execute on function public.immutable_unaccent(text)  to anon, authenticated;
 grant insert on public.video_submissions to anon, authenticated;
 grant select, update on public.video_submissions to authenticated;
 grant usage, select on sequence video_submissions_id_seq to anon, authenticated;
 grant insert on public.compositions to anon, authenticated;
 grant select, delete on public.compositions to authenticated;
+-- judge_runs : admin uniquement (l'anon passe par les RPC de lecture, story 2.2).
+grant select, insert, update, delete on public.judge_runs to authenticated;
 grant select on public.figure_views to authenticated;
 grant execute on function public.track_figure_view(integer)            to anon, authenticated;
 grant execute on function public.most_viewed_figures(integer, integer)  to anon, authenticated;
