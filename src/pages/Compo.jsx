@@ -21,6 +21,7 @@ const loadStored = () => {
       entries: data.entries || [],
       jibPasses: data.jibPasses || [],
       otherEntries: data.otherEntries || [],
+      gridKey: data.gridKey || 'wakeboard',
     }
   } catch {
     return null
@@ -38,7 +39,11 @@ const shortId = () => {
 const serializeEntry = (e) => ({
   slug: e.slug, name: e.name, category_slug: e.category_slug,
   side: e.side, contexts: e.contexts, approach: e.approach,
-  rotation: e.rotation, inverted: e.inverted, _seq: e._seq, _key: e._key,
+  rotation: e.rotation, inverted: e.inverted,
+  // Champs de décompo nécessaires aux grilles seated/wakeskate (handle pass,
+  // rewind, ollie 180). Absents sur les vieux runs sauvegardés → traités falsy.
+  rotation_type: e.rotation_type, rewind: e.rewind, spin: e.spin,
+  _seq: e._seq, _key: e._key,
 })
 
 const parseArr = (v) => typeof v === 'string' ? JSON.parse(v) : v || []
@@ -47,6 +52,7 @@ const parseFigure = (f) => ({
   contexts: parseArr(f.contexts),
   approach: parseArr(f.approach),
   rotation: parseArr(f.rotation),
+  rotation_type: parseArr(f.rotation_type),
 })
 
 // Slugs de figures référencés par la grille de score. Le slug étant un champ
@@ -61,6 +67,22 @@ const SCORING_SLUGS = {
   backLip:    'back-lip',
   fiftyFifty: '50-50',
   press:      'press',
+  // wakeskate
+  wsOllie:       'ollie',
+  // body varials : tricks où le corps tourne indépendamment de la planche
+  wsBodyVarial:  'ws-body-varial',
+  wsBigSpin:     'ws-big-spin',
+  wsBiggerSpin:  'ws-bigger-spin',
+  wsGazelle:     'ws-gazelle',
+  wsSexchange:   'ws-sexchange',
+  wsBigflip:     'ws-bigflip',
+  // seated
+  seatedFsBoardslide: 'seated-fs-boardslide',
+  seatedBsBoardslide: 'seated-bs-boardslide',
+  seatedFsShifty:     'seated-fs-shifty',
+  seatedBsShifty:     'seated-bs-shifty',
+  seatedOllie180:     'ollie-180',
+  seatedOllie360:     'ollie-360',
 }
 
 // Une passe jib génère des pseudo-entrées pour le moteur de score
@@ -99,31 +121,55 @@ function jibPassToEntries(pass) {
   return entries
 }
 
-// ── Grilles de score par discipline ──────────────────────────
+// ── Grilles de score ─────────────────────────────────────────
 //
-// Une grille = liste de sections ; une section = liste d'items ; un item porte
-// un `test(ctx)` renvoyant un booléen (« le run contient-il cet élément ? »).
+// GRIDS est indexé par identifiant de grille (≠ discipline : seated a deux
+// grilles distinctes selon le niveau de handicap, MP1→MP3 et MP3→MP5). Chaque
+// grille = { discipline, sections }. Une section = { section, items } ; un item
+// = { key, test(ctx) } renvoyant un booléen (« le run contient-il cet élément ? »).
 // `ctx` expose :
-//   - `entries` : les figures saisies individuellement (air / kicker / feature)
+//   - `entries` : les figures saisies individuellement (air / kicker / flat…)
 //   - `all`     : `entries` + les pseudo-entrées issues des passes jib
 //
-// Le score est volontairement binaire et sans seuil de degrés : c'est un
-// référentiel de jugement, pas un barème de performance (cf. invariant
-// anti-perf). Ajouter une discipline = ajouter une entrée dans GRIDS.
+// Le score est volontairement binaire et sans seuil de degrés : référentiel de
+// jugement, pas barème de performance (invariant anti-perf). `discipline` pilote
+// le filtre sport de la recherche de figures. Ajouter une grille = une entrée ici.
 
 // Prédicats élémentaires partagés par les tests
-const isAir    = e => e.contexts.includes('air_trick')
-const onModule = e => e.contexts.includes('kicker') || e.contexts.includes('feature')
-const hasTs    = e => e.approach.includes('ts')
-const hasHs    = e => e.approach.includes('hs')
+const isAir     = e => e.contexts.includes('air_trick')
+const onModule  = e => e.contexts.includes('kicker') || e.contexts.includes('feature')
+const hasTs     = e => e.approach.includes('ts')
+const hasHs     = e => e.approach.includes('hs')
+const hasFakie  = e => e.approach.includes('fakie')
+const handlePass = e => (e.rotation_type || []).includes('handle_pass')
+const rotInDir  = (e, dir) => e.rotation.includes(dir)
 
 // Vrai si `pred` est satisfait des deux côtés (gauche ET droite) → switch
 const onBoth = (list, pred) =>
   list.some(e => pred(e) && e.side === 'left') &&
   list.some(e => pred(e) && e.side === 'right')
 
+// Rotations seated : une case par côté × sens. Pas de notion de switch ici — le
+// handicap rend chaque côté significatif individuellement.
+const ROT_BY_SIDE = [
+  { key: 'rot_left_fs',  test: ({ all }) => all.some(e => rotInDir(e, 'fs') && e.side === 'left') },
+  { key: 'rot_left_bs',  test: ({ all }) => all.some(e => rotInDir(e, 'bs') && e.side === 'left') },
+  { key: 'rot_right_fs', test: ({ all }) => all.some(e => rotInDir(e, 'fs') && e.side === 'right') },
+  { key: 'rot_right_bs', test: ({ all }) => all.some(e => rotInDir(e, 'bs') && e.side === 'right') },
+]
+
+const SEATED_BOARDSLIDES = [SCORING_SLUGS.seatedFsBoardslide, SCORING_SLUGS.seatedBsBoardslide]
+const SEATED_SHIFTIES    = [SCORING_SLUGS.seatedFsShifty, SCORING_SLUGS.seatedBsShifty]
+const SEATED_OLLIES      = [SCORING_SLUGS.seatedOllie180, SCORING_SLUGS.seatedOllie360]
+// Tricks wakeskate contenant un body varial (corps tournant indépendamment de
+// la planche). Pas dérivable d'un champ → liste explicite.
+const WS_BODY_VARIALS    = [
+  SCORING_SLUGS.wsBodyVarial, SCORING_SLUGS.wsBigSpin, SCORING_SLUGS.wsBiggerSpin,
+  SCORING_SLUGS.wsGazelle, SCORING_SLUGS.wsSexchange, SCORING_SLUGS.wsBigflip,
+]
+
 const GRIDS = {
-  wakeboard: [
+  wakeboard: { discipline: 'wakeboard', modes: ['jib', 'kicker', 'air_trick'], sections: [
     { section: 'compo_sectionAir', items: [
       { key: 'railey_air',      test: ({ entries }) => entries.some(e => isAir(e) && e.category_slug === 'railey') },
       { key: 'backroll_air',    test: ({ entries }) => entries.some(e => isAir(e) && e.category_slug === 'backroll') },
@@ -148,27 +194,93 @@ const GRIDS = {
       { key: 'sw_hs_entry', test: ({ all }) => onBoth(all.filter(onModule), hasHs) },
     ] },
     { section: 'compo_sectionRota', items: [
-      { key: 'fs_rotation',    test: ({ all }) => all.some(e => e.rotation.includes('fs')) },
-      { key: 'sw_fs_rotation', test: ({ all }) => onBoth(all, e => e.rotation.includes('fs')) },
-      { key: 'bs_rotation',    test: ({ all }) => all.some(e => e.rotation.includes('bs')) },
-      { key: 'sw_bs_rotation', test: ({ all }) => onBoth(all, e => e.rotation.includes('bs')) },
+      { key: 'fs_rotation',    test: ({ all }) => all.some(e => rotInDir(e, 'fs')) },
+      { key: 'sw_fs_rotation', test: ({ all }) => onBoth(all, e => rotInDir(e, 'fs')) },
+      { key: 'bs_rotation',    test: ({ all }) => all.some(e => rotInDir(e, 'bs')) },
+      { key: 'sw_bs_rotation', test: ({ all }) => onBoth(all, e => rotInDir(e, 'bs')) },
     ] },
-  ],
+  ] },
+
+  wakeskate: { discipline: 'wakeskate', modes: ['jib', 'kicker', 'flat'], sections: [
+    { section: 'compo_sectionFlat', items: [
+      { key: 'ws_ollie',   test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.wsOllie) },
+      { key: 'ws_body_varial', test: ({ all }) => all.some(e => WS_BODY_VARIALS.includes(e.slug)) },
+      { key: 'ws_flip',    test: ({ all }) => all.some(e => e.category_slug === 'fliptricks') },
+      // Shove-it = catégorie shoveit, hors ollie et varials (qui ont leur propre case).
+      { key: 'ws_shoveit', test: ({ all }) => all.some(e => e.category_slug === 'shoveit'
+          && e.slug !== SCORING_SLUGS.wsOllie && !(e.slug || '').includes('varial')) },
+    ] },
+    { section: 'compo_sectionFeature', items: [
+      { key: 'fsboard_bslip', test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.frontBoard || e.slug === SCORING_SLUGS.backLip) },
+      { key: 'fslip_bsboard', test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.frontLip || e.slug === SCORING_SLUGS.backBoard) },
+    ] },
+    { section: 'compo_sectionEntries', items: [
+      { key: 'ts_entry',    test: ({ all }) => all.some(e => onModule(e) && hasTs(e)) },
+      { key: 'sw_ts_entry', test: ({ all }) => onBoth(all.filter(onModule), hasTs) },
+      { key: 'hs_entry',    test: ({ all }) => all.some(e => onModule(e) && hasHs(e)) },
+      { key: 'sw_hs_entry', test: ({ all }) => onBoth(all.filter(onModule), hasHs) },
+    ] },
+    { section: 'compo_sectionRota', items: [
+      { key: 'fs_rotation',    test: ({ all }) => all.some(e => rotInDir(e, 'fs')) },
+      { key: 'sw_fs_rotation', test: ({ all }) => onBoth(all, e => rotInDir(e, 'fs')) },
+      { key: 'bs_rotation',    test: ({ all }) => all.some(e => rotInDir(e, 'bs')) },
+      { key: 'sw_bs_rotation', test: ({ all }) => onBoth(all, e => rotInDir(e, 'bs')) },
+    ] },
+  ] },
+
+  // Seated MP1→MP3 : jib, kicker et flat (pas d'air trick).
+  seated_mp1: { discipline: 'seated', modes: ['jib', 'kicker', 'flat'], sections: [
+    { section: 'compo_sectionFeatureFlat', items: [
+      { key: '5050',              test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.fiftyFifty) },
+      { key: 'seated_ollie',      test: ({ all }) => all.some(e => SEATED_OLLIES.includes(e.slug)) },
+      { key: 'seated_boardslide', test: ({ all }) => all.some(e => SEATED_BOARDSLIDES.includes(e.slug)) },
+      { key: 'seated_fakie',      test: ({ all }) => all.some(hasFakie) },
+    ] },
+    { section: 'compo_sectionRota', items: [
+      { key: 'seated_shifty',     test: ({ all }) => all.some(e => SEATED_SHIFTIES.includes(e.slug)) },
+      { key: 'seated_handlepass', test: ({ all }) => all.some(handlePass) },
+      ...ROT_BY_SIDE,
+    ] },
+  ] },
+
+  // Seated MP3→MP5 : ajoute air trick (railey), invert et rewind.
+  seated_mp5: { discipline: 'seated', modes: ['jib', 'kicker', 'flat', 'air_trick'], sections: [
+    { section: 'compo_sectionAir', items: [
+      { key: 'railey_air', test: ({ entries }) => entries.some(e => isAir(e) && e.category_slug === 'railey') },
+    ] },
+    { section: 'compo_sectionFeatureFlat', items: [
+      { key: '5050',              test: ({ all }) => all.some(e => e.slug === SCORING_SLUGS.fiftyFifty) },
+      { key: 'seated_ollie',      test: ({ all }) => all.some(e => SEATED_OLLIES.includes(e.slug)) },
+      { key: 'seated_boardslide', test: ({ all }) => all.some(e => SEATED_BOARDSLIDES.includes(e.slug)) },
+      { key: 'seated_fakie',      test: ({ all }) => all.some(hasFakie) },
+      { key: 'seated_invert',     test: ({ all }) => all.some(e => e.inverted) },
+    ] },
+    { section: 'compo_sectionRota', items: [
+      { key: 'seated_shifty',     test: ({ all }) => all.some(e => SEATED_SHIFTIES.includes(e.slug)) },
+      { key: 'seated_handlepass', test: ({ all }) => all.some(handlePass) },
+      { key: 'seated_rewind',     test: ({ all }) => all.some(e => e.rewind === true) },
+      ...ROT_BY_SIDE,
+    ] },
+  ] },
 }
 
-function computeScore(entries, jibPasses, discipline = 'wakeboard') {
+function computeScore(entries, jibPasses, gridKey = 'wakeboard') {
   // Aplatir les passes jib en pseudo-entrées
   const all = [...entries, ...jibPasses.flatMap(jibPassToEntries)]
   const ctx = { entries, all }
-  const grid = GRIDS[discipline] || GRIDS.wakeboard
+  const sections = (GRIDS[gridKey] || GRIDS.wakeboard).sections
 
   const scored = {}
-  for (const { items } of grid)
+  for (const { items } of sections)
     for (const { key, test } of items)
       scored[key] = test(ctx)
 
-  const max = grid.reduce((n, s) => n + s.items.length, 0)
-  return { scored, total: Object.values(scored).filter(Boolean).length, max, grid }
+  const max = sections.reduce((n, s) => n + s.items.length, 0)
+  const total = Object.values(scored).filter(Boolean).length
+  // Score normalisé sur 20 pour comparer les grilles entre elles (nombre d'items
+  // variable). Le wakeboard a 20 items → score20 == total, inchangé.
+  const score20 = max ? Math.round((total / max) * 20) : 0
+  return { scored, total, max, score20, grid: sections }
 }
 
 const JIB_FIGURES = [
@@ -191,6 +303,21 @@ const ROTATIONS = [
   { value: 'bs', labelKey: 'compoRotBS' },
 ]
 
+// Ordre d'affichage des grilles dans le sélecteur (libellés via tr.compoGrids).
+const GRID_OPTIONS = ['wakeboard', 'wakeskate', 'seated_mp1', 'seated_mp5']
+
+// Libellé du bouton d'ajout par mode (les modes dispo viennent de la grille).
+const MODE_LABEL = {
+  jib:       'compoAddJib',
+  kicker:    'compoAddKicker',
+  air_trick: 'compoAddAir',
+  flat:      'compoAddFlat',
+}
+
+// Axe d'approche du formulaire jib selon la discipline.
+const STANDING_APPROACH = [{ value: 'hs', labelKey: 'compoHeelside' }, { value: 'ts', labelKey: 'compoToeside' }]
+const SEATED_APPROACH   = [{ value: 'regular', labelKey: 'compoRegular' }, { value: 'fakie', labelKey: 'compoFakie' }]
+
 const OptBtn = ({ active, onClick, children }) => (
   <button
     className={`${styles.optBtn} ${active ? styles.optSelected : ''}`}
@@ -199,7 +326,7 @@ const OptBtn = ({ active, onClick, children }) => (
 )
 
 // ── Formulaire Passe Jib ─────────────────────────────────────
-function JibForm({ tr, onConfirm, onCancel }) {
+function JibForm({ tr, approachOptions, onConfirm, onCancel }) {
   const [pass, setPass] = useState({
     side: null,
     approach: null,
@@ -232,8 +359,9 @@ function JibForm({ tr, onConfirm, onCancel }) {
       <div className={styles.questionRow}>
         <span className={styles.questionLabel}>{tr.compoApproach}</span>
         <div className={styles.questionOptions}>
-          <OptBtn active={pass.approach === 'hs'} onClick={() => set('approach', 'hs')}>{tr.compoHeelside}</OptBtn>
-          <OptBtn active={pass.approach === 'ts'} onClick={() => set('approach', 'ts')}>{tr.compoToeside}</OptBtn>
+          {approachOptions.map(o => (
+            <OptBtn key={o.value} active={pass.approach === o.value} onClick={() => set('approach', o.value)}>{tr[o.labelKey]}</OptBtn>
+          ))}
         </div>
       </div>
 
@@ -329,12 +457,21 @@ export default function Compo() {
   const [otherEntries, setOtherEntries] = useState(stored?.otherEntries || [])
   const [pendingFigure, setPendingFigure]   = useState(null)
   const [pendingAnswers, setPendingAnswers] = useState({})
-  const [addMode, setAddMode]         = useState(null) // null | 'jib' | 'kicker' | 'air_trick' | 'other'
+  const [pendingRewind, setPendingRewind]   = useState(false) // toggle rewind (spin sur kicker)
+  const [gridKey, setGridKey]         = useState(stored?.gridKey || 'wakeboard')
+  const [addMode, setAddMode]         = useState(null) // null | 'jib' | 'kicker' | 'air_trick' | 'flat' | 'other'
   const [saving, setSaving]           = useState(false)
   const [savedId, setSavedId]         = useState(null) // id of the run once saved → share link
   const [savedSig, setSavedSig]       = useState(null) // content signature the saved link belongs to
   const [showSave, setShowSave]       = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false) // score breakdown fold (mobile only)
+
+  // Grille active : pilote les modes d'ajout, le filtre sport de la recherche,
+  // l'axe d'approche du jib et la dispo du toggle rewind.
+  const activeGrid = GRIDS[gridKey] || GRIDS.wakeboard
+  const gridModes  = activeGrid.modes
+  const seatedApproach = activeGrid.discipline === 'seated'
+  const gridSupportsRewind = activeGrid.sections.some(s => s.items.some(i => i.key === 'seated_rewind'))
 
   // Resume the sequence counter past any restored items so ordering stays correct
   const maxStoredSeq = [...(stored?.entries || []), ...(stored?.jibPasses || []), ...(stored?.otherEntries || [])]
@@ -345,8 +482,8 @@ export default function Compo() {
   // Minimal snapshot of the run — persisted to localStorage and used to tell
   // whether a previously generated share link still matches the current content.
   const snapshot = useMemo(
-    () => JSON.stringify({ name, entries, jibPasses, otherEntries }),
-    [name, entries, jibPasses, otherEntries]
+    () => JSON.stringify({ name, entries, jibPasses, otherEntries, gridKey }),
+    [name, entries, jibPasses, otherEntries, gridKey]
   )
 
   // Persist the composition so an accidental refresh doesn't lose it
@@ -373,6 +510,7 @@ export default function Compo() {
       setEntries(d.entries || [])
       setJibPasses(d.jibPasses || [])
       setOtherEntries(d.otherEntries || [])
+      setGridKey(d.gridKey || 'wakeboard')
       seqRef.current = [...(d.entries || []), ...(d.jibPasses || []), ...(d.otherEntries || [])]
         .reduce((m, x) => Math.max(m, x._seq || 0), 0)
     })()
@@ -400,9 +538,27 @@ export default function Compo() {
     setOtherEntries([])
     setPendingFigure(null)
     setPendingAnswers({})
+    setPendingRewind(false)
     setAddMode(null)
     setShowSave(false)
     setSavedId(null)
+    setQuery('')
+    setSuggestions([])
+  }
+
+  // Changement de grille : on garde les figures saisies (donnée agnostique) mais
+  // on annule toute saisie en cours, car les modes d'ajout peuvent différer.
+  // Garde-fou : on n'autorise pas de changer de discipline avec des figures déjà
+  // saisies (un run ne mélange pas les disciplines) ; le switch de niveau au sein
+  // d'une même discipline (seated MP1↔MP5) reste permis.
+  const changeGrid = (key) => {
+    const hasItems = entries.length || jibPasses.length || otherEntries.length
+    if (hasItems && (GRIDS[key]?.discipline || 'wakeboard') !== activeGrid.discipline) return
+    setGridKey(key)
+    setAddMode(null)
+    setPendingFigure(null)
+    setPendingAnswers({})
+    setPendingRewind(false)
     setQuery('')
     setSuggestions([])
   }
@@ -414,11 +570,10 @@ export default function Compo() {
     setSearching(true)
     const data = await searchFigures(q.trim())
     let results = data.map(parseFigure)
-    // La compo est wakeboard pour l'instant : on restreint l'ajout d'un air
-    // trick / kicker aux figures wakeboard, en plus du filtre de contexte.
+    // Restreint à la discipline de la grille active, en plus du filtre de contexte.
     if (addMode) {
       results = results.filter(f =>
-        f.contexts.includes(addMode) && parseArr(f.sports).includes('wakeboard')
+        f.contexts.includes(addMode) && parseArr(f.sports).includes(activeGrid.discipline)
       )
     }
     setSuggestions(results.slice(0, 8))
@@ -451,6 +606,7 @@ export default function Compo() {
 
     setPendingFigure({ fig, questions })
     setPendingAnswers({})
+    setPendingRewind(false)
   }
 
   const confirmEntry = () => {
@@ -473,11 +629,13 @@ export default function Compo() {
       contexts: resolvedContexts,
       approach: resolvedApproach,
       side,
+      rewind: pendingRewind || !!fig.rewind,
       _key: `${fig.id}-${Date.now()}`,
       _seq: nextSeq(),
     }])
     setPendingFigure(null)
     setPendingAnswers({})
+    setPendingRewind(false)
     setAddMode(null)
   }
 
@@ -495,7 +653,7 @@ export default function Compo() {
     ? pendingFigure.questions.every(q => pendingAnswers[q.id])
     : false
 
-  const { scored, total, max, grid } = computeScore(entries, jibPasses)
+  const { scored, score20, grid } = computeScore(entries, jibPasses, gridKey)
 
   const saveRun = async () => {
     setSaving(true)
@@ -503,11 +661,12 @@ export default function Compo() {
     const { error } = await supabase.from('compositions').insert({
       id: newId,
       name: name.trim() || null,
-      score: total,
+      score: score20,
       data: {
         entries: entries.map(serializeEntry),
         jibPasses,
         otherEntries,
+        gridKey,
       },
     })
     setSaving(false)
@@ -527,7 +686,7 @@ export default function Compo() {
 
   const sideLabel = (s) => s === 'left' ? tr.compoLeft : tr.compoRight
   const ctxLabel  = (c) => tr.ctxNames?.[c] || c
-  const appLabel  = (a) => a === 'ts' ? tr.compoToeside : tr.compoHeelside
+  const appLabel  = (a) => ({ ts: tr.compoToeside, hs: tr.compoHeelside, regular: tr.compoRegular, fakie: tr.compoFakie }[a] || a)
 
   const jibSummary = (p) => {
     const parts = []
@@ -603,8 +762,8 @@ export default function Compo() {
       <SEO
         titleFr="Composition de run"
         titleEn="Run composition"
-        descriptionFr="Compose ton run de wakeboard et calcule ton score."
-        descriptionEn="Build your wakeboard run and compute your score."
+        descriptionFr="Compose ton run (wakeboard, wakeskate, wakeboard assis) et calcule ton score."
+        descriptionEn="Build your run (wakeboard, wakeskate, seated) and compute your score."
         path="/compo"
       />
       <ToastContainer toasts={toasts} />
@@ -629,6 +788,25 @@ export default function Compo() {
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Sélecteur de grille (discipline / niveau) — les autres disciplines
+              sont verrouillées dès qu'une figure est saisie. */}
+          <div className={styles.gridSelect}>
+            {GRID_OPTIONS.map(key => {
+              const locked = allItems.length > 0 && GRIDS[key].discipline !== activeGrid.discipline
+              return (
+                <button
+                  key={key}
+                  className={`${styles.gridTab} ${gridKey === key ? styles.gridTabActive : ''}`}
+                  onClick={() => changeGrid(key)}
+                  disabled={locked}
+                  title={locked ? tr.compoGridLocked : undefined}
+                >
+                  {tr.compoGrids?.[key] || key}
+                </button>
+              )
+            })}
           </div>
 
           {showSaveHint && (
@@ -674,23 +852,19 @@ export default function Compo() {
           {/* Boutons d'ajout */}
           {!addMode && !pendingFigure && (
             <div className={styles.addBtns}>
-              <button className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode('jib')}>
-                {tr.compoAddJib}
-              </button>
-              <button className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode('kicker')}>
-                {tr.compoAddKicker}
-              </button>
-              <button className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode('air_trick')}>
-                {tr.compoAddAir}
-              </button>
+              {gridModes.map(m => (
+                <button key={m} className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode(m)}>
+                  {tr[MODE_LABEL[m]]}
+                </button>
+              ))}
               <button className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode('other')}>
                 {tr.compoAddOther}
               </button>
             </div>
           )}
 
-          {/* Recherche figure (kicker ou air trick) */}
-          {(addMode === 'kicker' || addMode === 'air_trick') && (
+          {/* Recherche figure (kicker, air trick ou flat) */}
+          {(addMode === 'kicker' || addMode === 'air_trick' || addMode === 'flat') && (
             <div className={styles.searchSection}>
               <div className={styles.searchWrap}>
                 <input
@@ -734,6 +908,7 @@ export default function Compo() {
           {addMode === 'jib' && (
             <JibForm
               tr={tr}
+              approachOptions={seatedApproach ? SEATED_APPROACH : STANDING_APPROACH}
               onConfirm={confirmJib}
               onCancel={() => setAddMode(null)}
             />
@@ -766,6 +941,18 @@ export default function Compo() {
                   </div>
                 </div>
               ))}
+              {/* Toggle rewind : figure spin ajoutée sur kicker, grilles qui le scorent */}
+              {addMode === 'kicker' && pendingFigure.fig.category_slug === 'spin' && gridSupportsRewind && (
+                <div className={styles.questionRow}>
+                  <span className={styles.questionLabel}>{tr.compoRewindLabel}</span>
+                  <div className={styles.questionOptions}>
+                    <button
+                      className={`${styles.optBtn} ${pendingRewind ? styles.optSelected : ''}`}
+                      onClick={() => setPendingRewind(r => !r)}
+                    >{tr.compoRewind}</button>
+                  </div>
+                </div>
+              )}
               <div className={styles.pendingActions}>
                 <button className="btn btn-ghost btn-sm" onClick={() => { setPendingFigure(null); setAddMode(null); }}>{tr.cancel}</button>
                 <button className="btn btn-primary btn-sm" disabled={!allQuestionsAnswered} onClick={confirmEntry}>
@@ -841,8 +1028,8 @@ export default function Compo() {
             onClick={() => setDetailsOpen(o => !o)}
             aria-expanded={detailsOpen}
           >
-            <span className={styles.scoreTotal}>{total}</span>
-            <span className={styles.scoreMax}>/{max}</span>
+            <span className={styles.scoreTotal}>{score20}</span>
+            <span className={styles.scoreMax}>/20</span>
             <Icon
               name="chevron-right"
               className={`${styles.scoreToggle} ${detailsOpen ? styles.scoreToggleOpen : ''}`}

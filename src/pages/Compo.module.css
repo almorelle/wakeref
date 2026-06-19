@@ -198,6 +198,26 @@
 .optBtn:hover { border-color: var(--c-accent); color: var(--c-text); }
 .optSelected  { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
 
+/* Sélecteur de grille (discipline / niveau) */
+.gridSelect {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.gridTab {
+  padding: 6px 14px;
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--c-border2);
+  color: var(--c-muted);
+  transition: all var(--t-fast);
+}
+.gridTab:hover:not(:disabled) { border-color: var(--c-accent); color: var(--c-text); }
+.gridTabActive { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
+.gridTab:disabled { opacity: .4; cursor: not-allowed; }
+
 .pendingActions {
   display: flex;
   justify-content: flex-end;

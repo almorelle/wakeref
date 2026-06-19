@@ -36,9 +36,13 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
 - `prerequisites` — many-to-many self-join on figures
 - `videos` — references to video files stored in Supabase Storage
 - `takedown_requests` — copyright removal requests from video authors
-- `compositions` — saved runs from the Compo page (no auth); short text `id` used in the share URL, minimal JSONB snapshot in `data`, denormalized `score`. Public can insert + load one by id via the `get_composition(cid)` function; only admin can list/delete (RLS)
+- `compositions` — saved runs from the Compo page (no auth); short text `id` used in the share URL, minimal JSONB snapshot in `data` (incl. `gridKey`), denormalized `score` (normalized to /20). Public can insert + load one by id via the `get_composition(cid)` function; only admin can list/delete (RLS)
 
 Full-text search on figures uses a GIN index with French `unaccent`.
+
+### Compo scoring grids
+
+The Compo page scores a run against a discipline-specific grid. All grids live in `GRIDS` in `src/pages/Compo.jsx`, keyed by grid id — `wakeboard`, `wakeskate`, `seated_mp1` (MP1→MP3), `seated_mp5` (MP3→MP5); seated has two grids (handicap class). Each grid = `{ discipline, modes, sections }`; a section item is `{ key, test(ctx) }` where `ctx = { entries, all }` (`all` includes jib pseudo-entries). Scoring is **binary, no degree thresholds** (anti-perf invariant) and **normalized to /20** (`score20`) so grids are comparable. The active `gridKey` drives the grid selector (cross-discipline switch locked once a figure exists), the per-grid add modes (incl. `flat`), the jib approach axis (hs/ts vs regular/fakie), and the figure-search sport filter. Figure slugs referenced by tests are centralized in `SCORING_SLUGS` with a dev-only guard that warns when a referenced slug is absent from `figures` (slugs are editable in admin → silent drift). "Body varial" and similar concepts with no backing field use explicit slug lists (`WS_BODY_VARIALS`). Adding a grid = one entry in `GRIDS` + translations. The figure data these grids depend on (the Ollie family, wakeskate reclassements) is recorded in `_bmad-output/implementation-artifacts/compo-figures-data.md` — the live DB is the source of truth; that file is just the trace of the one-time seed/reclass operations.
 
 ### Seated (wakeboard assis) conventions
 
