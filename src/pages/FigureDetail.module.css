@@ -365,6 +365,53 @@ a.treeNode:hover {
   justify-content: center;
 }
 .videoPlaceholder i { font-size: 32px; color: var(--c-wake); }
+
+/* ── Média unifié : façade (upload + YouTube) + overlay play ── */
+.mediaWrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: var(--c-surface3);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+/* Miniature YouTube : ratio fixe, recadrée (cover) pour remplir le cadre. */
+.ytThumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  background: var(--c-surface3);
+}
+.ytThumbVertical { aspect-ratio: 9 / 16; }
+/* Formats verticaux (Shorts/reels) : largeur plafonnée + centrés pour éviter
+   le « mur » vidéo sur desktop. */
+.mediaVertical,
+.mediaVerticalEl { max-width: 320px; margin-left: auto; margin-right: auto; }
+
+/* Overlay cliquable : dégradé léger + gros bouton play centré (style commun
+   avec la carte Instagram). */
+.mediaScrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.05) 45%, rgba(0, 0, 0, 0.25));
+  transition: background var(--t-fast);
+}
+.mediaWrap:hover .mediaScrim,
+.mediaScrim:hover { background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.12) 45%, rgba(0, 0, 0, 0.35)); }
+.mediaWrap:hover .instaPlay,
+.mediaScrim:hover .instaPlay { transform: scale(1.06); }
+
 .videoMeta { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
 .creator {
   display: inline-flex;

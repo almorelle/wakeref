@@ -54,6 +54,112 @@ function InstagramCard({ v, label }) {
   )
 }
 
+// Monte le contenu lourd (iframe / metadata vidéo / thumbnail) seulement quand
+// la carte approche du viewport — perf sur les figures à galerie longue.
+function useInView(rootMargin = '300px') {
+  const ref = useRef(null)
+  const [inView, setInView] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || inView) return
+    if (typeof IntersectionObserver === 'undefined') { setInView(true); return }
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) { setInView(true); io.disconnect() }
+    }, { rootMargin })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [inView, rootMargin])
+  return [ref, inView]
+}
+
+// Façade YouTube : miniature + bouton play ; l'iframe (lourd) n'est monté qu'au
+// clic → page bien plus légère, et style unifié avec la carte Instagram.
+function YouTubeFacade({ videoId, vertical, title }) {
+  const [ref, inView] = useInView()
+  const [playing, setPlaying] = useState(false)
+  const [hiRes, setHiRes] = useState(true) // maxres → fallback hq si 404
+
+  if (playing) {
+    return (
+      <iframe
+        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
+        className={`${styles.video} ${vertical ? styles.mediaVerticalEl : ''}`}
+        title={title || 'YouTube'}
+        allowFullScreen
+        allow="autoplay; fullscreen"
+        style={{ border: 'none', width: '100%', aspectRatio: vertical ? '9/16' : '16/9', height: 'auto' }}
+      />
+    )
+  }
+
+  const thumb = `https://i.ytimg.com/vi/${videoId}/${hiRes ? 'maxresdefault' : 'hqdefault'}.jpg`
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className={`${styles.mediaWrap} ${vertical ? styles.mediaVertical : ''}`}
+      onClick={() => setPlaying(true)}
+      aria-label="Lire la vidéo YouTube"
+    >
+      {inView && (
+        <img
+          src={thumb}
+          alt={title || ''}
+          className={`${styles.ytThumb} ${vertical ? styles.ytThumbVertical : ''}`}
+          loading="lazy"
+          onError={() => hiRes && setHiRes(false)}
+        />
+      )}
+      <span className={styles.mediaScrim}>
+        <span className={styles.instaPlay}><Icon name="player-play" /></span>
+      </span>
+    </button>
+  )
+}
+
+// Vidéo uploadée : poster (1re frame), aperçu muet en boucle au survol, et
+// lecture pleine (son + contrôles) au clic. Metadata chargée seulement en vue.
+function UploadVideo({ url }) {
+  const [ref, inView] = useInView()
+  const videoRef = useRef(null)
+  const [active, setActive] = useState(false)
+
+  const activate = () => {
+    const vid = videoRef.current
+    setActive(true)
+    if (vid) { vid.muted = false; vid.currentTime = 0; vid.play().catch(() => {}) }
+  }
+  const hoverPlay = () => { if (!active) { const v = videoRef.current; if (v) { v.muted = true; v.play().catch(() => {}) } } }
+  const hoverStop = () => { if (!active) { const v = videoRef.current; if (v) { v.pause(); try { v.currentTime = 0.1 } catch { /* not seekable yet */ } } } }
+
+  return (
+    <div
+      ref={ref}
+      className={styles.mediaWrap}
+      onMouseEnter={hoverPlay}
+      onMouseLeave={hoverStop}
+    >
+      {inView && (
+        <video
+          ref={videoRef}
+          src={`${url}#t=0.1`}
+          className={styles.video}
+          preload="metadata"
+          playsInline
+          muted={!active}
+          loop={!active}
+          controls={active}
+        />
+      )}
+      {!active && (
+        <button type="button" className={styles.mediaScrim} onClick={activate} aria-label="Lire la vidéo">
+          <span className={styles.instaPlay}><Icon name="player-play" /></span>
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function FigureDetail() {
   const { slug } = useParams()
   const navigate = useNavigate()
@@ -153,11 +259,9 @@ export default function FigureDetail() {
   const renderVideoMedia = (v) => {
     const url = getVideoUrl(v)
 
-    // Upload direct. Le fragment #t=0.1 + preload="metadata" force le navigateur
-    // à peindre la première frame en guise de poster (sinon cadre gris/noir tant
-    // que rien n'est chargé), sans avoir à générer de miniature.
+    // Upload direct : poster + aperçu au survol + lecture pleine au clic.
     if (v.source_type === 'upload' && url) {
-      return <video src={`${url}#t=0.1`} controls playsInline preload="metadata" className={styles.video} />
+      return <UploadVideo url={url} />
     }
 
     // Instagram
@@ -165,25 +269,12 @@ export default function FigureDetail() {
       return <InstagramCard v={v} label={tr.viewOnInstagram} />
     }
 
-    // YouTube
+    // YouTube : façade (miniature + play), iframe montée au clic seulement.
     if (v.source_type === 'youtube' && v.source_url) {
       const videoId = v.source_url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?\s]+)/)?.[1]
       const isShort = v.source_url.includes('/shorts/')
       if (videoId) {
-        return (
-          <iframe
-            src={`https://www.youtube-nocookie.com/embed/${videoId}`}
-            className={styles.video}
-            allowFullScreen
-            allow="autoplay; fullscreen"
-            style={{
-              border: 'none',
-              width: '100%',
-              aspectRatio: isShort ? '9/16' : '16/9',
-              height: 'auto'
-            }}
-          />
-        )
+        return <YouTubeFacade videoId={videoId} vertical={isShort} title={v.title} />
       }
     }
 
