@@ -41,7 +41,6 @@ CREATE TABLE public.figures (
                                 tips_wakeskate ARRAY,
                                 tips_wakeskate_en ARRAY,
                                 CONSTRAINT figures_pkey PRIMARY KEY (id),
-                                CONSTRAINT figures_sport_in_sports CHECK (sport = ANY (sports)),
                                 CONSTRAINT figures_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id),
                                 CONSTRAINT figures_switch_of_fkey FOREIGN KEY (switch_of) REFERENCES public.figures(id),
                                 CONSTRAINT figures_built_on_id_fkey FOREIGN KEY (built_on_id) REFERENCES public.figures(id)
