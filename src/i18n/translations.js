@@ -165,8 +165,10 @@ export const t = {
     compoRotFS:      'FS 180 ou +',
     compoRotBS:      'BS 180 ou +',
     compoEntryRot:   'Rotation d\'entrée',
+    compoEntryTricks:'Trick d\'entrée',
     compoJibFigures: 'Figures sur le module',
     compoExitRot:    'Rotation de sortie',
+    compoExitTricks: 'Trick de sortie',
     compoNone:       'Aucune',
     ctxNames: {
       kicker: 'Kicker', air_trick: 'Air Trick', feature: 'Module', flat: 'Flat',
@@ -446,8 +448,10 @@ export const t = {
     compoRotFS:      'FS 180 or more',
     compoRotBS:      'BS 180 or more',
     compoEntryRot:   'Entry rotation',
+    compoEntryTricks:'Entry trick',
     compoJibFigures: 'Tricks on the feature',
     compoExitRot:    'Exit rotation',
+    compoExitTricks: 'Exit trick',
     compoNone:       'None',
     ctxNames: {
       kicker: 'Kicker', air_trick: 'Air Trick', feature: 'Feature', flat: 'Flat',

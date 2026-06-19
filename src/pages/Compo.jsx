@@ -85,6 +85,15 @@ const SCORING_SLUGS = {
   seatedOllie360:     'ollie-360',
 }
 
+// Tricks d'entrée/sortie de module proposés en wakeskate (en plus de la rotation).
+// `entry` = ce qu'il faut sur la pseudo-entrée pour allumer la bonne case de la
+// grille (shove-it → catégorie shoveit, kickflip → fliptricks, body varial → slug).
+const WS_JIB_TRICKS = [
+  { id: 'shoveit',    label: 'Shove-it',    entry: { category_slug: 'shoveit' } },
+  { id: 'kickflip',   label: 'Kickflip',    entry: { category_slug: 'fliptricks' } },
+  { id: 'bodyvarial', label: 'Body Varial', entry: { slug: SCORING_SLUGS.wsBodyVarial } },
+]
+
 // Une passe jib génère des pseudo-entrées pour le moteur de score
 function jibPassToEntries(pass) {
   const entries = []
@@ -117,6 +126,14 @@ function jibPassToEntries(pass) {
   // Rotations (entrée/sortie)
   if (pass.entryRotation) entries.push({ ...base, _key: `${pass._key}_entryrot`, rotation: [pass.entryRotation], approach: [pass.approach] })
   if (pass.exitRotation)  entries.push({ ...base, _key: `${pass._key}_exitrot`,  rotation: [pass.exitRotation],  approach: [pass.approach] })
+
+  // Tricks d'entrée / sortie (wakeskate) : shove-it / kickflip / body varial
+  for (const [phase, ids] of [['entry', pass.entryTricks], ['exit', pass.exitTricks]]) {
+    for (const tid of ids || []) {
+      const t = WS_JIB_TRICKS.find(x => x.id === tid)
+      if (t) entries.push({ ...base, _key: `${pass._key}_${phase}_${tid}`, approach: [pass.approach], ...t.entry })
+    }
+  }
 
   return entries
 }
@@ -298,6 +315,24 @@ const JIB_FIGURES = [
   { slug: 'bs-180',        labelKey: 'compoRotBS'  },
 ]
 
+// Jib seated : pas de board/lip/press ; à la place les deux boardslides assis.
+const JIB_FIGURES_SEATED = [
+  { slug: SCORING_SLUGS.fiftyFifty,         label: '50-50'         },
+  { slug: SCORING_SLUGS.seatedFsBoardslide, label: 'FS Boardslide' },
+  { slug: SCORING_SLUGS.seatedBsBoardslide, label: 'BS Boardslide' },
+  { slug: 'transfer',      label: 'Transfer'       },
+  { slug: 'rail-to-rail',  label: 'Rail to Rail'   },
+  { slug: 'gap',           label: 'Gap'            },
+  { slug: 're-entry',      label: 'Re-entry'       },
+  { slug: 'fs-180',        labelKey: 'compoRotFS'  },
+  { slug: 'bs-180',        labelKey: 'compoRotBS'  },
+]
+
+// Lookup combiné pour résoudre le libellé d'une figure jib quel que soit le jeu.
+const JIB_FIGURE_BY_SLUG = new Map(
+  [...JIB_FIGURES_SEATED, ...JIB_FIGURES].map(f => [f.slug, f])
+)
+
 const ROTATIONS = [
   { value: 'fs', labelKey: 'compoRotFS' },
   { value: 'bs', labelKey: 'compoRotBS' },
@@ -326,18 +361,20 @@ const OptBtn = ({ active, onClick, children }) => (
 )
 
 // ── Formulaire Passe Jib ─────────────────────────────────────
-function JibForm({ tr, approachOptions, onConfirm, onCancel }) {
+function JibForm({ tr, approachOptions, figures, tricks, onConfirm, onCancel }) {
   const [pass, setPass] = useState({
     side: null,
     approach: null,
     entryRotation: null,
     exitRotation: null,
     figures: [],
+    entryTricks: [],
+    exitTricks: [],
   })
 
   const toggle = (key, val) => setPass(p => ({
     ...p,
-    figures: p.figures.includes(val) ? p.figures.filter(x => x !== val) : [...p.figures, val],
+    [key]: p[key].includes(val) ? p[key].filter(x => x !== val) : [...p[key], val],
   }))
 
   const set = (key, val) => setPass(p => ({ ...p, [key]: p[key] === val ? null : val }))
@@ -366,11 +403,16 @@ function JibForm({ tr, approachOptions, onConfirm, onCancel }) {
       </div>
 
       <div className={styles.questionRow}>
-        <span className={styles.questionLabel}>{tr.compoEntryRot}</span>
+        <span className={styles.questionLabel}>{tr.compoEntryTricks}</span>
         <div className={styles.questionOptions}>
           <OptBtn active={pass.entryRotation === null} onClick={() => set('entryRotation', null)}>{tr.compoNone}</OptBtn>
           {ROTATIONS.map(r => (
             <OptBtn key={r.value} active={pass.entryRotation === r.value} onClick={() => set('entryRotation', r.value)}>{tr[r.labelKey]}</OptBtn>
+          ))}
+          {tricks && tricks.map(t => (
+            <OptBtn key={t.id} active={pass.entryTricks.includes(t.id)} onClick={() => toggle('entryTricks', t.id)}>
+              {t.label}
+            </OptBtn>
           ))}
         </div>
       </div>
@@ -378,7 +420,7 @@ function JibForm({ tr, approachOptions, onConfirm, onCancel }) {
       <div className={styles.questionRow}>
         <span className={styles.questionLabel}>{tr.compoJibFigures}</span>
         <div className={styles.questionOptions}>
-          {JIB_FIGURES.map(f => (
+          {figures.map(f => (
             <OptBtn key={f.slug} active={pass.figures.includes(f.slug)} onClick={() => toggle('figures', f.slug)}>
               {f.labelKey ? tr[f.labelKey] : f.label}
             </OptBtn>
@@ -387,11 +429,16 @@ function JibForm({ tr, approachOptions, onConfirm, onCancel }) {
       </div>
 
       <div className={styles.questionRow}>
-        <span className={styles.questionLabel}>{tr.compoExitRot}</span>
+        <span className={styles.questionLabel}>{tr.compoExitTricks}</span>
         <div className={styles.questionOptions}>
           <OptBtn active={pass.exitRotation === null} onClick={() => set('exitRotation', null)}>{tr.compoNone}</OptBtn>
           {ROTATIONS.map(r => (
             <OptBtn key={r.value} active={pass.exitRotation === r.value} onClick={() => set('exitRotation', r.value)}>{tr[r.labelKey]}</OptBtn>
+          ))}
+          {tricks && tricks.map(t => (
+            <OptBtn key={t.id} active={pass.exitTricks.includes(t.id)} onClick={() => toggle('exitTricks', t.id)}>
+              {t.label}
+            </OptBtn>
           ))}
         </div>
       </div>
@@ -586,7 +633,11 @@ export default function Compo() {
     setHighlightIdx(-1)
 
     const questions = []
-    questions.push({ id: 'side', labelKey: 'compoSide', optionKeys: ['compoLeft', 'compoRight'] })
+    // Un trick à plat n'a pas de côté de câble pertinent → on ne demande pas
+    // le côté (le mode 'flat' n'existe qu'en wakeskate et seated).
+    if (addMode !== 'flat') {
+      questions.push({ id: 'side', labelKey: 'compoSide', optionKeys: ['compoLeft', 'compoRight'] })
+    }
 
     if (!addMode) {
       const hasAir     = fig.contexts.includes('air_trick')
@@ -612,7 +663,9 @@ export default function Compo() {
   const confirmEntry = () => {
     const { fig } = pendingFigure
     const answers = pendingAnswers
-    const side = answers.side === 'compoRight' ? 'right' : 'left'
+    // null pour un trick à plat (côté non demandé) → n'entre pas dans les cases
+    // de rotation par côté.
+    const side = answers.side ? (answers.side === 'compoRight' ? 'right' : 'left') : null
     let resolvedContexts = [...fig.contexts]
     if (answers.context) {
       const map = { 'Air Trick': 'air_trick', 'Kicker': 'kicker', [tr.ctxNames?.feature || 'Feature']: 'feature' }
@@ -691,11 +744,13 @@ export default function Compo() {
   const jibSummary = (p) => {
     const parts = []
     if (p.entryRotation) parts.push(p.entryRotation.toUpperCase() + ' in')
+    if (p.entryTricks?.length) parts.push(p.entryTricks.map(id => WS_JIB_TRICKS.find(x => x.id === id)?.label || id).join(', '))
     if (p.figures.length) parts.push(p.figures.map(f => {
-      const fig = JIB_FIGURES.find(x => x.slug === f)
+      const fig = JIB_FIGURE_BY_SLUG.get(f)
       return fig ? (fig.labelKey ? tr[fig.labelKey] : fig.label) : f
     }).join(', '))
     if (p.exitRotation) parts.push(p.exitRotation.toUpperCase() + ' out')
+    if (p.exitTricks?.length) parts.push(p.exitTricks.map(id => WS_JIB_TRICKS.find(x => x.id === id)?.label || id).join(', '))
     return parts.join(' · ') || '50-50'
   }
 
@@ -909,6 +964,8 @@ export default function Compo() {
             <JibForm
               tr={tr}
               approachOptions={seatedApproach ? SEATED_APPROACH : STANDING_APPROACH}
+              figures={seatedApproach ? JIB_FIGURES_SEATED : JIB_FIGURES}
+              tricks={activeGrid.discipline === 'wakeskate' ? WS_JIB_TRICKS : null}
               onConfirm={confirmJib}
               onCancel={() => setAddMode(null)}
             />
@@ -978,7 +1035,7 @@ export default function Compo() {
                         <div className={styles.entryInfo}>
                           <span className={styles.entryName}>{e.name}</span>
                           <div className={styles.entryTags}>
-                            <span className={styles.tag}>{sideLabel(e.side)}</span>
+                            {e.side && <span className={styles.tag}>{sideLabel(e.side)}</span>}
                             {e.contexts.map(c => <span key={c} className={styles.tag}>{ctxLabel(c)}</span>)}
                             {e.approach.map(a => <span key={a} className={styles.tag}>{appLabel(a)}</span>)}
                           </div>
