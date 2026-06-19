@@ -214,8 +214,14 @@
   color: var(--c-muted);
   transition: all var(--t-fast);
 }
-.gridTab:hover:not(:disabled) { border-color: var(--c-accent); color: var(--c-text); }
-.gridTabActive { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
+.gridTab:hover:not(:disabled) { border-color: var(--disc, var(--c-accent)); color: var(--c-text); }
+/* Actif = teinté contour dans la couleur de la discipline (lisible pour cyan /
+   ambre / violet, contrairement à un aplat + texte blanc). */
+.gridTabActive {
+  background: color-mix(in srgb, var(--disc, var(--c-accent)) 16%, transparent);
+  border-color: var(--disc, var(--c-accent));
+  color: var(--disc, var(--c-accent));
+}
 .gridTab:disabled { opacity: .4; cursor: not-allowed; }
 
 .pendingActions {
@@ -348,11 +354,26 @@
   gap: 1rem;
 }
 
+/* En-tête de discipline : chip coloré au-dessus du score. */
+.disciplineTag {
+  align-self: center;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--disc, var(--c-accent));
+  background: color-mix(in srgb, var(--disc, var(--c-accent)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--disc, var(--c-accent)) 35%, transparent);
+  padding: 4px 12px;
+  border-radius: 100px;
+}
+
 .scoreTotal {
   font-family: var(--font-display);
   font-size: 56px;
   font-weight: 800;
-  color: var(--c-accent);
+  color: var(--disc, var(--c-accent));
   line-height: 1;
 }
 
@@ -384,7 +405,7 @@
   transition: background var(--t-fast);
 }
 
-.scoreItemOn { background: #3b82f610; }
+.scoreItemOn { background: color-mix(in srgb, var(--disc, var(--c-accent)) 10%, transparent); }
 
 .scoreItemDot {
   width: 6px; height: 6px;
@@ -393,7 +414,7 @@
   flex-shrink: 0;
   transition: background var(--t-fast);
 }
-.scoreItemOn .scoreItemDot { background: var(--c-accent); }
+.scoreItemOn .scoreItemDot { background: var(--disc, var(--c-accent)); }
 
 .scoreItemLabel {
   flex: 1;
@@ -410,7 +431,7 @@
   color: var(--c-faint);
   transition: color var(--t-fast);
 }
-.scoreItemOn .scoreItemPt { color: var(--c-accent); }
+.scoreItemOn .scoreItemPt { color: var(--disc, var(--c-accent)); }
 
 /* ── Responsive ── */
 @media (max-width: 700px) {

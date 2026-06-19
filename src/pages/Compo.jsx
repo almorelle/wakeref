@@ -341,6 +341,14 @@ const ROTATIONS = [
 // Ordre d'affichage des grilles dans le sélecteur (libellés via tr.compoGrids).
 const GRID_OPTIONS = ['wakeboard', 'wakeskate', 'seated_mp1', 'seated_mp5']
 
+// Couleur d'accent par discipline : signe visuellement le run (pill active,
+// score, critères, en-tête du panneau). Exposée en variable CSS --disc.
+const DISCIPLINE_COLOR = {
+  wakeboard: 'var(--c-wake)',   // cyan
+  wakeskate: 'var(--c-ws)',     // ambre
+  seated:    'var(--c-seated)', // violet
+}
+
 // Libellé du bouton d'ajout par mode (les modes dispo viennent de la grille).
 const MODE_LABEL = {
   jib:       'compoAddJib',
@@ -516,6 +524,7 @@ export default function Compo() {
   // Grille active : pilote les modes d'ajout, le filtre sport de la recherche,
   // l'axe d'approche du jib et la dispo du toggle rewind.
   const activeGrid = GRIDS[gridKey] || GRIDS.wakeboard
+  const disciplineColor = DISCIPLINE_COLOR[activeGrid.discipline] || 'var(--c-accent)'
   const gridModes  = activeGrid.modes
   const seatedApproach = activeGrid.discipline === 'seated'
   const gridSupportsRewind = activeGrid.sections.some(s => s.items.some(i => i.key === 'seated_rewind'))
@@ -822,7 +831,7 @@ export default function Compo() {
         path="/compo"
       />
       <ToastContainer toasts={toasts} />
-      <div className={styles.layout}>
+      <div className={styles.layout} style={{ '--disc': disciplineColor }}>
 
         <div className={styles.left}>
           <div className={styles.headerRow}>
@@ -1080,6 +1089,8 @@ export default function Compo() {
 
         {/* Score */}
         <div className={styles.right}>
+          {/* En-tête de discipline : signe le run dans la couleur de la grille. */}
+          <span className={styles.disciplineTag}>{tr.compoGrids?.[gridKey] || gridKey}</span>
           <button
             className={styles.scoreHeader}
             onClick={() => setDetailsOpen(o => !o)}
