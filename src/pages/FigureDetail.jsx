@@ -153,9 +153,11 @@ export default function FigureDetail() {
   const renderVideoMedia = (v) => {
     const url = getVideoUrl(v)
 
-    // Upload direct
+    // Upload direct. Le fragment #t=0.1 + preload="metadata" force le navigateur
+    // à peindre la première frame en guise de poster (sinon cadre gris/noir tant
+    // que rien n'est chargé), sans avoir à générer de miniature.
     if (v.source_type === 'upload' && url) {
-      return <video src={url} controls playsInline className={styles.video} />
+      return <video src={`${url}#t=0.1`} controls playsInline preload="metadata" className={styles.video} />
     }
 
     // Instagram
