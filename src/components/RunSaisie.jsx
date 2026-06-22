@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { searchFigures } from '../lib/searchFigures'
-import { GRIDS, SCORING_SLUGS, WS_JIB_TRICKS } from '../lib/compoGrids'
+import { GRIDS, WS_JIB_TRICKS, JIB_SLUGS, JIB_SLUGS_SEATED, jibFigureLabel } from '../lib/compoGrids'
 import { useT } from '../i18n/useT'
 import Icon from './Icon'
 import styles from './RunSaisie.module.css'
@@ -13,39 +13,6 @@ const parseFigure = (f) => ({
   rotation: parseArr(f.rotation),
   rotation_type: parseArr(f.rotation_type),
 })
-
-const JIB_FIGURES = [
-  { slug: SCORING_SLUGS.fiftyFifty, label: '50-50'        },
-  { slug: SCORING_SLUGS.frontBoard, label: 'Front Board'  },
-  { slug: SCORING_SLUGS.frontLip,   label: 'Front Lip'    },
-  { slug: SCORING_SLUGS.backBoard,  label: 'Back Board'   },
-  { slug: SCORING_SLUGS.backLip,    label: 'Back Lip'     },
-  { slug: SCORING_SLUGS.press,      label: 'Press'        },
-  { slug: 'transfer',      label: 'Transfer'       },
-  { slug: 'rail-to-rail',  label: 'Rail to Rail'   },
-  { slug: 'gap',           label: 'Gap'            },
-  { slug: 're-entry',      label: 'Re-entry'       },
-  { slug: 'fs-180',        labelKey: 'compoRotFS'  },
-  { slug: 'bs-180',        labelKey: 'compoRotBS'  },
-]
-
-// Jib seated : pas de board/lip/press ; à la place les deux boardslides assis.
-const JIB_FIGURES_SEATED = [
-  { slug: SCORING_SLUGS.fiftyFifty,         label: '50-50'         },
-  { slug: SCORING_SLUGS.seatedFsBoardslide, label: 'FS Boardslide' },
-  { slug: SCORING_SLUGS.seatedBsBoardslide, label: 'BS Boardslide' },
-  { slug: 'transfer',      label: 'Transfer'       },
-  { slug: 'rail-to-rail',  label: 'Rail to Rail'   },
-  { slug: 'gap',           label: 'Gap'            },
-  { slug: 're-entry',      label: 'Re-entry'       },
-  { slug: 'fs-180',        labelKey: 'compoRotFS'  },
-  { slug: 'bs-180',        labelKey: 'compoRotBS'  },
-]
-
-// Lookup combiné pour résoudre le libellé d'une figure jib quel que soit le jeu.
-const JIB_FIGURE_BY_SLUG = new Map(
-  [...JIB_FIGURES_SEATED, ...JIB_FIGURES].map(f => [f.slug, f])
-)
 
 const ROTATIONS = [
   { value: 'fs', labelKey: 'compoRotFS' },
@@ -66,6 +33,7 @@ const SEATED_APPROACH   = [{ value: 'regular', labelKey: 'compoRegular' }, { val
 
 const OptBtn = ({ active, onClick, children }) => (
   <button
+    type="button"
     className={`${styles.optBtn} ${active ? styles.optSelected : ''}`}
     onClick={onClick}
   >{children}</button>
@@ -131,9 +99,9 @@ function JibForm({ tr, approachOptions, figures, tricks, onConfirm, onCancel }) 
       <div className={styles.questionRow}>
         <span className={styles.questionLabel}>{tr.compoJibFigures}</span>
         <div className={styles.questionOptions}>
-          {figures.map(f => (
-            <OptBtn key={f.slug} active={pass.figures.includes(f.slug)} onClick={() => toggle('figures', f.slug)}>
-              {f.labelKey ? tr[f.labelKey] : f.label}
+          {figures.map(slug => (
+            <OptBtn key={slug} active={pass.figures.includes(slug)} onClick={() => toggle('figures', slug)}>
+              {jibFigureLabel(slug, tr)}
             </OptBtn>
           ))}
         </div>
@@ -155,8 +123,8 @@ function JibForm({ tr, approachOptions, figures, tricks, onConfirm, onCancel }) 
       </div>
 
       <div className={styles.pendingActions}>
-        <button className="btn btn-ghost btn-sm" onClick={onCancel}>{tr.cancel}</button>
-        <button className="btn btn-primary btn-sm" disabled={!valid} onClick={() => onConfirm(pass)}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>{tr.cancel}</button>
+        <button type="button" className="btn btn-primary btn-sm" disabled={!valid} onClick={() => onConfirm(pass)}>
           {tr.compoConfirm}
         </button>
       </div>
@@ -190,8 +158,8 @@ function OtherForm({ tr, onConfirm, onCancel }) {
         />
       </div>
       <div className={styles.pendingActions}>
-        <button className="btn btn-ghost btn-sm" onClick={onCancel}>{tr.cancel}</button>
-        <button className="btn btn-primary btn-sm" disabled={!valid} onClick={confirm}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>{tr.cancel}</button>
+        <button type="button" className="btn btn-primary btn-sm" disabled={!valid} onClick={confirm}>
           {tr.compoConfirm}
         </button>
       </div>
@@ -351,10 +319,7 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
     const parts = []
     if (p.entryRotation) parts.push(p.entryRotation.toUpperCase() + ' in')
     if (p.entryTricks?.length) parts.push(p.entryTricks.map(id => WS_JIB_TRICKS.find(x => x.id === id)?.label || id).join(', '))
-    if (p.figures.length) parts.push(p.figures.map(f => {
-      const fig = JIB_FIGURE_BY_SLUG.get(f)
-      return fig ? (fig.labelKey ? tr[fig.labelKey] : fig.label) : f
-    }).join(', '))
+    if (p.figures.length) parts.push(p.figures.map(f => jibFigureLabel(f, tr)).join(', '))
     if (p.exitRotation) parts.push(p.exitRotation.toUpperCase() + ' out')
     if (p.exitTricks?.length) parts.push(p.exitTricks.map(id => WS_JIB_TRICKS.find(x => x.id === id)?.label || id).join(', '))
     return parts.join(' · ') || '50-50'
@@ -397,16 +362,16 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
   const rowControls = (index, type, item) => (
     <div className={styles.rowActions}>
       <div className={styles.moveGroup}>
-        <button className={styles.moveBtn} disabled={index === 0}
+        <button type="button" className={styles.moveBtn} disabled={index === 0}
           onClick={() => moveItem(index, -1)} aria-label={tr.compoMoveUp}>
           <Icon name="chevron-right" size={16} className={styles.moveUp} />
         </button>
-        <button className={styles.moveBtn} disabled={index === allItems.length - 1}
+        <button type="button" className={styles.moveBtn} disabled={index === allItems.length - 1}
           onClick={() => moveItem(index, 1)} aria-label={tr.compoMoveDown}>
           <Icon name="chevron-right" size={16} className={styles.moveDown} />
         </button>
       </div>
-      <button className={styles.removeBtn} onClick={() => removeItem(type, item)} aria-label={tr.compoRemove}>
+      <button type="button" className={styles.removeBtn} onClick={() => removeItem(type, item)} aria-label={tr.compoRemove}>
         <Icon name="x" size={16} />
       </button>
     </div>
@@ -418,11 +383,11 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
       {!addMode && !pendingFigure && (
         <div className={styles.addBtns}>
           {gridModes.map(m => (
-            <button key={m} className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode(m)}>
+            <button type="button" key={m} className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode(m)}>
               {tr[MODE_LABEL[m]]}
             </button>
           ))}
-          <button className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode('other')}>
+          <button type="button" className={`btn btn-ghost btn-sm ${styles.addBtn}`} onClick={() => setAddMode('other')}>
             {tr.compoAddOther}
           </button>
         </div>
@@ -452,6 +417,7 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
               <div className={styles.suggestions}>
                 {suggestions.map((f, idx) => (
                   <button
+                    type="button"
                     key={f.id}
                     className={`${styles.suggestion} ${highlightIdx === idx ? styles.suggestionHighlight : ''}`}
                     onClick={() => selectFigure(f)}
@@ -463,7 +429,7 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
               </div>
             )}
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={() => { setAddMode(null); setQuery(''); setSuggestions([]) }}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setAddMode(null); setQuery(''); setSuggestions([]) }}>
             {tr.cancel}
           </button>
         </div>
@@ -474,7 +440,7 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
         <JibForm
           tr={tr}
           approachOptions={seatedApproach ? SEATED_APPROACH : STANDING_APPROACH}
-          figures={seatedApproach ? JIB_FIGURES_SEATED : JIB_FIGURES}
+          figures={seatedApproach ? JIB_SLUGS_SEATED : JIB_SLUGS}
           tricks={activeGrid.discipline === 'wakeskate' ? WS_JIB_TRICKS : null}
           onConfirm={confirmJib}
           onCancel={() => setAddMode(null)}
@@ -500,6 +466,7 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
               <div className={styles.questionOptions}>
                 {(q.optionKeys || q.options).map(opt => (
                   <button
+                    type="button"
                     key={opt}
                     className={`${styles.optBtn} ${pendingAnswers[q.id] === opt ? styles.optSelected : ''}`}
                     onClick={() => setPendingAnswers(a => ({ ...a, [q.id]: opt }))}
@@ -514,6 +481,7 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
               <span className={styles.questionLabel}>{tr.compoRewindLabel}</span>
               <div className={styles.questionOptions}>
                 <button
+                  type="button"
                   className={`${styles.optBtn} ${pendingRewind ? styles.optSelected : ''}`}
                   onClick={() => setPendingRewind(r => !r)}
                 >{tr.compoRewind}</button>
@@ -521,8 +489,8 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
             </div>
           )}
           <div className={styles.pendingActions}>
-            <button className="btn btn-ghost btn-sm" onClick={() => { setPendingFigure(null); setAddMode(null); }}>{tr.cancel}</button>
-            <button className="btn btn-primary btn-sm" disabled={!allQuestionsAnswered} onClick={confirmEntry}>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPendingFigure(null); setAddMode(null); }}>{tr.cancel}</button>
+            <button type="button" className="btn btn-primary btn-sm" disabled={!allQuestionsAnswered} onClick={confirmEntry}>
               {tr.compoConfirm}
             </button>
           </div>

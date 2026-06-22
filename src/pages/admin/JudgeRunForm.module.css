@@ -59,6 +59,19 @@
   gap: 1rem;
 }
 
+.fileInfo {
+  margin-top: 0.4rem;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-muted);
+}
+
+.fileInfo strong {
+  color: var(--c-text);
+  font-weight: 600;
+  word-break: break-all;
+}
+
 .publishLabel {
   display: flex;
   align-items: center;

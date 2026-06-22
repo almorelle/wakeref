@@ -58,7 +58,29 @@
   color: var(--disc, var(--c-accent));
 }
 
-.runs { display: flex; flex-direction: column; gap: 8px; }
+.runs { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.runGroup { display: flex; flex-direction: column; gap: 8px; }
+
+/* Entête de catégorie léger : pastille couleur discipline + libellé discret. */
+.groupHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.groupHead::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 100px;
+  background: var(--disc, var(--c-accent));
+}
 
 .runCard {
   display: flex;
@@ -72,9 +94,23 @@
   padding: 12px 14px;
   transition: all var(--t-fast);
 }
-.runCard:hover { border-color: var(--c-accent); }
-.runName { font-weight: 600; color: var(--c-text); }
+.runCard { cursor: pointer; }
+.runCard:hover {
+  border-color: var(--c-accent);
+  background: color-mix(in srgb, var(--c-accent) 8%, var(--c-surface));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--c-accent) 18%, transparent);
+}
+.runCard:hover .runName { color: var(--c-accent); }
+.runCard:active { transform: translateY(0); }
+.runName { font-weight: 600; color: var(--c-text); transition: color var(--t-fast); }
+.runRight { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .runMeta { font-size: 12px; color: var(--c-muted); }
+
+/* Chevron : affordance permanente « carte cliquable » (le hover seul ne suffit
+   pas sur tactile). Avance légèrement au survol/appui sur appareils non tactiles. */
+.runChevron { color: var(--c-faint); transition: transform var(--t-fast), color var(--t-fast); }
+.runCard:hover .runChevron { color: var(--c-accent); transform: translateX(2px); }
 
 .empty {
   font-size: 14px;
@@ -141,11 +177,10 @@
   background: var(--c-surface2);
   border: 1px solid var(--c-border);
 }
-.tCorrect { color: var(--c-success); }
-.tMissing { color: var(--c-danger); }
-.tAttr    { color: var(--c-ws); }
-.tOrder   { color: var(--c-accent2); }
-.tExtra   { color: var(--c-muted); }
+.tCorrect   { color: var(--c-success); }
+.tIncorrect { color: var(--c-danger); }
+.tMissing   { color: var(--c-danger); }
+.tExtra     { color: var(--c-muted); }
 
 /* ── Légende ── */
 .legend {
@@ -216,14 +251,25 @@
 }
 .gap { color: var(--c-faint); font-style: italic; font-size: 13px; }
 
+/* Attribut présent ici mais absent en face → c'est précisément ce qui diffère. */
+.badgeDiff {
+  background: color-mix(in srgb, var(--c-danger) 22%, transparent);
+  color: var(--c-danger);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-danger) 45%, transparent);
+}
+.nameDiff {
+  color: var(--c-danger);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
 /* États de diff : bord gauche + léger lavis (couleur jamais seul signal — le
    tally et la position portent aussi l'info). */
-.r_correct { border-left-color: var(--c-success); background: color-mix(in srgb, var(--c-success) 7%, transparent); }
-.r_attr    { border-left-color: var(--c-ws);      background: color-mix(in srgb, var(--c-ws) 9%, transparent); }
-.r_order   { border-left-color: var(--c-accent2); background: color-mix(in srgb, var(--c-accent2) 8%, transparent); }
-.r_missing { border-left-color: var(--c-danger);  background: color-mix(in srgb, var(--c-danger) 9%, transparent); }
-.r_mismatch{ border-left-color: var(--c-danger);  background: color-mix(in srgb, var(--c-danger) 9%, transparent); }
-.r_extra   { border-left-color: var(--c-faint); opacity: .62; }
+.r_correct   { border-left-color: var(--c-success); background: color-mix(in srgb, var(--c-success) 7%, transparent); }
+.r_incorrect { border-left-color: var(--c-danger);  background: color-mix(in srgb, var(--c-danger) 9%, transparent); }
+.r_missing   { border-left-color: var(--c-danger);  background: color-mix(in srgb, var(--c-danger) 9%, transparent); }
+.r_extra     { border-left-color: var(--c-faint); opacity: .62; }
 
 /* ── Mobile : empilé ── */
 @media (max-width: 900px) {

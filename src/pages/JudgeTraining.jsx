@@ -5,7 +5,9 @@ import { useToast } from '../hooks/useToast'
 import ToastContainer from '../components/Toast'
 import SEO from '../components/SEO'
 import RunSaisie from '../components/RunSaisie'
+import Icon from '../components/Icon'
 import { diffRuns } from '../lib/judgeDiff'
+import { WS_JIB_TRICKS, jibFigureLabel } from '../lib/compoGrids'
 import styles from './JudgeTraining.module.css'
 
 const EMPTY_RUN = { entries: [], jibPasses: [], otherEntries: [] }
@@ -41,24 +43,40 @@ export default function JudgeTraining() {
 
   const jt = tr.judge
 
-  // Charge le catalogue dès qu'un niveau ET une discipline sont choisis.
-  // (Tout le setState est dans l'IIFE async pour rester hors du corps de l'effet.)
+  // Charge tout le catalogue publié au montage. Les filtres niveau/discipline
+  // sont optionnels et s'appliquent côté client (liste courte).
   useEffect(() => {
-    if (!discipline || !difficulty) return
     let cancelled = false
     ;(async () => {
       setLoadingRuns(true)
-      const { data, error } = await supabase.rpc('list_judge_runs', {
-        p_discipline: discipline,
-        p_difficulty: difficulty,
-      })
+      const { data, error } = await supabase.rpc('list_judge_runs', {})
       if (cancelled) return
       if (error) { toast(jt.loadError, 'error'); setRuns([]); setLoadingRuns(false); return }
       setRuns(data || [])
       setLoadingRuns(false)
     })()
     return () => { cancelled = true }
-  }, [discipline, difficulty, jt.loadError, toast])
+  }, [jt.loadError, toast])
+
+  // Toggle des filtres : reclic = désélection (retour à « tout »).
+  const toggleDifficulty = (d) => setDifficulty(prev => prev === d ? null : d)
+  const toggleDiscipline = (d) => setDiscipline(prev => prev === d ? null : d)
+
+  // Runs filtrés puis groupés par discipline (entêtes), dans l'ordre canonique.
+  const filteredRuns = runs.filter(r =>
+    (!discipline || r.discipline === discipline) &&
+    (!difficulty || r.difficulty === difficulty)
+  )
+  // Tri intra-groupe : du plus facile au plus dur (ordre de DIFFICULTIES).
+  const diffRank = (d) => { const i = DIFFICULTIES.indexOf(d); return i < 0 ? 99 : i }
+  const runGroups = DISCIPLINES
+    .map(d => ({
+      discipline: d,
+      items: filteredRuns
+        .filter(r => r.discipline === d)
+        .sort((a, b) => diffRank(a.difficulty) - diffRank(b.difficulty)),
+    }))
+    .filter(g => g.items.length)
 
   const pickRun = (r) => {
     setSelectedRun(r)
@@ -100,29 +118,51 @@ export default function JudgeTraining() {
   // ── Rendu d'un élément (figure / jib) dans le diff ──
   const sideLabel = (s) => s === 'left' ? tr.compoLeft : tr.compoRight
   const appLabel  = (a) => ({ ts: tr.compoToeside, hs: tr.compoHeelside, regular: tr.compoRegular, fakie: tr.compoFakie }[a] || a)
+  const trickLabel = (id) => WS_JIB_TRICKS.find(x => x.id === id)?.label || id
 
-  const renderCell = (item, emptyText) => {
-    if (!item) return <span className={styles.gap}>{emptyText}</span>
+  // Décompose un item en badges identifiés par un `token` stable : permet de
+  // surligner exactement les attributs qui diffèrent de l'item en face.
+  const itemBadges = (item) => {
+    if (!item) return []
+    const out = []
     if (item.type === 'jib') {
       const p = item.data
-      return (
-        <div className={styles.cell}>
-          <span className={styles.cellName}>{tr.compoJibPass}</span>
-          <div className={styles.badges}>
-            {p.side && <span className={styles.badge}>{sideLabel(p.side)}</span>}
-            {p.approach && <span className={styles.badge}>{appLabel(p.approach)}</span>}
-          </div>
-        </div>
-      )
+      if (p.side)     out.push({ token: 'side:' + p.side,         label: sideLabel(p.side) })
+      if (p.approach) out.push({ token: 'app:' + p.approach,      label: appLabel(p.approach) })
+      if (p.entryRotation) out.push({ token: 'erot:' + p.entryRotation, label: p.entryRotation.toUpperCase() + ' in' })
+      ;(p.entryTricks || []).forEach(id => out.push({ token: 'etrick:' + id, label: trickLabel(id) + ' in' }))
+      ;(p.figures || []).forEach(f => out.push({ token: 'fig:' + f, label: jibFigureLabel(f, tr) }))
+      if (p.exitRotation) out.push({ token: 'xrot:' + p.exitRotation, label: p.exitRotation.toUpperCase() + ' out' })
+      ;(p.exitTricks || []).forEach(id => out.push({ token: 'xtrick:' + id, label: trickLabel(id) + ' out' }))
+      return out
     }
     const e = item.data
+    if (e.side) out.push({ token: 'side:' + e.side, label: sideLabel(e.side) })
+    ;(e.approach || []).forEach(a => out.push({ token: 'app:' + a, label: appLabel(a) }))
+    ;(e.rotation || []).forEach(r => out.push({ token: 'rot:' + r, label: r.toUpperCase() }))
+    return out
+  }
+
+  const itemName = (item) => item.type === 'jib' ? tr.compoJibPass : item.data.name
+
+  // `partner` = l'item en face (autre colonne) ou null. Si présent, on surligne
+  // le nom quand le trick diffère et les badges absents en face : la différence
+  // exacte (ex. « transfert » oublié) saute aux yeux.
+  const renderCell = (item, partner, emptyText) => {
+    if (!item) return <span className={styles.gap}>{emptyText}</span>
+    const badges = itemBadges(item)
+    const partnerTokens = partner ? new Set(itemBadges(partner).map(b => b.token)) : null
+    const nameDiff = partner && item.type !== 'other' && itemName(partner) !== itemName(item)
     return (
       <div className={styles.cell}>
-        <span className={styles.cellName}>{e.name}</span>
+        <span className={`${styles.cellName} ${nameDiff ? styles.nameDiff : ''}`}>{itemName(item)}</span>
         <div className={styles.badges}>
-          {e.side && <span className={styles.badge}>{sideLabel(e.side)}</span>}
-          {(e.approach || []).map(a => <span key={a} className={styles.badge}>{appLabel(a)}</span>)}
-          {(e.rotation || []).map(r => <span key={r} className={styles.badge}>{r.toUpperCase()}</span>)}
+          {badges.map(b => (
+            <span key={b.token}
+              className={`${styles.badge} ${partnerTokens && !partnerTokens.has(b.token) ? styles.badgeDiff : ''}`}>
+              {b.label}
+            </span>
+          ))}
         </div>
       </div>
     )
@@ -159,7 +199,7 @@ export default function JudgeTraining() {
               {DIFFICULTIES.map(d => (
                 <button key={d}
                   className={`${styles.chip} ${difficulty === d ? styles.chipOn : ''}`}
-                  onClick={() => setDifficulty(d)}>{jt[d]}</button>
+                  onClick={() => toggleDifficulty(d)}>{jt[d]}</button>
               ))}
             </div>
           </div>
@@ -171,24 +211,31 @@ export default function JudgeTraining() {
                 <button key={d}
                   className={`${styles.chip} ${discipline === d ? styles.chipOn : ''}`}
                   style={{ '--disc': DISCIPLINE_COLOR[d] }}
-                  onClick={() => setDiscipline(d)}>{jt.disc[d]}</button>
+                  onClick={() => toggleDiscipline(d)}>{jt.disc[d]}</button>
               ))}
             </div>
           </div>
 
-          {discipline && difficulty && (
-            <div className={styles.runs}>
-              <span className={styles.axisLabel}>{jt.pickRun}</span>
-              {loadingRuns && <span className="spinner" />}
-              {!loadingRuns && runs.length === 0 && <p className={styles.empty}>{jt.noRuns}</p>}
-              {!loadingRuns && runs.map(r => (
-                <button key={r.id} className={styles.runCard} onClick={() => pickRun(r)}>
-                  <span className={styles.runName}>{r.name}</span>
-                  <span className={styles.runMeta}>{jt.disc[r.discipline] || r.discipline}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <div className={styles.runs}>
+            {loadingRuns && <span className="spinner" />}
+            {!loadingRuns && runGroups.length === 0 && <p className={styles.empty}>{jt.noRuns}</p>}
+            {!loadingRuns && runGroups.map(g => (
+              <div key={g.discipline} className={styles.runGroup}>
+                <span className={styles.groupHead} style={{ '--disc': DISCIPLINE_COLOR[g.discipline] }}>
+                  {jt.disc[g.discipline] || g.discipline}
+                </span>
+                {g.items.map(r => (
+                  <button key={r.id} className={styles.runCard} onClick={() => pickRun(r)}>
+                    <span className={styles.runName}>{r.name}</span>
+                    <span className={styles.runRight}>
+                      <span className={styles.runMeta}>{jt[r.difficulty]}{r.category ? ` · ${r.category}` : ''}</span>
+                      <Icon name="chevron-right" size={18} className={styles.runChevron} />
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -232,17 +279,15 @@ export default function JudgeTraining() {
 
             <div className={styles.tally}>
               <span className={styles.tCorrect}>✓ {diff.tally.correct} {jt.tally.correct}</span>
+              {diff.tally.incorrect > 0 && <span className={styles.tIncorrect}>✗ {diff.tally.incorrect} {jt.tally.incorrect}</span>}
               {diff.tally.missing > 0 && <span className={styles.tMissing}>– {diff.tally.missing} {jt.tally.missing}</span>}
-              {diff.tally.attr > 0 && <span className={styles.tAttr}>! {diff.tally.attr} {jt.tally.attr}</span>}
-              {diff.tally.order > 0 && <span className={styles.tOrder}>⇄ {diff.tally.order} {jt.tally.order}</span>}
               {diff.tally.extra > 0 && <span className={styles.tExtra}>+ {diff.tally.extra} {jt.tally.extra}</span>}
             </div>
 
             <div className={styles.legend}>
               <span><i style={{ background: 'var(--c-success)' }} />{jt.legend.correct}</span>
+              <span><i style={{ background: 'var(--c-danger)' }} />{jt.legend.incorrect}</span>
               <span><i style={{ background: 'var(--c-danger)' }} />{jt.legend.missing}</span>
-              <span><i style={{ background: 'var(--c-ws)' }} />{jt.legend.attr}</span>
-              <span><i style={{ background: 'var(--c-accent2)' }} />{jt.legend.order}</span>
               <span><i style={{ background: 'var(--c-faint)' }} />{jt.legend.extra}</span>
             </div>
 
@@ -253,8 +298,8 @@ export default function JudgeTraining() {
               {diff.rows.map((row, i) => (
                 <div key={i} className={`${styles.diffRow} ${styles['r_' + row.state]}`}>
                   <span className={styles.pos}>{row.position}</span>
-                  {renderCell(row.judge, jt.nothing)}
-                  {renderCell(row.ref, jt.absent)}
+                  {renderCell(row.judge, row.ref, jt.nothing)}
+                  {renderCell(row.ref, row.judge, jt.absent)}
                 </div>
               ))}
             </div>

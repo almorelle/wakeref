@@ -10,6 +10,11 @@ import styles from './JudgeRunForm.module.css'
 
 const EMPTY_RUN = { entries: [], jibPasses: [], otherEntries: [] }
 
+// Taille lisible : octets → Mo avec 1 décimale.
+const formatMB = (bytes) => (bytes / (1024 * 1024)).toFixed(1) + ' Mo'
+// Dernier segment du chemin de stockage (ex. "runs/123.mp4" → "123.mp4").
+const fileNameOf = (path) => path?.split('/').pop() || path
+
 const GRID_LABELS = {
   wakeboard:  'Wakeboard',
   wakeskate:  'Wakeskate',
@@ -39,6 +44,7 @@ export default function JudgeRunForm() {
   const [videoUrl, setVideoUrl] = useState('')
   const [file, setFile] = useState(null)
   const [existingVideoPath, setExistingVideoPath] = useState(null)
+  const [existingVideoSize, setExistingVideoSize] = useState(null)
   const [published, setPublished] = useState(false)
   const [run, setRun] = useState(EMPTY_RUN)
 
@@ -57,6 +63,16 @@ export default function JudgeRunForm() {
       setSourceType(data.source_type || 'upload')
       setVideoUrl(data.video_url || '')
       setExistingVideoPath(data.video_path || null)
+      // Taille du fichier déjà stocké (pour l'affichage sous le champ d'upload).
+      if (data.video_path) {
+        const slash = data.video_path.lastIndexOf('/')
+        const folder = slash >= 0 ? data.video_path.slice(0, slash) : ''
+        const fname = data.video_path.slice(slash + 1)
+        const { data: files } = await supabase.storage.from('videos')
+          .list(folder, { search: fname })
+        const meta = files?.find(f => f.name === fname)
+        if (!cancelled && meta?.metadata?.size != null) setExistingVideoSize(meta.metadata.size)
+      }
       setPublished(!!data.published)
       setRun({
         entries: sol.entries || [],
@@ -178,9 +194,20 @@ export default function JudgeRunForm() {
           </div>
           {sourceType === 'upload' ? (
             <div className="field">
-              <label htmlFor="jr-file">Fichier {isEdit && existingVideoPath ? '(laisser vide pour garder l\'actuel)' : ''}</label>
+              <label htmlFor="jr-file">Fichier</label>
               <input id="jr-file" className="input" type="file" accept="video/*"
                 onChange={e => setFile(e.target.files?.[0] || null)} />
+              {file ? (
+                <p className={styles.fileInfo}>
+                  Nouveau fichier : <strong>{file.name}</strong> · {formatMB(file.size)}
+                </p>
+              ) : existingVideoPath ? (
+                <p className={styles.fileInfo}>
+                  Fichier actuel : <strong>{fileNameOf(existingVideoPath)}</strong>
+                  {existingVideoSize != null ? ` · ${formatMB(existingVideoSize)}` : ''}
+                  <br />Laisse vide pour le conserver, ou choisis un fichier pour le remplacer.
+                </p>
+              ) : null}
             </div>
           ) : (
             <div className="field">

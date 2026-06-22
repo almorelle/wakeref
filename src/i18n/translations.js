@@ -173,7 +173,7 @@ export const t = {
     judge: {
       nav: 'Juge',
       title: 'Entraînement juge',
-      intro: 'Choisis un niveau et une discipline, regarde le run et saisis-le, puis compare à la solution.',
+      intro: 'Choisis un run ci-dessous, regarde-le et saisis-le, puis compare à la solution. Filtre par niveau ou discipline si besoin.',
       difficulty: 'Niveau',
       discipline: 'Discipline',
       easy: 'Facile', medium: 'Moyen', hard: 'Difficile',
@@ -192,8 +192,8 @@ export const t = {
       restart: 'Recommencer',
       nothing: '— rien saisi —',
       absent: '— absent du run —',
-      legend: { correct: 'Correct', missing: 'Oublié', extra: 'En trop', attr: 'Mauvaise approche/côté/rotation', order: 'Mauvais ordre' },
-      tally: { correct: 'corrects', missing: 'oubliés', extra: 'en trop', attr: 'mauvaise approche', order: 'mauvais ordre' },
+      legend: { correct: 'Correct', incorrect: 'Faux', missing: 'Oublié', extra: 'En trop' },
+      tally: { correct: 'corrects', incorrect: 'faux', missing: 'oubliés', extra: 'en trop' },
     },
     ctxNames: {
       kicker: 'Kicker', air_trick: 'Air Trick', feature: 'Module', flat: 'Flat',
@@ -481,7 +481,7 @@ export const t = {
     judge: {
       nav: 'Judge',
       title: 'Judge training',
-      intro: 'Pick a difficulty and a discipline, watch the run and enter it, then compare to the solution.',
+      intro: 'Pick a run below, watch it and enter it, then compare to the solution. Filter by level or discipline if needed.',
       difficulty: 'Difficulty',
       discipline: 'Discipline',
       easy: 'Easy', medium: 'Medium', hard: 'Hard',
@@ -500,8 +500,8 @@ export const t = {
       restart: 'Start over',
       nothing: '— nothing entered —',
       absent: '— not in the run —',
-      legend: { correct: 'Correct', missing: 'Missed', extra: 'Extra', attr: 'Wrong approach/side/rotation', order: 'Wrong order' },
-      tally: { correct: 'correct', missing: 'missed', extra: 'extra', attr: 'wrong approach', order: 'wrong order' },
+      legend: { correct: 'Correct', incorrect: 'Wrong', missing: 'Missed', extra: 'Extra' },
+      tally: { correct: 'correct', incorrect: 'wrong', missing: 'missed', extra: 'extra' },
     },
     ctxNames: {
       kicker: 'Kicker', air_trick: 'Air Trick', feature: 'Feature', flat: 'Flat',

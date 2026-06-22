@@ -42,6 +42,44 @@ export const WS_JIB_TRICKS = [
   { id: 'bodyvarial', label: 'Body Varial', entry: { slug: SCORING_SLUGS.wsBodyVarial } },
 ]
 
+// Libellés des figures jib (slug → label fixe ou clé i18n), tous jeux confondus.
+// Source unique partagée par la saisie (RunSaisie) et la correction (JudgeTraining).
+export const JIB_FIGURE_LABELS = {
+  [SCORING_SLUGS.fiftyFifty]:         { label: '50-50'         },
+  [SCORING_SLUGS.frontBoard]:         { label: 'Front Board'   },
+  [SCORING_SLUGS.frontLip]:           { label: 'Front Lip'     },
+  [SCORING_SLUGS.backBoard]:          { label: 'Back Board'    },
+  [SCORING_SLUGS.backLip]:            { label: 'Back Lip'      },
+  [SCORING_SLUGS.press]:              { label: 'Press'         },
+  [SCORING_SLUGS.seatedFsBoardslide]: { label: 'FS Boardslide' },
+  [SCORING_SLUGS.seatedBsBoardslide]: { label: 'BS Boardslide' },
+  'transfer':     { label: 'Transfer'     },
+  'rail-to-rail': { label: 'Rail to Rail' },
+  'gap':          { label: 'Gap'          },
+  're-entry':     { label: 'Re-entry'     },
+  'fs-180':       { labelKey: 'compoRotFS' },
+  'bs-180':       { labelKey: 'compoRotBS' },
+}
+
+// Slugs proposés dans le formulaire jib, dans l'ordre, selon la discipline.
+export const JIB_SLUGS = [
+  SCORING_SLUGS.fiftyFifty, SCORING_SLUGS.frontBoard, SCORING_SLUGS.frontLip,
+  SCORING_SLUGS.backBoard, SCORING_SLUGS.backLip, SCORING_SLUGS.press,
+  'transfer', 'rail-to-rail', 'gap', 're-entry', 'fs-180', 'bs-180',
+]
+// Jib seated : pas de board/lip/press ; à la place les deux boardslides assis.
+export const JIB_SLUGS_SEATED = [
+  SCORING_SLUGS.fiftyFifty, SCORING_SLUGS.seatedFsBoardslide, SCORING_SLUGS.seatedBsBoardslide,
+  'transfer', 'rail-to-rail', 'gap', 're-entry', 'fs-180', 'bs-180',
+]
+
+// Résout le libellé d'une figure jib (clé i18n résolue via `tr` si besoin).
+export const jibFigureLabel = (slug, tr) => {
+  const f = JIB_FIGURE_LABELS[slug]
+  if (!f) return slug
+  return f.labelKey ? tr[f.labelKey] : f.label
+}
+
 // Une passe jib génère des pseudo-entrées pour le moteur de score
 export function jibPassToEntries(pass) {
   const entries = []
