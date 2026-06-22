@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>WakeRef — hero plein vidéo, dans le thème</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --paper:#eef1ec; --ink:#0c2a31; --ink-soft:#3f5b60; --ink-faint:#8aa0a0; --line2:#0c2a3133;
+    --signal:#ff5a36; --ax-hs:#f0a32a;
+    --f-disp:'Bricolage Grotesque',sans-serif; --f-body:'Inter',sans-serif; --f-mono:'JetBrains Mono',ui-monospace,monospace;
+  }
+  html{-webkit-font-smoothing:antialiased}
+  body{background:var(--paper);color:var(--ink);font-family:var(--f-body);line-height:1.5}
+  .label{font-family:var(--f-mono);font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft);
+    padding:16px 24px;border-bottom:1.5px solid var(--ink);display:flex;justify-content:space-between;align-items:center}
+  .label b{font-family:var(--f-disp);font-weight:800;font-size:15px;color:var(--ink)}
+
+  /* ════════ A — PLEIN CADRE DUOTONE + CHROME ════════ */
+  .heroA{position:relative;height:86vh;min-height:520px;overflow:hidden;border-bottom:1.5px solid var(--ink);background:#06181c}
+  .heroA .bgblur{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.15);
+    filter:blur(34px) grayscale(1) brightness(.7)}
+  .heroA .sharp{position:absolute;top:0;left:50%;transform:translateX(-50%);height:100%;width:auto;object-fit:contain;
+    filter:grayscale(1) contrast(1.06) brightness(.95)}
+  /* duotone : ombres encre + lumières signal */
+  .heroA .duo{position:absolute;inset:0;mix-blend-mode:multiply;background:linear-gradient(150deg,#0c2a31,#16454f 58%,#1f6675)}
+  .heroA .duo2{position:absolute;inset:0;mix-blend-mode:screen;background:radial-gradient(70% 55% at 52% 26%,#ff5a3655,transparent 60%)}
+  .heroA .scrim{position:absolute;inset:0;background:linear-gradient(0deg,#06181c 5%,transparent 40%),linear-gradient(180deg,#06181cb0 0%,transparent 22%)}
+  /* chrome blueprint */
+  .heroA .grid{position:absolute;inset:0;opacity:.16;background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);background-size:60px 60px}
+  .heroA .corner{position:absolute;width:22px;height:22px;border:1.5px solid #ffffff66}
+  .heroA .corner.tl{top:14px;left:14px;border-right:none;border-bottom:none}
+  .heroA .corner.tr{top:14px;right:14px;border-left:none;border-bottom:none}
+  .heroA .corner.bl{bottom:14px;left:14px;border-right:none;border-top:none}
+  .heroA .corner.br{bottom:14px;right:14px;border-left:none;border-top:none}
+  .heroA .hud{position:absolute;top:18px;left:46px;font-family:var(--f-mono);font-size:11px;color:#fff;letter-spacing:.06em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+  .heroA .hud .rec{width:8px;height:8px;border-radius:50%;background:var(--signal)}
+  .heroA .tc{position:absolute;top:18px;right:46px;font-family:var(--f-mono);font-size:11px;color:#fff;opacity:.8}
+  .heroA .brand{position:absolute;top:50px;left:46px;font-family:var(--f-disp);font-weight:800;color:#fff;font-size:18px;letter-spacing:-.02em;opacity:0}
+  /* contenu */
+  .heroA .copy{position:absolute;left:46px;bottom:40px;right:46px;z-index:3;max-width:640px}
+  .heroA .k{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#ffffffc0;margin-bottom:12px}
+  .heroA h1{font-family:var(--f-disp);font-weight:800;font-size:clamp(40px,7.5vw,78px);letter-spacing:-.035em;line-height:.92;color:#fff}
+  .heroA h1 em{font-style:normal;color:var(--signal)}
+  .heroA .search{margin-top:22px;display:flex;align-items:center;gap:10px;max-width:420px;background:#06181ccc;border:1.5px solid #ffffff3a;backdrop-filter:blur(6px);padding:13px 15px}
+  .heroA .search input{flex:1;border:none;background:none;outline:none;font:inherit;color:#fff;font-size:15px}
+  .heroA .search input::placeholder{color:#ffffff80}
+  .heroA .search .kbd{font-family:var(--f-mono);font-size:11px;color:#fff9;border:1.5px solid #ffffff3a;padding:2px 6px}
+  /* légende auto */
+  .heroA .cap{position:absolute;right:46px;bottom:44px;z-index:3;text-align:right}
+  .heroA .cap .b{font-family:var(--f-mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--signal)}
+  .heroA .cap .nm{font-family:var(--f-disp);font-weight:800;font-size:22px;color:#fff;letter-spacing:-.02em;margin-top:4px}
+  .heroA .cap .cd{font-family:var(--f-mono);font-size:12px;color:#fff;margin-top:4px}
+  .heroA .cap .cd b{color:var(--ax-hs)} .heroA .cap .cd .deg{color:var(--signal)}
+  @media(max-width:680px){ .heroA .cap{display:none} .heroA .grid{background-size:42px 42px} }
+
+  /* ════════ B — VIDÉO DANS LE WORDMARK ════════ */
+  .heroB{position:relative;background:var(--paper);padding:56px 24px 64px;overflow:hidden;
+    background-image:linear-gradient(#0c2a3115 1px,transparent 1px),linear-gradient(90deg,#0c2a3115 1px,transparent 1px);background-size:90px 90px}
+  .heroB .inner{max-width:1120px;margin:0 auto}
+  .heroB .k{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:18px}
+  .wordvid{position:relative;width:100%}
+  .wordvid video{display:block;width:100%;height:clamp(160px,30vw,300px);object-fit:cover;
+    filter:contrast(1.08) saturate(1.05)}
+  .wordvid .knock{position:absolute;inset:0;width:100%;height:100%}
+  .heroB .sub{margin-top:22px;display:flex;flex-wrap:wrap;align-items:center;gap:18px}
+  .heroB .sub p{color:var(--ink-soft);font-size:16px;max-width:40ch}
+  .heroB .search{display:flex;align-items:center;gap:10px;max-width:420px;border:1.5px solid var(--ink);background:var(--paper);padding:13px 15px;box-shadow:5px 5px 0 var(--ink)}
+  .heroB .search input{flex:1;border:none;background:none;outline:none;font:inherit;color:var(--ink);font-size:15px;min-width:0}
+  .heroB .search input::placeholder{color:var(--ink-faint)}
+
+  .note{max-width:1000px;margin:22px auto 56px;padding:18px 24px;font-size:13.5px;color:var(--ink-soft);line-height:1.6}
+  .note b{color:var(--ink)}
+</style>
+</head>
+<body>
+
+  <!-- ════ A ════ -->
+  <div class="label"><b>A — plein cadre, duotone + chrome blueprint</b><span>la vidéo EST le hero, traitée dans la palette</span></div>
+  <section class="heroA">
+    <video class="bgblur" src="1779789499255.mp4" autoplay muted loop playsinline></video>
+    <video class="sharp"  src="1779789499255.mp4" autoplay muted loop playsinline></video>
+    <div class="duo"></div><div class="duo2"></div><div class="scrim"></div>
+    <div class="grid"></div>
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <div class="hud"><span class="rec"></span> rec · réf. câble</div>
+    <div class="tc" id="tc">00:00:00</div>
+    <div class="copy">
+      <div class="k">Wakeboard · wakeskate · assis</div>
+      <h1>Suis le <em>câble.</em></h1>
+      <label class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffffaa" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input placeholder="back mobe, hs fs 540, raley…" />
+        <span class="kbd">/</span>
+      </label>
+    </div>
+    <div class="cap">
+      <div class="b">en vedette</div>
+      <div class="nm">Back Mobe</div>
+      <div class="cd"><b>HS</b> · backroll · <span class="deg">FS&nbsp;360</span> · blind</div>
+    </div>
+  </section>
+
+  <!-- ════ B ════ -->
+  <div class="label"><b>B — vidéo dans le wordmark (masque typographique)</b><span>on ne voit la footage qu'à travers les lettres → recadrage vertical invisible</span></div>
+  <section class="heroB">
+    <div class="inner">
+      <div class="k">Réf. câble — wakeboard · wakeskate · assis</div>
+      <div class="wordvid">
+        <video src="1779789499255.mp4" autoplay muted loop playsinline></video>
+        <svg class="knock" viewBox="0 0 1000 240" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <mask id="wm">
+              <rect width="1000" height="240" fill="#fff"/>
+              <text x="500" y="186" text-anchor="middle" font-family="'Bricolage Grotesque',sans-serif" font-weight="800" font-size="240" letter-spacing="-12" fill="#000">WAKE</text>
+            </mask>
+          </defs>
+          <rect width="1000" height="240" fill="var(--paper)" mask="url(#wm)"/>
+        </svg>
+      </div>
+      <div class="sub">
+        <p>214 figures filmées, décodées et notées. Cherche-en une, ou explore le câble.</p>
+        <label class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink-soft)" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input placeholder="back mobe…" />
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <p class="note"><b>Deux façons que « le hero soit la vidéo » sans casser le thème.</b>
+  <b>A</b> : plein cadre, mais désaturée + re-teintée dans ta palette (duotone) et habillée d'un chrome blueprint (grille, repères, timecode, légende auto) → la footage devient un relevé d'instrument, pas un reel générique. Les bords du clip vertical sont comblés par une version floutée.
+  <b>B</b> : la vidéo ne vit qu'à travers les lettres du wordmark → distinctif, et le recadrage du clip vertical disparaît. Idéal mobile. (Ici « WAKE » ; on peut mettre le titre complet ou un mot-clé du trick.)</p>
+
+<script>
+  // timecode HUD (cosmétique, suit la vidéo)
+  var sharp=document.querySelector('.heroA .sharp'), tc=document.getElementById('tc');
+  function pad(n){return String(n).padStart(2,'0');}
+  function f(){var t=sharp.currentTime||0;tc.textContent='00:'+pad(Math.floor(t))+':'+pad(Math.floor((t%1)*30));requestAnimationFrame(f);}
+  requestAnimationFrame(f);
+</script>
+</body>
+</html>
