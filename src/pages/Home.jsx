@@ -132,6 +132,7 @@ export default function Home() {
                 { to: '/figures', icon: 'list',       color: 'var(--c-accent)', title: tr.tileCatalogTitle, sub: tr.tileCatalogSub },
                 { to: '/quiz',    icon: 'help',       color: 'var(--c-wake)',   title: tr.tileQuizTitle,    sub: tr.tileQuizSub },
                 { to: '/compo',   icon: 'calculator', color: 'var(--c-ws)',     title: tr.tileCompoTitle,   sub: tr.tileCompoSub },
+                { to: '/judge',   icon: 'star',       color: 'var(--c-seated)', title: tr.tileJudgeTitle,   sub: tr.tileJudgeSub },
               ].map((f, i) => (
                 <button
                   key={f.to}
