@@ -7,6 +7,19 @@ import styles from './Quiz.module.css'
 import SEO from '../components/SEO'
 import Icon from '../components/Icon'
 
+// Disciplines d'une figure : `sports[]` (⊇ native) avec repli sur `sport` seul.
+function figureSports(f) {
+  return (Array.isArray(f.sports) && f.sports.length) ? f.sports : (f.sport ? [f.sport] : [])
+}
+
+// Deux figures partagent-elles au moins une discipline ? Garde-fou anti-ambiguïté
+// inter-discipline : un extrait de spin wakeboard « HS FS 360 » ne doit pas
+// proposer le « FS 360 » propre au wakeboard assis comme distracteur.
+function shareDiscipline(a, b) {
+  const sa = new Set(figureSports(a))
+  return figureSports(b).some(s => sa.has(s))
+}
+
 function shuffle(arr) {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
@@ -25,6 +38,24 @@ function mainVideo(figure) {
 
 // Cible d'équilibrage de l'échantillonnage par session (#24/#25). 0.5 = parité.
 const BALANCE_RATIO = 0.6
+
+// Probabilité de présenter une figure via le nom de sa version switch (quand elle
+// en a une). Un extrait ne permet pas de distinguer switch / normal : on réutilise
+// donc la vidéo de la figure normale et on relabelise seulement la bonne réponse.
+// Voir buildQuiz : la version normale (= figure sélectionnée) reste exclue du pool
+// de distracteurs, donc « X » et « Switch X » ne cohabitent jamais dans les options.
+const SWITCH_LABEL_PROB = 0.35
+
+// Renvoie soit la figure telle quelle, soit — occasionnellement et si elle a au
+// moins une version switch — une copie présentée sous le nom/id de cette version
+// switch (vidéo, catégorie et description de la normale conservées).
+function maybeSwitchLabel(figure) {
+  const switches = typeof figure.switch_versions === 'string'
+    ? JSON.parse(figure.switch_versions) : figure.switch_versions || []
+  if (!switches.length || Math.random() > SWITCH_LABEL_PROB) return figure
+  const sw = switches[Math.floor(Math.random() * switches.length)]
+  return { ...figure, id: sw.id, name: sw.name }
+}
 
 // Échantillonnage équilibré par session (#25) : on remplit d'abord le groupe
 // primaire jusqu'à la cible (BALANCE_RATIO), puis on complète avec le groupe
@@ -84,10 +115,16 @@ export default function Quiz() {
     const selected = shuffle(balancedSample(withVideos, Math.min(TOTAL, withVideos.length)))
     const selectedIds = new Set(selected.map(f => f.id))
 
-    const qs = selected.map(correct => {
-      const sameCat = allFigures.filter(f => !selectedIds.has(f.id) && f.category_slug === correct.category_slug)
-      const wrongPool = sameCat.length >= 3 ? sameCat : allFigures.filter(f => !selectedIds.has(f.id))
+    const qs = selected.map(correctRaw => {
+      // Distracteurs tirés sur la figure normale, puis la bonne réponse est
+      // éventuellement relabelisée en version switch.
+      // Contrainte DURE : même discipline que la bonne réponse (anti-ambiguïté
+      // inter-discipline). Préférence SOUPLE : même catégorie, repli sinon.
+      const sameDisc = allFigures.filter(f => !selectedIds.has(f.id) && shareDiscipline(f, correctRaw))
+      const sameCat = sameDisc.filter(f => f.category_slug === correctRaw.category_slug)
+      const wrongPool = sameCat.length >= 3 ? sameCat : sameDisc
       const wrongs = shuffle(wrongPool).slice(0, 3)
+      const correct = maybeSwitchLabel(correctRaw)
       return { correct, options: shuffle([correct, ...wrongs]) }
     })
     setQuestions(qs); setIdx(0); setScore(0); setAnswered(null); setChosen(null); setDone(false)

@@ -50,11 +50,12 @@ select
     (select json_build_object('id', o.id, 'name', o.name, 'slug', o.slug)
      from figures o where o.id = f.switch_of)
   end as switch_of_figure,
-  case when f.built_on_id is not null then
+  -- Progression ancrée sur la figure de base (bf) : un switch hérite du « précédent ».
+  case when bf.built_on_id is not null then
     (select json_build_object('id', b.id, 'name', b.name, 'slug', b.slug,
               'switch_names', (select string_agg(x.name, ', ' order by x.name)
                                from figures x where x.switch_of = b.id))
-     from figures b where b.id = f.built_on_id
+     from figures b where b.id = bf.built_on_id
        and b.switch_of is null)  -- pas de parent affiché si c'est lui-même un switch
   end as built_on_figure,
   coalesce(
@@ -66,7 +67,7 @@ select
     (select json_agg(json_build_object('id', p.id, 'name', p.name, 'slug', p.slug))
      from prerequisites pr
      join figures p on p.id = pr.requires_id
-     where pr.figure_id = f.id),
+     where pr.figure_id = bf.id),  -- prérequis de la base, hérités par le switch
     '[]'
   ) as prerequisites,
   coalesce(
@@ -87,14 +88,14 @@ select
        )),
     '[]'
   ) as videos,
-  -- Figures directement dérivées (built_on_id = figure courante) : le « +1 » de l'arbre.
+  -- Figures directement dérivées (built_on_id = figure de base) : le « +1 » de l'arbre.
   -- On exclut les switchs ; switch_names liste la/les version(s) switch de chaque nœud.
   coalesce(
     (select json_agg(json_build_object('id', n.id, 'name', n.name, 'slug', n.slug,
               'switch_names', (select string_agg(x.name, ', ' order by x.name)
                                from figures x where x.switch_of = n.id))
                      order by n.rotation, n.inverted, n.name)
-     from figures n where n.built_on_id = f.id
+     from figures n where n.built_on_id = bf.id
        and n.switch_of is null),
     '[]'
   ) as built_on_children,
@@ -104,10 +105,10 @@ select
   f.inverts,
   f.rewind_degs,
   f.rotation_type,
-  -- Trick de base : racine de la chaîne built_on (le plus haut parent).
+  -- Trick de base : racine de la chaîne built_on (le plus haut parent), depuis bf.
   (with recursive anc as (
      select b.id, b.name, b.slug, b.built_on_id
-     from figures b where b.id = f.built_on_id
+     from figures b where b.id = bf.built_on_id
      union all
      select p.id, p.name, p.slug, p.built_on_id
      from figures p join anc a on p.id = a.built_on_id
@@ -124,7 +125,9 @@ select
   f.tips_wakeskate, f.tips_wakeskate_en,
   f.sports
 from figures f
-left join categories c on c.id = f.category_id;
+left join categories c on c.id = f.category_id
+-- Figure de base du groupe switch (bf = f pour une figure normale).
+left join figures bf on bf.id = coalesce(f.switch_of, f.id);
 
 alter view figures_full set (security_invoker = true);
 

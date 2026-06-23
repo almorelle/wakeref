@@ -124,6 +124,8 @@ export default function FigureForm() {
   const [prereqSearch, setPrereqSearch] = useState('')
   const [builtOnId, setBuiltOnId] = useState(null)
   const [builtOnSearch, setBuiltOnSearch] = useState('')
+  const [switchOfId, setSwitchOfId] = useState(null)
+  const [switchOfSearch, setSwitchOfSearch] = useState('')
   const location = useLocation()
   const figureIds = location.state?.figureIds || []
   const currentIndex = figureIds.indexOf(parseInt(id))
@@ -159,6 +161,7 @@ export default function FigureForm() {
           : []
         setPrereqIds(prereqs.map(p => p.id))
         setBuiltOnId(fig.built_on_id || null)
+        setSwitchOfId(fig.switch_of || null)
         setForm({
           name: fig.name,
           slug: fig.slug,
@@ -258,6 +261,8 @@ export default function FigureForm() {
       slug: form.slug || genSlug(form.name),
       category_id: form.category_id ? parseInt(form.category_id) : null,
       built_on_id: builtOnId || null,
+      switch_of: switchOfId || null,
+      is_switch: !!switchOfId,
       difficulty: parseInt(form.difficulty),
       contexts: form.contexts,
       approach: form.approach,
@@ -525,6 +530,43 @@ export default function FigureForm() {
                       : results.map(f => (
                           <button key={f.id} type="button" className={styles.prereqResult}
                             onClick={() => { setBuiltOnId(f.id); setBuiltOnSearch('') }}>
+                            {f.name}
+                          </button>
+                        ))}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+        </div>
+
+        <div className="field">
+          <label htmlFor="figure-switchof">Version switch de</label>
+          {switchOfId ? (
+            <div className={styles.prereqChips}>
+              <span className={styles.prereqChip}>
+                {(() => { const f = allFigures.find(x => x.id === switchOfId); return f ? f.name : `#${switchOfId}` })()}
+                <button type="button" className={styles.prereqChipRemove}
+                  onClick={() => setSwitchOfId(null)} aria-label="Retirer">×</button>
+              </span>
+            </div>
+          ) : (
+            <div className={styles.prereqSearch}>
+              <input id="figure-switchof" className="input" value={switchOfSearch}
+                onChange={e => setSwitchOfSearch(e.target.value)}
+                placeholder="Rechercher la figure d'origine (non-switch)…" />
+              {switchOfSearch.trim() && (() => {
+                const results = allFigures.filter(f =>
+                  (!id || f.id !== parseInt(id)) &&
+                  norm(f.name).includes(norm(switchOfSearch))
+                ).slice(0, 8)
+                return (
+                  <div className={styles.prereqResults}>
+                    {results.length === 0
+                      ? <div className={styles.prereqNoResult}>Aucune figure trouvée</div>
+                      : results.map(f => (
+                          <button key={f.id} type="button" className={styles.prereqResult}
+                            onClick={() => { setSwitchOfId(f.id); setSwitchOfSearch('') }}>
                             {f.name}
                           </button>
                         ))}
