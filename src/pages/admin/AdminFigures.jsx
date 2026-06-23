@@ -129,6 +129,9 @@ export default function AdminFigures() {
               <button className="btn btn-ghost btn-sm btn-icon" title="Modifier" aria-label={`Modifier ${f.name}`} onClick={() => navigate(`/admin/figures/${f.id}/edit`, { state: { figureIds: filtered.map(x => x.id) } })}>
                 <Icon name="pencil" />
               </button>
+              <button className="btn btn-ghost btn-sm btn-icon" title="Dupliquer" aria-label={`Dupliquer ${f.name}`} onClick={() => navigate('/admin/figures/new', { state: { duplicateFrom: f.id } })}>
+                <Icon name="copy" />
+              </button>
               <button className="btn btn-ghost btn-sm btn-icon" title="Supprimer" aria-label={`Supprimer ${f.name}`} style={{ color: 'var(--c-danger)' }} onClick={() => deleteFigure(f.id, f.name)}>
                 <Icon name="trash" />
               </button>

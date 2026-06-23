@@ -89,13 +89,46 @@ const padTips = (arr) => {
   return [...a, '', '', '', ''].slice(0, Math.max(4, a.length + 1))
 }
 
+// Mappe une ligne `figures` vers l'état du formulaire. Partagé par l'édition et
+// la duplication (création préremplie depuis une figure existante).
+const buildForm = (fig) => ({
+  name: fig.name,
+  slug: fig.slug,
+  category_id: String(fig.category_id || ''),
+  sport: fig.sport,
+  sports: (fig.sports && fig.sports.length) ? fig.sports : [fig.sport],
+  difficulty: fig.difficulty,
+  published: fig.published,
+  contexts: fig.contexts || [],
+  approach: fig.approach || [],
+  rotation: fig.rotation || [],
+  inverted: fig.inverted || false,
+  rewind: fig.rewind || false,
+  spin: fig.spin || 0,
+  rewind_degs: (fig.rewind_degs && fig.rewind_degs.length) ? fig.rewind_degs : [0],
+  rotation_type: fig.rotation_type || [],
+  inverts: fig.inverts || 0,
+  description: fig.description || '',
+  tips: padTips(fig.tips),
+  description_en: fig.description_en || '',
+  tips_en: padTips(fig.tips_en),
+  tips_seated: padTips(fig.tips_seated),
+  tips_seated_en: padTips(fig.tips_seated_en),
+  tips_wakeskate: padTips(fig.tips_wakeskate),
+  tips_wakeskate_en: padTips(fig.tips_wakeskate_en),
+})
+
 export default function FigureForm() {
   const { id } = useParams()
   const isEdit = !!id
   const navigate = useNavigate()
+  const location = useLocation()
   const { toasts, toast } = useToast()
 
-  const [loading, setLoading] = useState(isEdit)
+  // Création préremplie depuis une figure existante (bouton « Dupliquer »).
+  const duplicateFrom = !isEdit ? (location.state?.duplicateFrom || null) : null
+
+  const [loading, setLoading] = useState(isEdit || !!duplicateFrom)
   const [saving, setSaving] = useState(false)
   const [categories, setCategories] = useState([])
   const [allFigures, setAllFigures] = useState([])
@@ -126,31 +159,31 @@ export default function FigureForm() {
   const [builtOnSearch, setBuiltOnSearch] = useState('')
   const [switchOfId, setSwitchOfId] = useState(null)
   const [switchOfSearch, setSwitchOfSearch] = useState('')
-  const location = useLocation()
   const figureIds = location.state?.figureIds || []
   const currentIndex = figureIds.indexOf(parseInt(id))
   const prevId = figureIds[currentIndex - 1]
   const nextId = figureIds[currentIndex + 1]
 
   useEffect(() => {
-    const baseQueries = Promise.all([
-      supabase.from('categories').select('*').order('sort_order'),
-      supabase.from('figures').select('id, name, slug').order('name'),
-    ])
-
-    if (!isEdit) {
-      baseQueries.then(([{ data: cats }, { data: figs }]) => {
+    // Création vierge : on ne charge que les listes de référence.
+    if (!isEdit && !duplicateFrom) {
+      Promise.all([
+        supabase.from('categories').select('*').order('sort_order'),
+        supabase.from('figures').select('id, name, slug').order('name'),
+      ]).then(([{ data: cats }, { data: figs }]) => {
         setCategories(cats || [])
         setAllFigures(figs || [])
       })
       return
     }
 
+    // Édition (id de la route) ou duplication (id du state).
+    const sourceId = isEdit ? id : duplicateFrom
     Promise.all([
       supabase.from('categories').select('*').order('sort_order'),
       supabase.from('figures').select('id, name, slug').order('name'),
-      supabase.from('figures').select('*').eq('id', id).single(),
-      supabase.from('figures_full').select('prerequisites').eq('id', id).single(),
+      supabase.from('figures').select('*').eq('id', sourceId).single(),
+      supabase.from('figures_full').select('prerequisites').eq('id', sourceId).single(),
     ]).then(([{ data: cats }, { data: figs }, { data: fig }, { data: full }]) => {
       setCategories(cats || [])
       setAllFigures(figs || [])
@@ -162,36 +195,16 @@ export default function FigureForm() {
         setPrereqIds(prereqs.map(p => p.id))
         setBuiltOnId(fig.built_on_id || null)
         setSwitchOfId(fig.switch_of || null)
-        setForm({
-          name: fig.name,
-          slug: fig.slug,
-          category_id: String(fig.category_id || ''),
-          sport: fig.sport,
-          sports: (fig.sports && fig.sports.length) ? fig.sports : [fig.sport],
-          difficulty: fig.difficulty,
-          published: fig.published,
-          contexts: fig.contexts || [],
-          approach: fig.approach || [],
-          rotation: fig.rotation || [],
-          inverted: fig.inverted || false,
-          rewind: fig.rewind || false,
-          spin: fig.spin || 0,
-          rewind_degs: (fig.rewind_degs && fig.rewind_degs.length) ? fig.rewind_degs : [0],
-          rotation_type: fig.rotation_type || [],
-          inverts: fig.inverts || 0,
-          description: fig.description || '',
-          tips: [...(fig.tips || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips || []).length + 1)),
-          description_en: fig.description_en || '',
-          tips_en: [...(fig.tips_en || []), '', '', '', ''].slice(0, Math.max(4, (fig.tips_en || []).length + 1)),
-          tips_seated: padTips(fig.tips_seated),
-          tips_seated_en: padTips(fig.tips_seated_en),
-          tips_wakeskate: padTips(fig.tips_wakeskate),
-          tips_wakeskate_en: padTips(fig.tips_wakeskate_en),
-        })
+        // En duplication, le nom/slug doivent rester uniques : on suffixe « (copie) »
+        // et on régénère le slug pour éviter la collision avec la figure source.
+        const base = buildForm(fig)
+        setForm(duplicateFrom
+          ? { ...base, name: `${fig.name} (copie)`, slug: genSlug(`${fig.name} copie`) }
+          : base)
       }
       setLoading(false)
     })
-  }, [id, isEdit])
+  }, [id, isEdit, duplicateFrom])
 
   const genSlug = (name) =>
     name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
