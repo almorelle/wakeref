@@ -169,7 +169,7 @@ export default function FigureForm() {
     if (!isEdit && !duplicateFrom) {
       Promise.all([
         supabase.from('categories').select('*').order('sort_order'),
-        supabase.from('figures').select('id, name, slug').order('name'),
+        supabase.from('figures').select('id, name, slug, switch_of').order('name'),
       ]).then(([{ data: cats }, { data: figs }]) => {
         setCategories(cats || [])
         setAllFigures(figs || [])
@@ -181,7 +181,7 @@ export default function FigureForm() {
     const sourceId = isEdit ? id : duplicateFrom
     Promise.all([
       supabase.from('categories').select('*').order('sort_order'),
-      supabase.from('figures').select('id, name, slug').order('name'),
+      supabase.from('figures').select('id, name, slug, switch_of').order('name'),
       supabase.from('figures').select('*').eq('id', sourceId).single(),
       supabase.from('figures_full').select('prerequisites').eq('id', sourceId).single(),
     ]).then(([{ data: cats }, { data: figs }, { data: fig }, { data: full }]) => {
@@ -269,11 +269,21 @@ export default function FigureForm() {
     // sinon on n'écrit rien → pas d'override orphelin si on décoche / bascule.
     const overrideFor = (key, d) =>
       (d !== form.sport && sports.includes(d)) ? form[key].filter(t => t.trim()) : []
+    // `built_on` d'une figure NON-switch doit pointer vers la BASE : si la cible
+    // est une version switch, on remonte à sa base (sinon la progression casse —
+    // parent masqué + enfant orphelin dans figures_full). Filet pour les données
+    // héritées. Une figure switch, elle, hérite sa progression de sa base (son
+    // built_on_id est ignoré par la vue) → on la laisse pointer où elle veut,
+    // y compris vers un autre switch.
+    const builtOnFig = allFigures.find(x => x.id === builtOnId)
+    const builtOnBaseId = switchOfId
+      ? (builtOnId || null)
+      : (builtOnFig?.switch_of || builtOnId || null)
     const payload = {
       ...form,
       slug: form.slug || genSlug(form.name),
       category_id: form.category_id ? parseInt(form.category_id) : null,
-      built_on_id: builtOnId || null,
+      built_on_id: builtOnBaseId,
       switch_of: switchOfId || null,
       is_switch: !!switchOfId,
       difficulty: parseInt(form.difficulty),
@@ -530,10 +540,16 @@ export default function FigureForm() {
             <div className={styles.prereqSearch}>
               <input id="figure-builton" className="input" value={builtOnSearch}
                 onChange={e => setBuiltOnSearch(e.target.value)}
-                placeholder="Rechercher la figure précédente…" />
+                placeholder="Rechercher la figure précédente (base, non-switch)…" />
               {builtOnSearch.trim() && (() => {
+                // Pour une figure NON-switch, `built_on` doit pointer vers une base
+                // (la progression est portée par la base, pas par son switch) → on
+                // exclut les switchs du sélecteur, sinon parent masqué + enfant
+                // orphelin. Une figure switch hérite sa progression de sa base, donc
+                // on l'autorise à pointer vers ce qu'elle veut (y compris un switch).
                 const results = allFigures.filter(f =>
                   (!id || f.id !== parseInt(id)) &&
+                  (switchOfId || !f.switch_of) &&
                   norm(f.name).includes(norm(builtOnSearch))
                 ).slice(0, 8)
                 return (
