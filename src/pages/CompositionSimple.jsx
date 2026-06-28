@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useT } from '../i18n/useT'
 import SEO from '../components/SEO'
 import { GRIDS, GRID_OPTIONS } from '../lib/compoGrids'
-import styles from './Competition.module.css'
+import styles from './CompositionSimple.module.css'
 
-const STORAGE_KEY = 'wakeref_competition'
+const STORAGE_KEY = 'wakeref_composition_simple'
 
 // Couleur d'accent par discipline (cf. Compo) — pilote la teinte via --disc.
 const DISCIPLINE_COLOR = {
@@ -30,8 +30,8 @@ const loadStored = () => {
 
 // ── Page de saisie manuelle de note ──────────────────────────
 // Cousine légère de Compo : pas de saisie de tricks, on coche directement les
-// items de la grille et on lit la note /20. Non exposée dans le menu (/competition).
-export default function Competition() {
+// items de la grille et on lit la note /20. Non exposée dans le menu (/composition-simple).
+export default function CompositionSimple() {
   const tr = useT()
   const [stored] = useState(loadStored)
   const [gridKey, setGridKey] = useState(stored?.gridKey || 'wakeboard')
@@ -90,7 +90,7 @@ export default function Competition() {
         titleEn="Score sheet"
         descriptionFr="Coche les critères de la grille et lis ta note sur 20."
         descriptionEn="Tick the grid criteria and read your score out of 20."
-        path="/competition"
+        path="/composition-simple"
       />
 
       {/* Sélecteur de grille (discipline / niveau). Les deux grilles seated
