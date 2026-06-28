@@ -40,6 +40,7 @@ La documentation technique complète vit dans [`docs/`](./docs/) (point d'entré
 | [Component Inventory](./docs/component-inventory.md) | Pages, composants, contexts, hooks, i18n |
 | [Development Guide](./docs/development-guide.md) | Install, env, setup DB, conventions |
 | [Deployment Guide](./docs/deployment-guide.md) | Vercel + Supabase, PWA, backups |
+| [Saisie vocale & entraînement](./training/README.md) | Collecte de données (`/judge/voix`), fine-tuning Whisper, export ONNX → Hugging Face |
 
 Instructions pour les agents IA : [`CLAUDE.md`](./CLAUDE.md).
 
