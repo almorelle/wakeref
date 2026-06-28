@@ -1,5 +1,8 @@
 // Centralise toutes les icônes utilisées dans WakeRef
 import {
+  IconAlertTriangle,
+  IconMicrophone,
+  IconPlayerStopFilled,
   IconArrowBackUp,
   IconArrowDownFromArc,
   IconArrowLeft,
@@ -65,6 +68,9 @@ import {
 } from '@tabler/icons-react'
 
 const ICONS = {
+  'alert-triangle':         IconAlertTriangle,
+  'mic':                    IconMicrophone,
+  'player-stop':            IconPlayerStopFilled,
   'arrow-back-up':          IconArrowBackUp,
   'arrow-down-from-arc':    IconArrowDownFromArc,
   'arrow-left':             IconArrowLeft,

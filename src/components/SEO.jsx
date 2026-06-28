@@ -16,7 +16,7 @@ const DEFAULT = {
   },
 }
 
-export default function SEO({ titleFr, titleEn, descriptionFr, descriptionEn, path = '' }) {
+export default function SEO({ titleFr, titleEn, descriptionFr, descriptionEn, path = '', noindex = false }) {
   const { lang } = useLanguage()
 
   const title       = (lang === 'en' ? titleEn       : titleFr)       || DEFAULT[lang].title
@@ -31,6 +31,11 @@ export default function SEO({ titleFr, titleEn, descriptionFr, descriptionEn, pa
     // Meta description
     setMeta('name', 'description', description)
 
+    // Indexation : les pages non publiques (ex. outils juge) se retirent des
+    // moteurs. Toujours posé (et remis à index en quittant la page) car setMeta
+    // mute le <head> partagé entre les routes.
+    setMeta('name', 'robots', noindex ? 'noindex,nofollow' : 'index,follow')
+
     // OG
     setMeta('property', 'og:title',       fullTitle)
     setMeta('property', 'og:description', description)
@@ -39,7 +44,7 @@ export default function SEO({ titleFr, titleEn, descriptionFr, descriptionEn, pa
     setMeta('property', 'og:type',        'website')
     setMeta('property', 'og:site_name',   SITE_NAME)
     setMeta('property', 'og:locale',      lang === 'en' ? 'en_US' : 'fr_FR')
-  }, [fullTitle, description, url, lang])
+  }, [fullTitle, description, url, lang, noindex])
 
   return null
 }

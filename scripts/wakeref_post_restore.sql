@@ -138,7 +138,8 @@ drop view if exists figures_card cascade;
 create view figures_card as
 select f.id, f.slug, f.name, f.sport, f.difficulty, f.contexts,
        c.name as category_name, c.slug as category_slug,
-       f.sports
+       f.sports,
+       f.aliases
 from figures f
 left join categories c on c.id = f.category_id;
 
@@ -155,19 +156,29 @@ set search_path = public as $$
       -- noms tapés collés ("frontflip", "frontroll") malgré les espaces du nom en base.
       regexp_replace(public.immutable_unaccent(lower(trim(query))), '[^a-z0-9]', '', 'g') as compact
   )
-  select f.* from figures_full f, q
+  select f.* from figures_full f
+  join figures fb on fb.id = f.id, q
   where
-    to_tsvector('french', public.immutable_unaccent(coalesce(f.name,'') || ' ' || coalesce(f.description,'')))
+    to_tsvector('french', public.immutable_unaccent(
+      coalesce(f.name,'') || ' ' || coalesce(f.description,'') || ' ' || array_to_string(fb.aliases, ' ')))
       @@ plainto_tsquery('french', q.raw)
     or (q.compact <> '' and regexp_replace(public.immutable_unaccent(lower(f.name)), '[^a-z0-9]', '', 'g')
           like '%' || q.compact || '%')
+    -- Alias parlés (figures.aliases) : surnoms de figure absents du nom canonique,
+    -- socle du matching dictée→trick (saisie de run à la voix).
+    or (q.compact <> '' and exists (
+          select 1 from unnest(fb.aliases) a
+          where regexp_replace(public.immutable_unaccent(lower(a)), '[^a-z0-9]', '', 'g') like '%' || q.compact || '%'))
   order by
-    -- Pertinence : nom exact, puis préfixe de nom, puis sous-chaîne de nom, puis
-    -- match uniquement par description (full-text). Départage par rang full-text.
+    -- Pertinence : nom exact, préfixe de nom, sous-chaîne de nom, préfixe d'alias,
+    -- puis match uniquement par description (full-text). Départage par rang full-text.
     case
       when public.immutable_unaccent(lower(f.name)) = q.raw then 0
       when q.compact <> '' and regexp_replace(public.immutable_unaccent(lower(f.name)), '[^a-z0-9]', '', 'g') like q.compact || '%' then 1
       when q.compact <> '' and regexp_replace(public.immutable_unaccent(lower(f.name)), '[^a-z0-9]', '', 'g') like '%' || q.compact || '%' then 2
+      when q.compact <> '' and exists (
+        select 1 from unnest(fb.aliases) a
+        where regexp_replace(public.immutable_unaccent(lower(a)), '[^a-z0-9]', '', 'g') like q.compact || '%') then 2
       else 3
     end,
     ts_rank(

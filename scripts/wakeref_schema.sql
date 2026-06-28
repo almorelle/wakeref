@@ -40,6 +40,7 @@ CREATE TABLE public.figures (
                                 tips_seated_en ARRAY,
                                 tips_wakeskate ARRAY,
                                 tips_wakeskate_en ARRAY,
+                                aliases ARRAY NOT NULL DEFAULT '{}'::text[],
                                 CONSTRAINT figures_pkey PRIMARY KEY (id),
                                 CONSTRAINT figures_category_id_fkey FOREIGN KEY (category_id) REFERENCES public.categories(id),
                                 CONSTRAINT figures_switch_of_fkey FOREIGN KEY (switch_of) REFERENCES public.figures(id),

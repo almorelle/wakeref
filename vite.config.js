@@ -12,6 +12,9 @@ export default defineConfig({
           groups: [
             { name: 'supabase', test: /node_modules[\\/]@supabase[\\/]/ },
             { name: 'react', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/ },
+            // STT local (Whisper) : chunk dédié, tiré en dynamic-import au 1er usage
+            // de la saisie vocale seulement. Exclu du précache PWA (globIgnores).
+            { name: 'transformers', test: /node_modules[\\/](@huggingface|onnxruntime-web)[\\/]/ },
           ],
         },
       },
@@ -25,6 +28,12 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        // Saisie vocale (outil juge, non public) : on NE précache RIEN du STT local.
+        // Un visiteur lambda ne doit jamais le télécharger ; ces assets ne sont tirés
+        // qu'à la visite de /judge/voix, au runtime. On ignore le chunk transformers
+        // ET les binaires onnxruntime (.wasm, jusqu'à ~24 Mo). Les poids du modèle
+        // Whisper viennent du CDN Hugging Face → hors dist, jamais précachés non plus.
+        globIgnores: ['**/transformers-*.js', '**/*.wasm', '**/ort-*', '**/jszip*'],
       },
       manifest: {
         name: 'WakeRef',

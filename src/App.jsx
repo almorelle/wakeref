@@ -15,6 +15,9 @@ const Quiz = lazy(() => import('./pages/Quiz'))
 const Compo = lazy(() => import('./pages/Compo'))
 const Competition = lazy(() => import('./pages/Competition'))
 const JudgeTraining = lazy(() => import('./pages/JudgeTraining'))
+// Saisie de run à la voix (outil juge) : route NON listée dans la Navbar,
+// chunk isolé → un visiteur lambda ne charge jamais ce code.
+const JudgeVoice = lazy(() => import('./pages/JudgeVoice'))
 
 // Admin : jamais embarqué dans le bundle public
 const Login = lazy(() => import('./pages/admin/Login'))
@@ -45,6 +48,7 @@ export default function App() {
             <Route path="/compo/:id" element={<Compo />} />
             <Route path="/competition" element={<Competition />} />
             <Route path="/judge" element={<JudgeTraining />} />
+            <Route path="/judge/voix" element={<JudgeVoice />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/submit" element={<SubmitVideo />} />
           </Route>

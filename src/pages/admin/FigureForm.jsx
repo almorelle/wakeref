@@ -94,6 +94,7 @@ const padTips = (arr) => {
 const buildForm = (fig) => ({
   name: fig.name,
   slug: fig.slug,
+  aliases: fig.aliases || [],
   category_id: String(fig.category_id || ''),
   sport: fig.sport,
   sports: (fig.sports && fig.sports.length) ? fig.sports : [fig.sport],
@@ -135,7 +136,7 @@ export default function FigureForm() {
   const [activeTab, setActiveTab] = useState('fr')
 
   const [form, setForm] = useState({
-    name: '', slug: '', category_id: '', sport: 'wakeboard',
+    name: '', slug: '', aliases: [], category_id: '', sport: 'wakeboard',
     sports: ['wakeboard'],
     difficulty: 2, published: true,
     contexts: [],
@@ -282,6 +283,8 @@ export default function FigureForm() {
     const payload = {
       ...form,
       slug: form.slug || genSlug(form.name),
+      // Surnoms parlés (reconnaissance vocale) : on trim et on retire les vides.
+      aliases: (form.aliases || []).map(a => a.trim()).filter(Boolean),
       category_id: form.category_id ? parseInt(form.category_id) : null,
       built_on_id: builtOnBaseId,
       switch_of: switchOfId || null,
@@ -371,6 +374,18 @@ export default function FigureForm() {
             <label htmlFor="figure-slug">Slug</label>
             <input id="figure-slug" className="input" value={form.slug} onChange={e => set('slug', e.target.value)} placeholder="auto-généré" />
           </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="figure-aliases">Alias (reconnaissance vocale)</label>
+          <input
+            id="figure-aliases"
+            className="input"
+            value={form.aliases.join(', ')}
+            onChange={e => set('aliases', e.target.value.split(',').map(a => a.replace(/^\s+/, '')))}
+            placeholder="surnoms parlés, séparés par des virgules — ex. tan, tantrum to blind"
+          />
+          <small>Surnoms / variantes dictés par les juges, en plus du nom canonique. Améliore aussi la recherche tapée.</small>
         </div>
 
         <div className={styles.row3}>
