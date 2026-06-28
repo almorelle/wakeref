@@ -71,10 +71,10 @@ prononciation. Pour le rendre robuste à d'autres juges :
    existant (ça figerait le biais vers la 1ʳᵉ voix). On **ré-entraîne depuis
    `openai/whisper-base`** sur l'**union** de toutes les données (les tiennes +
    celles des autres). Conserve donc tes anciens zips.
-3. **Fusionne les zips** en un seul dataset. Dans le [notebook d'entraînement multi](training/wakeref_finetune_multi_colab.ipynb),
-   qui prend plusieurs zips et produit un `ds/` unifié :
-   (Renumérote les fichiers pour éviter les collisions, concatène les
-   `metadata.csv`, et convertit en wav — comme la cellule d'origine.)
+3. **Fusionne les zips** en un seul dataset et produit un `ds/` unifié en utilisant le
+   [notebook d'entraînement multi](wakeref_finetune_multi_colab.ipynb). Renumérote 
+   les fichiers pour éviter les collisions, concatène les `metadata.csv`, et convertit 
+   en wav — comme la cellule d'origine.
 4. **Lance l'entraînement** (cellule suivante, inchangée) puis **ré-exporte +
    re-pousse** sur le même repo HF (notebook 2). L'app pointant déjà sur
    `almorelle/whisper-wakeref-onnx`, elle prendra la nouvelle version au prochain
