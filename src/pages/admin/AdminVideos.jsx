@@ -11,6 +11,18 @@ const GENDER_LABELS = { woman: 'Femme', man: 'Homme', other: 'Autre' }
 
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
+// Déduit le type de source sans le demander à l'admin : un fichier joint = upload
+// direct ; sinon on lit l'URL source. Renvoie null si indéterminable (ni fichier,
+// ni URL reconnue) → l'ajout est bloqué (le rendu ne sait afficher que ces 3 types).
+const deriveSourceType = (file, url) => {
+  if (file) return 'upload'
+  const u = (url || '').trim()
+  if (!u) return null
+  if (/instagram\.com/i.test(u)) return 'instagram'
+  if (/youtube\.com|youtu\.be/i.test(u)) return 'youtube'
+  return null
+}
+
 export default function AdminVideos() {
   const [searchParams] = useSearchParams()
   const { toasts, toast } = useToast()
@@ -35,7 +47,6 @@ export default function AdminVideos() {
   const [form, setForm] = useState({
     figure_id: prefigureId || '',
     title: '',
-    source_type: 'upload',
     source_url: '',
     creator_name: '',
     creator_url: '',
@@ -129,6 +140,11 @@ export default function AdminVideos() {
   const submit = async (e) => {
     e.preventDefault()
     if (!form.figure_id) { toast('Sélectionne une figure', 'error'); return }
+    const source_type = deriveSourceType(file, form.source_url)
+    if (!source_type) {
+      toast('Ajoute un fichier vidéo ou une source Instagram/YouTube valide', 'error')
+      return
+    }
     setUploading(true)
 
     let file_path = null
@@ -147,6 +163,7 @@ export default function AdminVideos() {
       ...form,
       figure_id: parseInt(form.figure_id),
       file_path,
+      source_type,                                       // déduit (upload / instagram / youtube)
       sport: form.sport || null,                         // '' → hérite de la figure
       performer_gender: form.performer_gender || null,   // '' → non renseigné
     })
@@ -256,19 +273,17 @@ export default function AdminVideos() {
             </p>}
           </div>
 
-          <div className={styles.row2}>
-            <div className="field">
-              <label htmlFor="video-source">Source originale (lien Instagram / YouTube)</label>
-              <input id="video-source" className="input" value={form.source_url} onChange={e => set('source_url', e.target.value)} placeholder="https://www.instagram.com/p/..." />
-            </div>
-            <div className="field">
-              <label htmlFor="video-sourcetype">Type de source</label>
-              <select id="video-sourcetype" className="input" value={form.source_type} onChange={e => set('source_type', e.target.value)}>
-                <option value="upload">Upload direct</option>
-                <option value="instagram">Instagram</option>
-                <option value="youtube">YouTube</option>
-              </select>
-            </div>
+          <div className="field">
+            <label htmlFor="video-source">Source originale (lien Instagram / YouTube)</label>
+            <input id="video-source" className="input" value={form.source_url} onChange={e => set('source_url', e.target.value)} placeholder="https://www.instagram.com/p/..." />
+            {/* Type de source déduit : fichier joint → upload direct, sinon lu depuis l'URL. */}
+            <p style={{ fontSize: 12, color: 'var(--c-muted)', marginTop: 4 }}>
+              {file
+                ? 'Type : upload direct (fichier joint)'
+                : deriveSourceType(null, form.source_url)
+                  ? `Type : ${deriveSourceType(null, form.source_url) === 'instagram' ? 'Instagram' : 'YouTube'}`
+                  : 'Ajoute un fichier ou un lien Instagram/YouTube'}
+            </p>
           </div>
 
           <div className={styles.row2}>
@@ -309,7 +324,7 @@ export default function AdminVideos() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button type="submit" className="btn btn-primary" disabled={uploading}>
+            <button type="submit" className="btn btn-primary" disabled={uploading || !deriveSourceType(file, form.source_url)}>
               {uploading ? 'Upload en cours…' : <><Icon name="upload" /> Ajouter la vidéo</>}
             </button>
           </div>

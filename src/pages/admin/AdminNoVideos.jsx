@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { externalUrl } from '../../lib/url'
 import { CategoryBadge, SportBadge } from '../../components/Badges'
@@ -26,14 +26,26 @@ const FigurePanel = ({ icon, title, desc, figures, panelKey, open, toggle, navig
       ) : (
         <div className={styles.list}>
           {figures.map(f => (
-            <button key={f.id} className={styles.item} onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
-              <span className={styles.itemName}>{f.name}</span>
-              <span className={styles.itemMeta}>
-                <CategoryBadge slug={f.category_slug} name={f.category_name} />
-                <SportBadge sport={f.sport} />
-                <DifficultyDots value={f.difficulty} />
-              </span>
-            </button>
+            <div key={f.id} className={styles.item}>
+              <button className={styles.itemMain} onClick={() => navigate(`/admin/videos?figure=${f.id}`)}>
+                <span className={styles.itemName}>{f.name}</span>
+                <span className={styles.itemMeta}>
+                  <CategoryBadge slug={f.category_slug} name={f.category_name} />
+                  <SportBadge sport={f.sport} />
+                  <DifficultyDots value={f.difficulty} />
+                </span>
+              </button>
+              <Link
+                to={`/figures/${f.slug}`}
+                target="_blank"
+                rel="noopener"
+                className={styles.itemLink}
+                title="Voir la page du trick"
+                aria-label={`Voir la page du trick ${f.name}`}
+              >
+                <Icon name="external-link" />
+              </Link>
+            </div>
           ))}
         </div>
       )
