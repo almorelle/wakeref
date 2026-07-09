@@ -4,7 +4,8 @@ import SEO from '../components/SEO'
 import Icon from '../components/Icon'
 import { buildIndex, matchSegment } from '../lib/voiceMatch'
 import { loadWhisper, transcribe, blobToMono16k, isWhisperLoaded } from '../lib/whisperStt'
-import { addSample, updateLabel, countSamples, countsBySlug, deleteSample, clearSamples, exportZip } from '../lib/voiceDataset'
+import { normalizeJib, grammarPhrases } from '../lib/normalizeJib'
+import { addSample, updateLabel, countSamples, countsBySlug, countsByKind, deleteSample, clearSamples, exportZip } from '../lib/voiceDataset'
 import styles from './JudgeVoice.module.css'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,8 +55,12 @@ export default function JudgeVoice() {
   })
   const [model, setModel] = useState('base')            // 'base' | 'small' | 'large'
   const [bias, setBias] = useState(false)               // prompt biasing (expérimental)
+  const [freeJib, setFreeJib] = useState(false)         // mode dictée libre du jib (texte éditable, sans matcher)
+  const [jibEntries, setJibEntries] = useState([])      // [{id, raw, text}] — passes jib dictées
+  const [constrain, setConstrain] = useState(false)     // spike grammaire : injecte un LogitsProcessor
   const [collect, setCollect] = useState(false)         // collecte (audio,label) → dataset
   const [sampleCount, setSampleCount] = useState(0)
+  const [jibCount, setJibCount] = useState(0)           // passes jib collectées (dataset fine-tune jib)
   const [guided, setGuided] = useState(false)           // collecte guidée (label = trick cible)
   const [counts, setCounts] = useState({})              // slug → nb d'échantillons
   const [targetSlug, setTargetSlug] = useState(null)    // trick à enregistrer
@@ -79,25 +84,35 @@ export default function JudgeVoice() {
   const indexRef = useRef(null)
   const figBySlugRef = useRef({})
   const guidedRef = useRef(guided)
+  const freeJibRef = useRef(freeJib)
+  const constrainRef = useRef(constrain)
   const targetSlugRef = useRef(targetSlug)
   const nextTargetRef = useRef(null)   // → nextTarget (appelé depuis le handler clavier)
   const sampleIdBySeg = useRef({})     // segId → id IndexedDB (pour MAJ du label)
+  const sampleIdByJib = useRef({})     // jibEntry.id → id IndexedDB (passe jib collectée)
+  const jibEntriesRef = useRef([])     // dernières passes (pour révoquer les URLs au démontage)
+  const jibQueueRef = useRef([])       // file d'attente de transcription (dictée libre, non-bloquant)
+  const jibProcessingRef = useRef(false)
   useEffect(() => { listeningRef.current = listening }, [listening])
   useEffect(() => { engineRef.current = engine }, [engine])
   useEffect(() => { collectRef.current = collect }, [collect])
   useEffect(() => { disciplineRef.current = discipline }, [discipline])
   useEffect(() => { guidedRef.current = guided }, [guided])
+  useEffect(() => { freeJibRef.current = freeJib }, [freeJib])
+  useEffect(() => { constrainRef.current = constrain }, [constrain])
   useEffect(() => { targetSlugRef.current = targetSlug }, [targetSlug])
+  useEffect(() => { jibEntriesRef.current = jibEntries }, [jibEntries])
 
   // Compteurs d'échantillons déjà collectés (au montage).
   useEffect(() => {
     countSamples().then(setSampleCount).catch(() => {})
     countsBySlug().then(setCounts).catch(() => {})
+    countsByKind().then(k => setJibCount(k.jib || 0)).catch(() => {})
   }, [])
 
   // Refresh du catalogue depuis Supabase (le cache a déjà initialisé l'état).
   useEffect(() => {
-    supabase.from('figures_card').select('slug,name,aliases,sport,sports')
+    supabase.from('figures_card').select('slug,name,aliases,sport,sports,contexts,category_slug')
       .then(({ data }) => {
         if (!data) return
         setFigures(data)
@@ -111,6 +126,28 @@ export default function JudgeVoice() {
     const m = {}; for (const f of figures) m[f.slug] = f; return m
   }, [figures])
   useEffect(() => { figBySlugRef.current = figBySlug }, [figBySlug])
+
+  // NB : on N'INJECTE PLUS les 74 tricks kicker dans le COMPOSITEUR normalizeJib. Leurs
+  // aliases structurels empoisonnent la composition d'une passe (« back blind » → Roll
+  // to Blind, « front blind » → Front Flip to Blind, « entre » → Tantrum) au lieu de la
+  // structure voulue. Les tricks qui apparaissent vraiment en jib (Scarecrow, Tantrum,
+  // Mexican Roll, Pretzel) sont déjà dans le VOCAB de normalizeJib.
+
+  // Tricks nommés (contexts⊇'kicker', hors spin/grab) + aliases → injectés dans la GRAMMAIRE.
+  const jibTricks = useMemo(() => {
+    const arr = (v) => Array.isArray(v) ? v : (typeof v === 'string' ? JSON.parse(v || '[]') : [])
+    return figures
+      .filter(f => arr(f.contexts).includes('kicker') && f.category_slug !== 'spin' && f.category_slug !== 'grabs')
+      .map(f => ({ canon: f.name, variants: [f.name.toLowerCase(), ...(f.aliases || [])] }))
+  }, [figures])
+
+  // Phrases de la grammaire (dictée contrainte) = STRUCTURE jib + rotations + tricks. On
+  // REMET les tricks (jadis exclus car ils empoisonnaient whisper-small générique, ex.
+  // scarecrow→slob) : avec le modèle MAISON jib (bonne acoustique jargon), la grammaire
+  // ne fait plus que VERROUILLER la sortie sur le vocabulaire. À n'activer qu'avec ce modèle.
+  const jibGrammar = useMemo(() => grammarPhrases(jibTricks), [jibTricks])
+  const jibGrammarRef = useRef([])
+  useEffect(() => { jibGrammarRef.current = jibGrammar }, [jibGrammar])
 
   // Tricks de la discipline, triés du MOINS couvert au plus couvert (collecte guidée).
   const targets = useMemo(() =>
@@ -156,6 +193,40 @@ export default function JudgeVoice() {
   }, [])
   const stopBrowser = useCallback(() => recRef.current?.stop(), [])
 
+  // ── File d'attente jib (dictée libre) : transcrit les passes en TÂCHE DE FOND, en
+  // série (1 inférence à la fois), en remplissant l'entrée correspondante au fur et à
+  // mesure. La dictée n'est jamais bloquée par une transcription en cours. ──
+  const processJibQueue = useCallback(async () => {
+    if (jibProcessingRef.current) return
+    jibProcessingRef.current = true
+    try {
+      while (jibQueueRef.current.length) {
+        const item = jibQueueRef.current.shift()
+        try {
+          const float = await blobToMono16k(item.blob)
+          const text = (await transcribe(float, { language: 'french', model: item.model, bias: item.bias, constrain: item.gram, grammarPhrases: jibGrammarRef.current })).trim()
+          setModelState('ready')
+          if (!text) {
+            setJibEntries(prev => prev.map(e => e.id === item.id ? { ...e, status: 'error', raw: '(rien entendu)' } : e))
+            continue
+          }
+          const auto = normalizeJib(text)  // compositeur VOCAB-seul (l'injection de tricks empoisonne la structure)
+          setJibEntries(prev => prev.map(e => e.id === item.id ? { ...e, raw: text, auto, text: auto, status: 'done' } : e))
+          // Collecte dataset : (audio, brut STT, cible = sortie composeur, recalée à l'édition).
+          if (collectRef.current) {
+            addSample({ blob: item.blob, mime: item.mime, sttText: text, labelName: auto, kind: 'jib', gram: item.gram, model: item.model })
+              .then((dbId) => { sampleIdByJib.current[item.id] = dbId; setSampleCount(c => c + 1); setJibCount(c => c + 1) })
+              .catch(() => {})
+          }
+        } catch (e) {
+          setJibEntries(prev => prev.map(x => x.id === item.id ? { ...x, status: 'error', raw: '(échec transcription)' } : x))
+        }
+      }
+    } finally {
+      jibProcessingRef.current = false
+    }
+  }, [])
+
   // ── Moteur local (Whisper) : enregistre puis transcrit au relâchement ──
   const startLocal = useCallback(async () => {
     if (listeningRef.current) return
@@ -185,10 +256,21 @@ export default function JudgeVoice() {
         }).catch(() => {})
         return
       }
+      // Mode dictée libre (jib) : NON-BLOQUANT. On crée aussitôt une entrée « en cours »
+      // (audio réécoutable direct) + on EMPILE pour transcription en tâche de fond, puis on
+      // rend la main immédiatement → le juge enchaîne les passes sans attendre les 15-30 s.
+      if (freeJibRef.current) {
+        const jid = segId.current++
+        const url = URL.createObjectURL(blob)
+        setJibEntries(prev => [{ id: jid, raw: '', auto: '', text: '', gram: constrainRef.current, url, status: 'pending' }, ...prev])
+        jibQueueRef.current.push({ id: jid, blob, mime: mr.mimeType, gram: constrainRef.current, model, bias })
+        processJibQueue()
+        return
+      }
       setBusy(true)
       try {
         const float = await blobToMono16k(blob)
-        const text = (await transcribe(float, { language: 'french', model, bias })).trim()
+        const text = (await transcribe(float, { language: 'french', model, bias, constrain: constrainRef.current, grammarPhrases: jibGrammarRef.current })).trim()
         setModelState('ready')
         if (!text) return
         const id = segId.current++
@@ -227,6 +309,7 @@ export default function JudgeVoice() {
     recRef.current?.stop()
     if (mrRef.current?.state === 'recording') mrRef.current.stop()
     streamRef.current?.getTracks().forEach(t => t.stop())
+    jibEntriesRef.current.forEach(e => e.url && URL.revokeObjectURL(e.url))
   }, [])
 
   // Push-to-talk : maintenir Espace dicte, relâcher arrête. Ignoré sur les champs.
@@ -234,13 +317,14 @@ export default function JudgeVoice() {
     const isField = (el) =>
       el && (/^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(el.tagName) || el.isContentEditable)
     const onDown = (e) => {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey || isField(e.target)) return
+      if (e.metaKey || e.ctrlKey || e.altKey || isField(e.target)) return
       // Flèche droite (mode guidé) : trick suivant. Ignorée pendant l'enregistrement.
       if (e.code === 'ArrowRight' && guidedRef.current && !listeningRef.current) {
         e.preventDefault(); nextTargetRef.current?.(); return
       }
-      if (e.code !== 'Space' || busy) return
-      e.preventDefault()
+      if (e.code !== 'Space') return
+      e.preventDefault()          // bloque le scroll de page — Y COMPRIS sur les key-repeat (maintien)
+      if (e.repeat || busy) return
       if (!spaceHeldRef.current) { spaceHeldRef.current = true; start() }
     }
     const onUp = (e) => {
@@ -274,6 +358,57 @@ export default function JudgeVoice() {
   }
 
   const reset = () => { setSegments([]); setChoices({}); setInterim('') }
+
+  // ── Mode dictée libre (jib) ──
+  const toggleFreeJib = (on) => {
+    setFreeJib(on)
+    // Modèle MAISON jib (whisper-small fine-tuné sur passes, q8) — sans biais. Grammaire
+    // laissée au choix (case « grammaire ») : le modèle capte déjà les passes entières,
+    // la contrainte peut couper aux pauses (cf. troncatures) → à activer si besoin seulement.
+    if (on) { setEngine('local'); pickModel('wakerefJib'); setBias(false) }
+  }
+  const editJib = (id, val) => {
+    setJibEntries(prev => prev.map(e => e.id === id ? { ...e, text: val } : e))
+    // Recaler la cible d'entraînement du sample collecté sur la correction du juge.
+    const dbId = sampleIdByJib.current[id]
+    if (dbId != null) updateLabel(dbId, { labelName: val }).catch(() => {})
+  }
+  const removeJib = (id) => {
+    setJibEntries(prev => {
+      const e = prev.find(x => x.id === id)
+      if (e?.url) URL.revokeObjectURL(e.url)
+      return prev.filter(x => x.id !== id)
+    })
+    jibQueueRef.current = jibQueueRef.current.filter(item => item.id !== id)  // retirer de la file si pas encore transcrit
+    const dbId = sampleIdByJib.current[id]
+    if (dbId != null) {
+      deleteSample(dbId).catch(() => {})
+      delete sampleIdByJib.current[id]
+      setSampleCount(c => Math.max(0, c - 1)); setJibCount(c => Math.max(0, c - 1))
+    }
+  }
+  // « Effacer » vide seulement la vue : les clips restent dans le dataset (l'objet de
+  // la collecte) et repartiront à l'export. On oublie le mapping d'édition + révoque les URLs.
+  const resetJib = () => {
+    setJibEntries(prev => { prev.forEach(e => e.url && URL.revokeObjectURL(e.url)); return [] })
+    jibQueueRef.current = []
+    sampleIdByJib.current = {}
+  }
+  // Export au format prêt à coller dans scripts/test-normalize-jib.mjs : ['brut', 'attendu'].
+  const copyJibLog = async () => {
+    const esc = (s) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    // [brut, ta correction] (= format harnais). Si tu as édité, on annote en commentaire
+    // ce que le compositeur avait sorti (auto) → je vois direct quoi corriger.
+    const out = jibEntries.map(e => {
+      const line = `  ['${esc(e.raw)}', '${esc(e.text)}'],`
+      const notes = []
+      if (e.gram) notes.push('grammaire ON')
+      if (e.text !== e.auto) notes.push(`auto: ${e.auto}`)
+      return notes.length ? `${line}   // ${notes.join(' | ')}` : line
+    }).join('\n')
+    try { await navigator.clipboard.writeText(out); setError(null) }
+    catch { setError('Copie impossible — log en console.'); console.log(out) }
+  }
   const removeSeg = (id) => {
     setSegments(prev => prev.filter(s => s.id !== id))
     setChoices(prev => { const n = { ...prev }; delete n[id]; return n })
@@ -323,25 +458,38 @@ export default function JudgeVoice() {
     }
   }
 
-  // Dataset d'entraînement : export .zip (audiofolder) + vidage.
-  const exportDataset = async () => {
+  // Dataset d'entraînement : export .zip (audiofolder) + vidage. `kind` filtre
+  // ('jib' → passes jib seules ; null → tout, tricks + jib).
+  const exportDataset = async (kind = null) => {
     try {
-      const zip = await exportZip()
+      const zip = await exportZip(kind)
       if (!zip) return
       const url = URL.createObjectURL(zip)
       const a = document.createElement('a')
       a.href = url
-      a.download = `wakeref-voix-dataset-${new Date().toISOString().slice(0, 10)}.zip`
+      a.download = `wakeref-voix-dataset${kind ? '-' + kind : ''}-${new Date().toISOString().slice(0, 10)}.zip`
       a.click()
       URL.revokeObjectURL(url)
     } catch (e) { setError('Export échoué : ' + (e?.message || e)) }
   }
-  const clearDataset = async () => {
-    if (!confirm(`Supprimer les ${sampleCount} échantillons collectés ?`)) return
-    await clearSamples().catch(() => {})
-    sampleIdBySeg.current = {}
-    setSampleCount(0)
-    setCounts({})
+  // Le store IndexedDB est PARTAGÉ tricks+jib. On scope le vidage par nature pour ne
+  // pas nuker un dataset en éditant l'autre ('trick' depuis le panneau tricks, 'jib'
+  // depuis la dictée libre ; null = tout, non exposé dans l'UI).
+  const clearDataset = async (kind = null) => {
+    const n = kind === 'jib' ? jibCount : kind === 'trick' ? (sampleCount - jibCount) : sampleCount
+    const label = kind === 'jib' ? 'passes jib' : kind === 'trick' ? 'clips tricks' : 'échantillons'
+    if (!confirm(`Supprimer les ${n} ${label} collectés ?`)) return
+    await clearSamples(kind).catch(() => {})
+    if (kind === 'jib') {
+      sampleIdByJib.current = {}
+      setSampleCount(c => Math.max(0, c - jibCount)); setJibCount(0)
+    } else if (kind === 'trick') {
+      sampleIdBySeg.current = {}
+      setSampleCount(jibCount); setCounts({})
+    } else {
+      sampleIdBySeg.current = {}; sampleIdByJib.current = {}
+      setSampleCount(0); setJibCount(0); setCounts({})
+    }
   }
 
   // Mode guidé : implique la collecte. On démarre sur le trick le moins couvert.
@@ -381,7 +529,8 @@ export default function JudgeVoice() {
       </header>
 
       {/* Discipline (filtre le matching ; lève les collisions seated/standing) */}
-      <div className={styles.discipline}>
+      {!freeJib && (
+       <div className={styles.discipline}>
         <label htmlFor="jv-discipline">Discipline</label>
         <select id="jv-discipline" className="input" value={discipline}
           onChange={e => setDiscipline(e.target.value)} disabled={listening || busy}>
@@ -389,7 +538,8 @@ export default function JudgeVoice() {
           <option value="wakeskate">Wakeskate</option>
           <option value="seated">Wakeboard assis</option>
         </select>
-      </div>
+       </div>
+      )}
 
       {/* Sélecteur de moteur STT */}
       <div className={styles.engine} role="radiogroup" aria-label="Moteur de reconnaissance">
@@ -409,11 +559,40 @@ export default function JudgeVoice() {
         </button>
       </div>
 
+      {/* Mode dictée libre (jib) : texte normalisé éditable, sans matcher */}
+      {engine === 'local' && (
+        <div className={styles.model}>
+          <label className={styles.bias} title="Dicte une passe jib entière → texte normalisé éditable (small sans biais), sans passer par le matcher">
+            <input type="checkbox" checked={freeJib} onChange={e => toggleFreeJib(e.target.checked)} disabled={listening || busy} />
+            dictée libre (jib) <small>texte éditable</small>
+          </label>
+          {freeJib && (
+            <>
+              <label className={styles.bias} title="Décodage contraint : whisper ne peut sortir que des phrases du vocabulaire jib + tricks (plus de garbles hors-vocab).">
+                <input type="checkbox" checked={constrain} onChange={e => setConstrain(e.target.checked)} disabled={listening || busy} />
+                grammaire <small>(contrainte)</small>
+              </label>
+              <label className={styles.bias} title="Enregistre l'audio de chaque passe + le texte corrigé (dans le champ) comme cible → dataset pour fine-tuner un modèle jib.">
+                <input type="checkbox" checked={collect} onChange={e => setCollect(e.target.checked)} disabled={listening || busy} />
+                collecter <small>(dataset jib)</small>
+              </label>
+              <span className={styles.count}>{jibCount} passe{jibCount > 1 ? 's' : ''}</span>
+              {jibCount > 0 && (
+                <>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => exportDataset('jib')}>Exporter (.zip)</button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => clearDataset('jib')}>Vider</button>
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       {/* Modèle Whisper (mode local) : choix base/small/large + biais + préchargement */}
       {engine === 'local' && (
         <div className={styles.model}>
           <div className={styles.modelPick}>
-            {[['wakeref', 'maison ✨'], ['base', 'léger'], ['small', '+qualité'], ['large', 'turbo · lourd']].map(([m, tag]) => (
+            {[['wakeref', 'maison ✨'], ['wakerefJib', 'jib ✨'], ['base', 'léger'], ['small', '+qualité'], ['large', 'turbo · lourd']].map(([m, tag]) => (
               <button
                 key={m} type="button"
                 className={`${styles.modelBtn} ${model === m ? styles.modelOn : ''}`}
@@ -441,7 +620,7 @@ export default function JudgeVoice() {
 
       {/* Collecte de dataset (local) : audio + label, stocké en IndexedDB, exporté
           en .zip audiofolder pour entraîner plus tard un modèle léger spécialisé. */}
-      {engine === 'local' && (
+      {engine === 'local' && !freeJib && (
         <div className={styles.model}>
           <label className={styles.bias} title="Enregistre chaque clip + le trick confirmé, en local, pour l'entraînement">
             <input type="checkbox" checked={collect} onChange={e => setCollect(e.target.checked)} disabled={guided} />
@@ -451,11 +630,11 @@ export default function JudgeVoice() {
             <input type="checkbox" checked={guided} onChange={e => toggleGuided(e.target.checked)} />
             mode guidé
           </label>
-          <span className={styles.count}>{sampleCount} clip{sampleCount > 1 ? 's' : ''}</span>
-          {sampleCount > 0 && (
+          <span className={styles.count}>{sampleCount - jibCount} clip{sampleCount - jibCount > 1 ? 's' : ''}</span>
+          {sampleCount - jibCount > 0 && (
             <>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={exportDataset}>Exporter (.zip)</button>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={clearDataset}>Vider</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => exportDataset('trick')}>Exporter (.zip)</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => clearDataset('trick')}>Vider</button>
             </>
           )}
         </div>
@@ -526,11 +705,20 @@ export default function JudgeVoice() {
         </button>
         {canCapture && <span className={styles.ptt}>ou maintiens <kbd>Espace</kbd></span>}
         {listening && <span className={styles.rec} aria-hidden="true" />}
-        {!guided && segments.length > 0 && !listening && !busy && (
+        {!guided && !freeJib && segments.length > 0 && !listening && !busy && (
           <>
             <button type="button" className="btn btn-ghost" onClick={copyLog}>Copier le log</button>
             <button type="button" className="btn btn-ghost" onClick={reset}>Effacer</button>
           </>
+        )}
+        {freeJib && jibEntries.length > 0 && !listening && (
+          <>
+            <button type="button" className="btn btn-ghost" onClick={copyJibLog}>Copier le log</button>
+            <button type="button" className="btn btn-ghost" onClick={resetJib}>Effacer</button>
+          </>
+        )}
+        {freeJib && jibEntries.some(e => e.status === 'pending') && (
+          <span className={styles.count}>{jibEntries.filter(e => e.status === 'pending').length} en transcription…</span>
         )}
         {!guided && (
           <span className={styles.count}>
@@ -541,7 +729,41 @@ export default function JudgeVoice() {
 
       {interim && !guided && <p className={styles.interim}>{interim}…</p>}
 
-      {guided ? null : segments.length === 0 ? (
+      {freeJib ? (
+        jibEntries.length === 0 ? (
+          <div className={styles.transcript}>
+            <p className={styles.placeholder}>Dicte une passe jib entière (maintiens <kbd>Espace</kbd>). Le texte normalisé éditable s'affiche ici ; le brut reste visible pour le tuning.</p>
+          </div>
+        ) : (
+          <ol className={styles.segments}>
+            {jibEntries.map(e => (
+              <li key={e.id} className={styles.seg}>
+                <div className={styles.segMain} style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6, width: '100%' }}>
+                  {e.status === 'pending' ? (
+                    <span className={styles.segRaw} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className={styles.rec} aria-hidden="true" /> transcription en cours…
+                    </span>
+                  ) : (
+                    <textarea
+                      value={e.text}
+                      onChange={ev => editJib(e.id, ev.target.value)}
+                      rows={2}
+                      style={{ width: '100%', resize: 'vertical', font: 'inherit', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--c-border2)', background: 'var(--c-surface2)', color: 'var(--c-text)' }}
+                    />
+                  )}
+                  {e.url && (
+                    <audio controls preload="metadata" src={e.url} style={{ width: '100%', height: 32 }} />
+                  )}
+                  {e.status !== 'pending' && <span className={styles.segRaw}>brut : « {e.raw} »</span>}
+                </div>
+                <button type="button" className={styles.segDel} onClick={() => removeJib(e.id)} aria-label="Retirer">
+                  <Icon name="x" size={15} />
+                </button>
+              </li>
+            ))}
+          </ol>
+        )
+      ) : guided ? null : segments.length === 0 ? (
         <div className={styles.transcript}>
           <p className={styles.placeholder}>Les tricks reconnus apparaîtront ici, un par segment dicté…</p>
         </div>
@@ -574,7 +796,7 @@ export default function JudgeVoice() {
         </ol>
       )}
 
-      {resolved.length > 0 && (
+      {!freeJib && resolved.length > 0 && (
         <div className={styles.summary}>
           <strong>{resolved.length}</strong> trick{resolved.length > 1 ? 's' : ''} retenu{resolved.length > 1 ? 's' : ''} :
           {' '}{resolved.map(f => f.name).join(' · ')}

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>WakeRef — Saisie de run (juge / compèt)</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c-bg:#0a0a0f; --c-surface:#111118; --c-surface2:#1a1a24; --c-surface3:#22222f;
+  --c-border:#ffffff12; --c-border2:#ffffff1e;
+  --c-text:#f0f0f8; --c-muted:#8888a0; --c-faint:#44445a;
+  --c-accent:#3b82f6; --c-wake:#06b6d4; --c-ws:#f59e0b; --c-seated:#a855f7;
+  --c-danger:#ef4444; --c-success:#22c55e; --c-orange:#f59e0b;
+  --cat-spin:#6366f1; --cat-jib:#22c55e; --cat-railey:#0ea5e9; --cat-tantrum:#ef4444;
+  --font-display:'Syne',sans-serif; --font-body:'DM Sans',sans-serif;
+  --r-sm:6px; --r-md:10px; --r-lg:16px; --r-xl:24px;
+  --t-fast:120ms ease; --t-mid:200ms ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:radial-gradient(120% 80% at 50% -10%, #14141f 0%, var(--c-bg) 55%);
+  color:var(--c-text); font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+  display:flex; justify-content:center;
+}
+
+/* ─ tablette ─ */
+.tablet{
+  width:min(100vw,1180px); height:100vh; display:flex; flex-direction:column;
+  position:relative;
+}
+
+/* ─ top bar ─ */
+.topbar{
+  display:flex; align-items:center; gap:14px; padding:14px 22px;
+  border-bottom:1px solid var(--c-border);
+  background:linear-gradient(180deg, #12121b 0%, transparent 100%);
+}
+.brand{font-family:var(--font-display); font-weight:800; letter-spacing:-.02em; font-size:18px}
+.brand b{color:var(--c-wake)}
+.rider{
+  display:flex; align-items:center; gap:10px; margin-left:6px;
+  padding:5px 12px; background:var(--c-surface2); border:1px solid var(--c-border);
+  border-radius:999px; font-weight:600; font-size:14px;
+}
+.rider .num{
+  width:22px;height:22px;display:grid;place-items:center;border-radius:50%;
+  background:var(--c-wake); color:#001; font-weight:800; font-size:12px;
+}
+.disc{
+  margin-left:auto; display:flex; gap:6px; background:var(--c-surface);
+  padding:4px; border-radius:999px; border:1px solid var(--c-border);
+}
+.disc button{
+  border:0; background:transparent; color:var(--c-muted); font:inherit; font-weight:600;
+  font-size:13px; padding:6px 14px; border-radius:999px; cursor:pointer; transition:var(--t-fast);
+}
+.disc button.on{background:var(--c-wake); color:#001}
+.runtime{font-variant-numeric:tabular-nums; color:var(--c-muted); font-size:13px; margin-left:4px}
+
+/* ─ spine / timeline ─ */
+.scroll{flex:1; overflow-y:auto; padding:18px 0 200px; position:relative}
+.spine{position:relative; max-width:980px; margin:0 auto; padding:0 28px}
+.spine::before{
+  content:""; position:absolute; top:0; bottom:0; left:50%; width:2px;
+  transform:translateX(-50%);
+  background:repeating-linear-gradient(180deg, var(--c-border2) 0 8px, transparent 8px 16px);
+}
+.empty{
+  text-align:center; color:var(--c-faint); font-size:15px; padding:80px 20px;
+  font-style:italic;
+}
+.empty b{color:var(--c-muted); font-style:normal}
+
+/* ─ row = une entrée ─ */
+.row{
+  display:grid; grid-template-columns:1fr 36px 1fr; align-items:center;
+  margin:10px 0; position:relative;
+  animation:drop .28s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes drop{from{opacity:0; transform:translateY(-10px) scale(.97)} to{opacity:1; transform:none}}
+.node{
+  grid-column:2; width:13px; height:13px; border-radius:50%; justify-self:center;
+  background:var(--c-surface3); border:2px solid var(--c-wake); z-index:2;
+  box-shadow:0 0 0 4px var(--c-bg);
+}
+.row.jib .node{border-color:var(--cat-jib)}
+.seq{
+  position:absolute; left:50%; transform:translateX(-50%) translateY(-22px);
+  font-size:10px; color:var(--c-faint); font-weight:700;
+}
+
+/* connector spine→card */
+.connector{
+  position:absolute; top:50%; height:2px; background:var(--c-border2); z-index:1;
+}
+.row.left .connector{right:50%; width:calc(50% - 28px - 18px); transform:translateY(-1px)}
+.row.right .connector{left:50%; width:calc(50% - 28px - 18px); transform:translateY(-1px)}
+
+/* ─ carte ─ */
+.card{
+  background:var(--c-surface2); border:1px solid var(--c-border);
+  border-radius:var(--r-md); padding:11px 13px; position:relative;
+  transition:transform var(--t-mid), border-color var(--t-fast);
+  touch-action:pan-y;
+}
+.row.left .card{grid-column:1; margin-right:18px; border-left:3px solid var(--c-wake)}
+.row.right .card{grid-column:3; margin-left:18px; border-right:3px solid var(--c-wake)}
+.row.jib.left .card{border-left-color:var(--cat-jib)}
+.row.jib.right .card{border-right-color:var(--cat-jib)}
+.card.flipping{transform:scale(.94); border-color:var(--c-accent)}
+
+.card-top{display:flex; align-items:center; gap:8px}
+.name{font-weight:700; font-size:16px; letter-spacing:-.01em; flex:1; min-width:0}
+.row.right .card-top{flex-direction:row-reverse; text-align:right}
+.kbadge{
+  font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase;
+  padding:2px 7px; border-radius:5px; color:#001; white-space:nowrap;
+}
+.kbadge.air{background:var(--c-wake)} .kbadge.kicker{background:var(--c-ws)} .kbadge.jib{background:var(--cat-jib)}
+
+.tags{display:flex; gap:5px; margin-top:7px; flex-wrap:wrap}
+.row.right .tags{justify-content:flex-end}
+.tag{
+  font-size:11px; color:var(--c-muted); background:var(--c-surface3);
+  padding:2px 8px; border-radius:999px; border:1px solid var(--c-border);
+}
+
+/* ─ note 3 états (discrète) ─ */
+.rate{display:flex; gap:5px; margin-top:9px}
+.row.right .rate{justify-content:flex-end}
+.dot{
+  width:15px; height:15px; border-radius:50%; cursor:pointer;
+  border:1.5px solid var(--c-faint); background:transparent; padding:0;
+  transition:var(--t-fast); position:relative;
+}
+.dot[data-v="bad"].on{background:var(--c-orange); border-color:var(--c-orange)}
+.dot[data-v="ok"].on{background:var(--c-muted); border-color:var(--c-muted)}
+.dot[data-v="top"].on{background:var(--c-success); border-color:var(--c-success)}
+.dot.dim{opacity:.4}
+
+/* ─ chips jib inline ─ */
+.chips{display:flex; gap:6px; margin-top:9px; flex-wrap:wrap}
+.row.right .chips{justify-content:flex-end}
+.chip{
+  font-size:12px; font-weight:600; color:var(--c-text); background:var(--c-surface3);
+  border:1px solid var(--c-border2); padding:4px 9px; border-radius:var(--r-sm);
+  cursor:pointer; transition:var(--t-fast); user-select:none;
+}
+.chip:active{transform:scale(.95)}
+.chip .lab{color:var(--c-faint); font-size:10px; text-transform:uppercase; letter-spacing:.03em; margin-right:5px}
+.chip.empty{color:var(--c-faint); border-style:dashed}
+.chip.add{color:var(--cat-jib); border-color:var(--cat-jib)33; border-style:dashed}
+
+/* ─ controls carte (flip / del) ─ */
+.card-ctrls{
+  position:absolute; top:8px; display:flex; gap:4px; opacity:0; transition:var(--t-fast);
+}
+.row.left .card-ctrls{right:8px} .row.right .card-ctrls{left:8px}
+.card:hover .card-ctrls{opacity:1}
+.ic{
+  width:26px; height:26px; border-radius:6px; border:1px solid var(--c-border2);
+  background:var(--c-surface); color:var(--c-muted); cursor:pointer; display:grid;
+  place-items:center; font-size:13px; transition:var(--t-fast);
+}
+.ic:hover{color:var(--c-text); border-color:var(--c-border2)}
+.ic.del:hover{color:var(--c-danger); border-color:var(--c-danger)}
+
+/* ─ dock bas ─ */
+.dock{
+  position:absolute; left:0; right:0; bottom:0; padding:16px 22px 22px;
+  background:linear-gradient(0deg, var(--c-bg) 55%, transparent);
+  display:flex; flex-direction:column; gap:13px; align-items:center;
+}
+.sideline{
+  display:flex; align-items:center; gap:10px; font-size:13px; color:var(--c-muted);
+}
+.sidepill{
+  display:flex; align-items:center; gap:6px; background:var(--c-surface2);
+  border:1px solid var(--c-border); border-radius:999px; padding:5px 6px 5px 14px; font-weight:600;
+}
+.sidepill .next{color:var(--c-wake); font-weight:800; min-width:54px}
+.sideflip{
+  border:0; background:var(--c-surface3); color:var(--c-text); width:28px; height:28px;
+  border-radius:50%; cursor:pointer; font-size:14px; transition:var(--t-fast);
+}
+.sideflip:hover{background:var(--c-accent); color:#fff}
+.lockbtn{
+  border:1px solid var(--c-border2); background:transparent; color:var(--c-faint);
+  font:inherit; font-size:12px; font-weight:600; padding:5px 12px; border-radius:999px; cursor:pointer;
+}
+.lockbtn.locked{color:var(--c-ws); border-color:var(--c-ws)66; background:#f59e0b14}
+
+.actions{display:flex; align-items:center; gap:14px}
+.btn{
+  border:1px solid var(--c-border2); background:var(--c-surface2); color:var(--c-text);
+  font:inherit; font-weight:700; font-size:15px; padding:13px 22px; border-radius:var(--r-md);
+  cursor:pointer; display:flex; align-items:center; gap:9px; transition:var(--t-fast);
+}
+.btn:hover{border-color:var(--c-border2); background:var(--c-surface3)}
+.btn .gly{font-size:18px; line-height:1}
+.btn.jib{color:var(--cat-jib)}
+.mic{
+  width:86px; height:86px; border-radius:50%; border:0; cursor:pointer;
+  background:radial-gradient(circle at 35% 30%, #22d3ee, var(--c-wake) 70%);
+  color:#001; font-size:34px; display:grid; place-items:center;
+  box-shadow:0 10px 30px -6px var(--c-wake)88, inset 0 1px 0 #ffffff55;
+  transition:transform var(--t-fast);
+}
+.mic:active{transform:scale(.93)}
+.mic.live{animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 var(--c-wake)66, 0 10px 30px -6px var(--c-wake)88}50%{box-shadow:0 0 0 16px var(--c-wake)00, 0 10px 30px -6px var(--c-wake)88}}
+.mic-cap{font-size:11px; color:var(--c-faint); text-align:center; margin-top:-6px; letter-spacing:.04em}
+
+/* hint dictée live */
+.heard{
+  position:absolute; bottom:178px; left:50%; transform:translateX(-50%);
+  background:#000c; border:1px solid var(--c-wake)55; color:var(--c-wake);
+  padding:8px 18px; border-radius:999px; font-size:14px; font-weight:600; opacity:0;
+  transition:var(--t-mid); pointer-events:none; white-space:nowrap;
+}
+.heard.show{opacity:1; bottom:188px}
+
+/* score résumé en topbar */
+.score{
+  display:flex; gap:14px; align-items:center; margin-left:18px; font-size:13px; color:var(--c-muted);
+}
+.score b{color:var(--c-text); font-size:15px; font-variant-numeric:tabular-nums}
+.score .seg{display:flex; gap:4px; align-items:center}
+.minidot{width:9px;height:9px;border-radius:50%}
+.minidot.bad{background:var(--c-orange)} .minidot.ok{background:var(--c-muted)} .minidot.top{background:var(--c-success)}
+
+::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-thumb{background:var(--c-surface3); border-radius:8px}
+</style>
+</head>
+<body>
+<div class="tablet">
+
+  <div class="topbar">
+    <div class="brand">Wake<b>Ref</b></div>
+    <div class="rider"><span class="num">7</span> Léo M.</div>
+    <div class="score" id="score">
+      <span class="runtime">passage 7/24</span>
+    </div>
+    <div class="disc">
+      <button class="on">Wakeboard</button>
+      <button>Wakeskate</button>
+      <button>Assis</button>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="spine" id="spine">
+      <div class="empty" id="empty">
+        Dicte le premier trick au <b>micro</b>, ou ajoute une passe.<br>
+        Le côté du câble s'alterne tout seul — swipe une carte pour l'inverser.
+      </div>
+    </div>
+  </div>
+
+  <div class="heard" id="heard"></div>
+
+  <div class="dock">
+    <div class="sideline">
+      <span>Prochaine entrée côté</span>
+      <div class="sidepill">
+        <span class="next" id="nextSide">gauche</span>
+        <button class="sideflip" id="flipNext" title="inverser le côté">⇄</button>
+      </div>
+      <button class="lockbtn" id="lock" title="verrouiller le côté (stoppe l'alternance auto)">⟳ auto</button>
+    </div>
+    <div class="actions">
+      <button class="btn" id="addTrick"><span class="gly">＋</span> Trick</button>
+      <button class="mic" id="mic" title="maintenir pour dicter">🎤</button>
+      <button class="btn jib" id="addJib"><span class="gly">＋</span> Jib</button>
+    </div>
+    <div class="mic-cap">maintenir le micro pour dicter — relâcher pour valider</div>
+  </div>
+
+</div>
+
+<script>
+// ── démo : tricks "dictés" qui tombent au micro ───────────────
+const DEMO = [
+  {name:'HS FS 360', ctx:'air', cat:'spin', tags:['heelside','front']},
+  {name:'Tantrum',   ctx:'kicker', cat:'tantrum', tags:['toeside']},
+  {name:'Half Cab Roll', ctx:'air', cat:'railey', tags:['switch']},
+  {name:'Pete Rose',  ctx:'kicker', cat:'railey', tags:['heelside']},
+  {name:'TS BS 540',  ctx:'air', cat:'spin', tags:['toeside','back']},
+  {name:'Moby Dick',  ctx:'kicker', cat:'railey', tags:['toeside']},
+  {name:'Backside 313', ctx:'air', cat:'spin', tags:['back']},
+];
+let demoI = 0;
+
+// ── chips jib : valeurs cyclables ─────────────────────────────
+const JIB_CHIPS = {
+  appr:  {lab:'appr', vals:['HS','TS']},
+  in:    {lab:'in',   vals:['–','270','450','BS','FS']},
+  slide: {lab:'slide',vals:['bs board','fs board','nose','tail','lip','blunt']},
+  out:   {lab:'out',  vals:['–','270','450','BS','FS']},
+};
+const RATES = ['bad','ok','top'];
+
+const state = { items:[], nextSide:'left', locked:false, seq:0 };
+const spine = document.getElementById('spine');
+const empty = document.getElementById('empty');
+const nextSideEl = document.getElementById('nextSide');
+const heard = document.getElementById('heard');
+
+function sideLabel(s){return s==='left'?'gauche':'droite'}
+function refreshNext(){ nextSideEl.textContent = sideLabel(state.nextSide) }
+
+function consumeSide(){
+  const s = state.nextSide;
+  if(!state.locked) state.nextSide = s==='left'?'right':'left';
+  refreshNext();
+  return s;
+}
+
+function addTrick(t){
+  state.items.push({type:'trick', side:consumeSide(), rate:'ok', seq:++state.seq, ...t});
+  render();
+}
+function addJib(){
+  state.items.push({type:'jib', side:consumeSide(), rate:'ok', seq:++state.seq,
+    chips:{appr:'HS', in:'–', slide:'bs board', out:'–'}});
+  render();
+}
+
+function flipSide(item){
+  const card = document.querySelector(`[data-seq="${item.seq}"] .card`);
+  if(card){card.classList.add('flipping'); setTimeout(()=>card.classList.remove('flipping'),200)}
+  item.side = item.side==='left'?'right':'left';
+  render();
+}
+function cycleChip(item, key){
+  const c = JIB_CHIPS[key]; const cur = item.chips[key];
+  const i = c.vals.indexOf(cur);
+  item.chips[key] = c.vals[(i+1)%c.vals.length];
+  render();
+}
+function setRate(item, v){ item.rate = v; render(); }
+function del(item){ state.items = state.items.filter(x=>x!==item); render(); }
+
+// swipe horizontal sur une carte → flip côté
+function attachSwipe(cardEl, item){
+  let x0=null;
+  cardEl.addEventListener('pointerdown', e=>{ if(e.target.closest('.dot,.chip,.ic')) return; x0=e.clientX; });
+  cardEl.addEventListener('pointerup', e=>{
+    if(x0===null) return; const dx=e.clientX-x0; x0=null;
+    if(Math.abs(dx)>55) flipSide(item);
+  });
+}
+
+function render(){
+  empty.style.display = state.items.length? 'none':'block';
+  [...spine.querySelectorAll('.row')].forEach(r=>r.remove());
+
+  const sorted = [...state.items].sort((a,b)=>a.seq-b.seq);
+  sorted.forEach(item=>{
+    const row = document.createElement('div');
+    row.className = `row ${item.side} ${item.type}`;
+    row.dataset.seq = item.seq;
+
+    const rateHtml = `<div class="rate">${RATES.map(v=>
+      `<button class="dot ${item.rate===v?'on':'dim'}" data-v="${v}" title="${({bad:'pas terrible',ok:'ok',top:'extra'})[v]}"></button>`
+    ).join('')}</div>`;
+
+    let body;
+    if(item.type==='trick'){
+      body = `
+        <div class="card-top">
+          <span class="name">${item.name}</span>
+          <span class="kbadge ${item.ctx}">${item.ctx==='air'?'air':item.ctx}</span>
+        </div>
+        <div class="tags">${item.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+        ${rateHtml}`;
+    } else {
+      const chip = (k)=>`<span class="chip ${item.chips[k]==='–'?'empty':''}" data-chip="${k}"><span class="lab">${JIB_CHIPS[k].lab}</span>${item.chips[k]}</span>`;
+      body = `
+        <div class="card-top">
+          <span class="name">Passe jib</span>
+          <span class="kbadge jib">jib</span>
+        </div>
+        <div class="chips">
+          ${chip('appr')}${chip('in')}${chip('slide')}${chip('out')}
+          <span class="chip add" data-add="1">+ trick</span>
+        </div>
+        ${rateHtml}`;
+    }
+
+    row.innerHTML = `
+      <div class="seq">${item.seq}</div>
+      <div class="connector"></div>
+      <div class="node"></div>
+      <div class="card">
+        ${body}
+        <div class="card-ctrls">
+          <button class="ic flip" title="changer de côté">⇄</button>
+          <button class="ic del" title="supprimer">✕</button>
+        </div>
+      </div>`;
+
+    const card = row.querySelector('.card');
+    card.querySelectorAll('.dot').forEach(d=>d.onclick=()=>setRate(item, d.dataset.v));
+    card.querySelectorAll('[data-chip]').forEach(c=>c.onclick=()=>cycleChip(item, c.dataset.chip));
+    row.querySelector('.flip').onclick=()=>flipSide(item);
+    row.querySelector('.del').onclick=()=>del(item);
+    attachSwipe(card, item);
+
+    spine.appendChild(row);
+  });
+
+  // score résumé (compte par note)
+  const counts = {bad:0,ok:0,top:0};
+  state.items.forEach(i=>counts[i.rate]++);
+  const sc = document.getElementById('score');
+  sc.innerHTML = `<span class="runtime">passage 7/24</span>` + (state.items.length?
+    `<span class="seg"><b>${state.items.length}</b> entrées</span>
+     <span class="seg"><span class="minidot top"></span>${counts.top}
+       <span class="minidot ok"></span>${counts.ok}
+       <span class="minidot bad"></span>${counts.bad}</span>`:'');
+}
+
+// ── micro simulé : maintenir = dicter, relâcher = déposer ──────
+const mic = document.getElementById('mic');
+let micTimer=null;
+function startMic(){
+  mic.classList.add('live');
+  const t = DEMO[demoI % DEMO.length];
+  heard.textContent = '« '+t.name.toLowerCase()+' »';
+  heard.classList.add('show');
+}
+function endMic(){
+  mic.classList.remove('live');
+  heard.classList.remove('show');
+  const t = DEMO[demoI % DEMO.length]; demoI++;
+  addTrick(t);
+}
+mic.addEventListener('pointerdown', e=>{e.preventDefault(); startMic();});
+mic.addEventListener('pointerup', e=>{e.preventDefault(); endMic();});
+mic.addEventListener('pointerleave', ()=>{ if(mic.classList.contains('live')) endMic(); });
+
+document.getElementById('addTrick').onclick=()=>{
+  const t = DEMO[demoI % DEMO.length]; demoI++; addTrick(t);
+};
+document.getElementById('addJib').onclick=addJib;
+document.getElementById('flipNext').onclick=()=>{
+  state.nextSide = state.nextSide==='left'?'right':'left'; refreshNext();
+};
+document.getElementById('lock').onclick=function(){
+  state.locked=!state.locked;
+  this.classList.toggle('locked', state.locked);
+  this.textContent = state.locked? '🔒 '+sideLabel(state.nextSide) : '⟳ auto';
+};
+
+// push-to-talk clavier (espace), comme /judge/voix
+window.addEventListener('keydown', e=>{
+  if(e.code==='Space' && !e.repeat && !mic.classList.contains('live')){e.preventDefault(); startMic();}
+});
+window.addEventListener('keyup', e=>{
+  if(e.code==='Space' && mic.classList.contains('live')){e.preventDefault(); endMic();}
+});
+
+refreshNext();
+render();
+</script>
+</body>
+</html>

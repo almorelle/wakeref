@@ -61,6 +61,14 @@ export async function countsBySlug() {
   return m
 }
 
+// Nombre d'échantillons par nature ('trick' | 'jib') — pour un compteur dédié jib.
+export async function countsByKind() {
+  const rows = await allSamples()
+  const m = {}
+  for (const r of rows) { const k = r.kind || 'trick'; m[k] = (m[k] || 0) + 1 }
+  return m
+}
+
 export async function countSamples() {
   const db = await open()
   return new Promise((resolve, reject) => {
@@ -89,12 +97,28 @@ export async function deleteSample(id) {
   })
 }
 
-export async function clearSamples() {
+// Vide le dataset. `kind` ('trick' | 'jib') restreint la suppression à cette nature
+// (le store est PARTAGÉ entre les deux collectes) ; sans kind → tout.
+export async function clearSamples(kind = null) {
+  if (!kind) {
+    const db = await open()
+    return new Promise((resolve, reject) => {
+      const r = tx(db, 'readwrite').clear()
+      r.onsuccess = () => resolve()
+      r.onerror = () => reject(r.error)
+    })
+  }
+  const ids = (await allSamples()).filter(r => (r.kind || 'trick') === kind).map(r => r.id)
   const db = await open()
   return new Promise((resolve, reject) => {
-    const r = tx(db, 'readwrite').clear()
-    r.onsuccess = () => resolve()
-    r.onerror = () => reject(r.error)
+    const store = tx(db, 'readwrite')
+    let pending = ids.length
+    if (!pending) return resolve()
+    for (const id of ids) {
+      const d = store.delete(id)
+      d.onerror = () => reject(d.error)
+      d.onsuccess = () => { if (--pending === 0) resolve() }
+    }
   })
 }
 
@@ -102,23 +126,27 @@ const csvCell = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`
 
 // Construit un .zip au format « audiofolder » HuggingFace : audio/NNNN.webm +
 // metadata.csv (file_name,transcription,…). JSZip en dynamic import (hors bundle).
-// `transcription` = nom canonique du trick confirmé (cible d'entraînement) ; on
-// joint aussi le texte STT brut et le slug pour le tri/nettoyage ultérieur.
-export async function exportZip() {
-  const rows = await allSamples()
+// `transcription` = cible d'entraînement : nom canonique du trick confirmé (kind
+// 'trick') ou texte corrigé de la passe (kind 'jib'). On joint le texte STT brut,
+// le slug, et le flag grammaire pour le tri/nettoyage ultérieur.
+// `kind` (optionnel) filtre l'export : 'trick' | 'jib' | undefined (= tout).
+export async function exportZip(kind = null) {
+  let rows = await allSamples()
+  if (kind) rows = rows.filter(r => (r.kind || 'trick') === kind)
   if (!rows.length) return null
   const { default: JSZip } = await import('jszip')
   const zip = new JSZip()
   const audio = zip.folder('audio')
   const ext = (mime) => (mime?.includes('ogg') ? 'ogg' : mime?.includes('wav') ? 'wav' : 'webm')
-  const lines = ['file_name,transcription,stt,slug,discipline,model,created_at']
+  const lines = ['file_name,transcription,stt,kind,slug,discipline,model,gram,created_at']
   rows.forEach((r, i) => {
     const n = String(i + 1).padStart(4, '0')
     const name = `${n}.${ext(r.mime)}`
     if (r.blob) audio.file(name, r.blob)
     lines.push([
       csvCell(`audio/${name}`), csvCell(r.labelName), csvCell(r.sttText),
-      csvCell(r.labelSlug), csvCell(r.discipline), csvCell(r.model),
+      csvCell(r.kind || 'trick'), csvCell(r.labelSlug), csvCell(r.discipline),
+      csvCell(r.model), csvCell(r.gram ? 1 : ''),
       csvCell(new Date(r.createdAt).toISOString()),
     ].join(','))
   })

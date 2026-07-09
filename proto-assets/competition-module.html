@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>WakeRef — Module compétition (setup + saisie immersive)</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --c-bg:#0a0a0f; --c-surface:#111118; --c-surface2:#1a1a24; --c-surface3:#22222f;
+  --c-border:#ffffff26; --c-border2:#ffffff3a;
+  --c-text:#f4f4fb; --c-muted:#b2b2ca; --c-faint:#7a7a96;
+  --c-accent:#3b82f6; --c-wake:#06b6d4; --c-ws:#f59e0b; --c-seated:#a855f7;
+  --c-danger:#ef4444; --c-success:#22c55e; --c-orange:#f59e0b; --cat-jib:#22c55e;
+  --c-int:#fb7185; --c-ext:#818cf8;  /* axe côté : intérieur (rose) / extérieur (indigo) — dimension distincte des couleurs de type */
+  --font-display:'Syne',sans-serif; --font-body:'DM Sans',sans-serif;
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
+  --t-fast:120ms ease; --t-mid:200ms ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:radial-gradient(120% 80% at 50% -10%, #14141f 0%, var(--c-bg) 55%);color:var(--c-text);font-family:var(--font-body);-webkit-font-smoothing:antialiased;overflow:hidden;display:flex;justify-content:center}
+.tablet{width:min(100vw,1180px);height:100vh;display:flex;flex-direction:column;position:relative}
+
+.topbar{display:flex;align-items:center;gap:14px;padding:12px 22px;border-bottom:1px solid var(--c-border);flex:none}
+.brand{font-family:var(--font-display);font-weight:800;font-size:18px;letter-spacing:-.02em}
+.brand b{color:var(--c-wake)}
+.code{font-size:12px;color:var(--c-faint);background:var(--c-surface2);border:1px solid var(--c-border);padding:4px 10px;border-radius:999px}
+.code b{color:var(--c-wake);letter-spacing:.12em}
+.tabs{margin-left:auto;display:flex;gap:6px;background:var(--c-surface);padding:4px;border-radius:999px;border:1px solid var(--c-border)}
+.tabs button{border:0;background:transparent;color:var(--c-muted);font:inherit;font-weight:700;font-size:13px;padding:7px 18px;border-radius:999px;cursor:pointer;transition:var(--t-fast)}
+.tabs button.on{background:var(--c-wake);color:#001}
+
+.view{flex:1;overflow-y:auto;padding:22px 0 180px}
+.wrap{max-width:900px;margin:0 auto;padding:0 24px}
+h2{font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+.hide{display:none!important}
+
+/* ───── SETUP ───── */
+.cablespin{display:flex;align-items:center;gap:16px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:var(--r-md);padding:12px 16px;margin-bottom:18px;flex-wrap:wrap}
+.csLab{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-muted)}
+.csToggle{display:flex;gap:8px}
+.csToggle button{border:1.5px solid var(--c-border2);background:var(--c-surface3);color:var(--c-muted);font:inherit;font-weight:700;font-size:14px;padding:9px 16px;border-radius:var(--r-sm);cursor:pointer;text-align:left;line-height:1.15}
+.csToggle button small{display:block;font-weight:500;font-size:10px;color:var(--c-faint);margin-top:2px}
+.csToggle button.on{border-color:var(--c-wake);background:#06b6d418;color:var(--c-text)}
+.csToggle button.on small{color:var(--c-muted)}
+.section{background:var(--c-surface2);border:1px solid var(--c-border);border-radius:var(--r-md);padding:12px 14px;margin-bottom:10px;display:flex;flex-wrap:wrap;align-items:stretch;gap:14px}
+.zextra{flex-basis:100%;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-top:1px dashed var(--c-border);padding-top:9px;margin-top:2px}
+.section.twin{border-style:dashed;background:#a855f70e}
+.twinBody{flex:1;min-width:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.twinTag{font-size:11px;font-weight:800;color:var(--c-seated);background:#a855f71e;border:1px solid #a855f755;border-radius:999px;padding:4px 10px;white-space:nowrap}
+.twinRef{font-size:12px;color:var(--c-faint)}
+.twinSum{display:flex;gap:6px;flex-wrap:wrap}
+.twinChip{font-size:11px;font-weight:700;color:var(--c-muted);background:var(--c-surface3);border:1px solid var(--c-border2);border-radius:5px;padding:3px 8px}
+.twinChip.kicker{color:#f59e0b;border-color:#f59e0b55}
+.twinChip.jib{color:#22c55e;border-color:#22c55e55}
+.twinChip.air{color:#06b6d4;border-color:#06b6d455}
+.zx{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--c-muted)}
+.zx select{background:var(--c-surface3);border:1.5px solid var(--c-border2);border-radius:var(--r-sm);color:var(--c-text);font:inherit;font-weight:700;font-size:12px;padding:6px 8px}
+button.redtog{border:1.5px solid var(--c-border2);background:var(--c-surface3);color:var(--c-muted);font:inherit;font-weight:700;font-size:12px;padding:7px 12px;border-radius:var(--r-sm);cursor:pointer}
+button.redtog.on{border-color:var(--c-seated);background:#a855f71e;color:var(--c-seated)}
+/* poulie dans le setup */
+.pulleyrow{display:flex;align-items:center;gap:12px;background:#ffffff08;border:1px dashed var(--c-border2);border-radius:var(--r-md);padding:8px 14px;margin-bottom:10px}
+.pnode{width:26px;height:26px;border-radius:50%;background:var(--c-surface3);border:2px solid var(--c-muted);display:grid;place-items:center;font-size:12px;color:var(--c-muted);flex:none}
+.pnode.motor{border-color:var(--c-wake);color:var(--c-wake);background:#06b6d418}
+.pinfo{flex:1;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--c-muted)}
+.pinfo select{background:var(--c-surface3);border:1.5px solid var(--c-border2);border-radius:var(--r-sm);color:var(--c-text);font:inherit;font-weight:800;font-size:14px;padding:6px 8px}
+.pinfo .ptag{font-weight:700;text-transform:none;letter-spacing:0;color:var(--c-wake);font-size:11px}
+.sIdx{width:24px;height:24px;border-radius:50%;background:var(--c-surface3);display:grid;place-items:center;font-weight:800;font-size:12px;color:var(--c-muted);flex:none;align-self:center}
+.sides{flex:1;min-width:0;display:flex;gap:14px}
+.sideCol{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.sideHead{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-faint)}
+.slot{background:var(--c-surface3);border:1px solid var(--c-border2);border-radius:var(--r-sm);padding:8px 10px;display:flex;align-items:center;gap:8px;min-height:42px;min-width:0}
+.slot.empty{border-style:dashed;cursor:pointer;color:var(--c-faint);justify-content:center;font-weight:600;font-size:13px}
+.slot.empty:hover{color:var(--c-text);border-color:var(--c-text)}
+.kindToggle{display:flex;gap:3px}
+.kindToggle button{border:1px solid var(--c-border2);background:transparent;color:var(--c-muted);font:inherit;font-weight:800;font-size:11px;padding:4px 9px;border-radius:5px;cursor:pointer}
+.kindToggle button.on[data-k="kicker"]{background:var(--c-ws);color:#001;border-color:var(--c-ws)}
+.kindToggle button.on[data-k="jib"]{background:var(--cat-jib);color:#001;border-color:var(--cat-jib)}
+.slot input{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--c-border2);color:var(--c-text);font:inherit;font-size:13px;padding:3px 2px}
+.slot input:focus{outline:0;border-color:var(--c-wake)}
+.slot .rm{border:0;background:transparent;color:var(--c-faint);cursor:pointer;font-size:13px}
+.airband{flex:1;display:flex;align-items:center;gap:10px;color:var(--c-wake);font-weight:700;font-size:14px}
+.airband .tag{font-size:11px;color:var(--c-faint);font-weight:500;font-style:italic}
+.sCtrls{display:flex;flex-direction:column;gap:5px;justify-content:center}
+.mini{width:28px;height:28px;border-radius:6px;border:1px solid var(--c-border2);background:var(--c-surface);color:var(--c-muted);cursor:pointer;display:grid;place-items:center;font-size:12px}
+.mini:hover{color:var(--c-text)} .mini.del:hover{color:var(--c-danger);border-color:var(--c-danger)}
+/* barres d'insertion « entre deux poulies » (avant chaque poulie) ET « après la dernière poulie » (addSection) : même format */
+.pInsert,.addSection{display:flex;gap:8px;justify-content:center;margin:2px 0 8px;opacity:.5;transition:opacity var(--t-fast)}
+.pInsert:hover,.addSection:hover{opacity:1}
+.pInsert button,.addSection button{border:1px dashed var(--c-border2);background:transparent;color:var(--c-muted);font:inherit;font-weight:700;font-size:12px;padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;display:flex;gap:5px;align-items:center}
+.pInsert button:hover,.addSection button:hover{color:var(--c-text);border-color:var(--c-text)}
+/* vider le parcours */
+.clearWrap{margin-top:22px;padding-top:16px;border-top:1px solid var(--c-border)}
+.clearParcours{border:1px solid var(--c-danger)44;background:transparent;color:var(--c-danger);font:inherit;font-weight:700;font-size:13px;padding:10px 16px;border-radius:var(--r-md);cursor:pointer}
+.clearParcours:hover{background:var(--c-danger)14}
+.clearParcours.armed{background:var(--c-danger);color:#fff;border-color:var(--c-danger)}
+/* setup : éditeur + aperçu live du câble */
+.setupGrid{display:flex;gap:20px;align-items:flex-start}
+.setupMain{flex:1;min-width:0}
+.setupAside{flex:none;width:260px;position:sticky;top:14px}
+.setupMapCard{background:var(--c-surface2);border:1px solid var(--c-border);border-radius:var(--r-lg);padding:12px 12px 10px}
+.smTitle{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-muted);margin-bottom:4px}
+.setupMap{height:300px;display:flex}
+.setupMap .mmSvg{height:100%}
+/* dans la Saisie, la carte d'aperçu remplit toute la colonne latérale */
+.minimap .setupMapCard{flex:1;display:flex;flex-direction:column;min-height:0}
+.minimap .setupMap{flex:1;height:auto;min-height:0}
+.setupMap .mmHint{margin-top:2px}
+.smSummary{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding-top:10px;border-top:1px solid var(--c-border)}
+.smChip{font-size:11px;font-weight:700;color:var(--c-muted);background:var(--c-surface3);border:1px solid var(--c-border2);border-radius:999px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px}
+.smChip.ok{color:#34d399;border-color:#34d39955}
+.smChip.warn{color:var(--c-danger);border-color:var(--c-danger)66}
+@media(max-width:820px){.setupGrid{flex-direction:column}.setupAside{width:100%;position:static}.setupMap{height:240px}}
+
+/* ───── SAISIE (immersive) ───── */
+#viewSaisie{display:flex;flex-direction:column;overflow:hidden;padding:0}
+.saisieBody{flex:1;display:flex;min-height:0;justify-content:center;gap:18px;padding-right:24px}
+.minimap{flex:none;width:270px;padding:8px 0 6px 24px;display:flex;flex-direction:column;overflow:hidden}
+.mmRider{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--c-text);line-height:1.15;margin-bottom:1px}
+.mmRun{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--c-wake);margin-bottom:8px}
+.mmSvg{flex:1;min-height:0;width:100%}
+.mmHint{font-size:10px;color:var(--c-faint);text-align:center;margin-top:6px;line-height:1.3}
+.mmEmpty{font-size:11px;color:var(--c-faint);line-height:1.4;padding:8px 4px}
+.saisieHead{flex:none;padding:14px 24px 8px}
+.riderbar{display:flex;align-items:center;gap:12px;max-width:720px;margin:0 auto}
+.riderbar .num{width:30px;height:30px;border-radius:50%;background:var(--c-wake);color:#001;font-weight:800;display:grid;place-items:center;flex:none}
+.riderbar input{background:var(--c-surface2);border:1px solid var(--c-border);border-radius:var(--r-md);color:var(--c-text);font:inherit;font-weight:700;font-size:16px;padding:9px 14px;width:190px}
+.riderbar input:focus{outline:0;border-color:var(--c-wake)}
+.ridernameRo{font-family:var(--font-display);font-weight:800;font-size:17px;color:var(--c-text)}
+.spinBadge{font-size:11px;font-weight:800;color:var(--c-muted);background:var(--c-surface2);border:1px solid var(--c-border);padding:5px 11px;border-radius:999px;white-space:nowrap}
+.runsdone{margin-left:auto;font-size:13px;color:var(--c-muted)} .runsdone b{color:var(--c-text)}
+
+.runstage{flex:0 1 760px;display:flex;flex-direction:column;min-height:0;max-width:760px;width:100%;margin:0;padding:6px 0 0}
+
+/* peek (prochaine zone, futur) */
+.peek{flex:none;background:linear-gradient(180deg,var(--c-surface) 0%,transparent 130%);border:1px dashed var(--c-border2);border-radius:var(--r-md);padding:9px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;opacity:.72;transition:var(--t-fast)}
+.peek:hover{opacity:1;border-color:var(--c-wake)55}
+.peek .arrow{color:var(--c-faint);font-size:15px}
+.peek .plab{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-faint)}
+.peek .pname{font-weight:700;font-size:14px}
+.peek .pmore{margin-left:auto;font-size:11px;color:var(--c-faint)}
+.peek.deck{box-shadow:0 -5px 0 -1px var(--c-surface2),0 -6px 0 -1px var(--c-border2),0 -11px 0 -3px var(--c-surface),0 -12px 0 -3px var(--c-border2)}
+.peek.end{cursor:default;justify-content:center;color:var(--c-faint);font-style:italic;font-size:13px;opacity:.6}
+.peek.end:hover{border-color:var(--c-border2)}
+
+/* petits inserts hors-parcours */
+.insert{flex:none;position:relative;display:flex;justify-content:center;align-items:center;height:30px;z-index:3}
+.insert::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;transform:translateX(-50%);background:repeating-linear-gradient(180deg,var(--c-border2) 0 6px,transparent 6px 12px)}
+.insert button{position:relative;z-index:2;opacity:.5;border:1px solid var(--c-border2);background:var(--c-surface3);color:var(--c-seated);font-weight:800;width:24px;height:24px;padding:0;border-radius:50%;cursor:pointer;font-size:14px;line-height:1;transition:var(--t-fast);display:grid;place-items:center}
+.insert button:hover{opacity:1;border-color:var(--c-seated);transform:scale(1.12)}
+
+/* zone courante (stage) */
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;overflow-y:auto;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:var(--r-lg);padding:16px 18px;position:relative}
+.stage{border-width:2.5px}
+.stage.cur-kicker{border-color:var(--c-ws);box-shadow:0 0 0 4px var(--c-ws)26, 0 0 22px var(--c-ws)33}
+.stage.cur-jib{border-color:var(--cat-jib);box-shadow:0 0 0 4px var(--cat-jib)26, 0 0 22px var(--cat-jib)33}
+.stage.cur-air{border-color:var(--c-wake);box-shadow:0 0 0 4px var(--c-wake)26, 0 0 22px var(--c-wake)33}
+.stage.cur-adhoc{border-color:var(--c-seated);box-shadow:0 0 0 4px var(--c-seated)26, 0 0 22px var(--c-seated)33}
+.stage.fallen{border-color:var(--c-danger)66;box-shadow:0 0 0 1px var(--c-danger)33}
+/* transitions de zone — sélectionnables dans la Saisie */
+.stage[class*="anim-"]{will-change:transform,opacity,filter}
+@keyframes soft-next{from{opacity:0;transform:translateY(-26px)}to{opacity:1;transform:none}}
+@keyframes soft-prev{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:none}}
+.stage.anim-soft-next{animation:soft-next .26s cubic-bezier(.2,.8,.2,1)}
+.stage.anim-soft-prev{animation:soft-prev .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes push-next{from{opacity:0;transform:translateY(-96px)}to{opacity:1;transform:none}}
+@keyframes push-prev{from{opacity:0;transform:translateY(96px)}to{opacity:1;transform:none}}
+.stage.anim-push-next{animation:push-next .3s cubic-bezier(.16,1,.3,1)}
+.stage.anim-push-prev{animation:push-prev .3s cubic-bezier(.16,1,.3,1)}
+@keyframes rebond-next{from{opacity:0;transform:translateY(-72px)}to{opacity:1;transform:none}}
+@keyframes rebond-prev{from{opacity:0;transform:translateY(72px)}to{opacity:1;transform:none}}
+.stage.anim-rebond-next{animation:rebond-next .44s cubic-bezier(.34,1.56,.64,1)}
+.stage.anim-rebond-prev{animation:rebond-prev .44s cubic-bezier(.34,1.56,.64,1)}
+@keyframes zoom-next{from{opacity:0;transform:translateY(-18px) scale(.9)}to{opacity:1;transform:none}}
+@keyframes zoom-prev{from{opacity:0;transform:translateY(18px) scale(.9)}to{opacity:1;transform:none}}
+.stage.anim-zoom-next{animation:zoom-next .3s cubic-bezier(.2,.8,.2,1)}
+.stage.anim-zoom-prev{animation:zoom-prev .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes flip-next{from{opacity:0;transform:perspective(1000px) rotateX(16deg) translateY(-26px)}to{opacity:1;transform:perspective(1000px) rotateX(0) translateY(0)}}
+@keyframes flip-prev{from{opacity:0;transform:perspective(1000px) rotateX(-16deg) translateY(26px)}to{opacity:1;transform:perspective(1000px) rotateX(0) translateY(0)}}
+.stage.anim-flip-next{animation:flip-next .34s ease-out;transform-origin:top center}
+.stage.anim-flip-prev{animation:flip-prev .34s ease-out;transform-origin:bottom center}
+@keyframes flou-next{from{opacity:0;filter:blur(10px);transform:translateY(-16px)}to{opacity:1;filter:blur(0);transform:none}}
+@keyframes flou-prev{from{opacity:0;filter:blur(10px);transform:translateY(16px)}to{opacity:1;filter:blur(0);transform:none}}
+.stage.anim-flou-next{animation:flou-next .32s ease-out}
+.stage.anim-flou-prev{animation:flou-prev .32s ease-out}
+@keyframes glow-next{0%{opacity:0;transform:translateY(-30px)}55%{box-shadow:0 0 26px 2px var(--c-wake)}100%{opacity:1;transform:none}}
+@keyframes glow-prev{0%{opacity:0;transform:translateY(30px)}55%{box-shadow:0 0 26px 2px var(--c-wake)}100%{opacity:1;transform:none}}
+.stage.anim-glow-next{animation:glow-next .4s ease-out}
+.stage.anim-glow-prev{animation:glow-prev .4s ease-out}
+@keyframes deck-next{0%{opacity:.1;transform:translateY(-52px) scale(.78)}55%{box-shadow:0 28px 55px #000a}100%{opacity:1;transform:none}}
+@keyframes deck-prev{0%{opacity:.1;transform:translateY(52px) scale(.78)}55%{box-shadow:0 -20px 45px #0009}100%{opacity:1;transform:none}}
+.stage.anim-deck-next{animation:deck-next .38s cubic-bezier(.16,1,.3,1)}
+.stage.anim-deck-prev{animation:deck-prev .38s cubic-bezier(.16,1,.3,1)}
+/* transition à deux temps : la courante se range dessous, la suivante s'ouvre */
+.stage[class*="stage-"]{will-change:transform,opacity}
+@keyframes leave-next{to{transform:translateY(70px) scale(.78);opacity:0}}
+@keyframes leave-prev{to{transform:translateY(-70px) scale(.78);opacity:0}}
+.stage.stage-leave-next{animation:leave-next .16s ease-in forwards}
+.stage.stage-leave-prev{animation:leave-prev .16s ease-in forwards}
+@keyframes open-next{from{opacity:.15;transform:translateY(-32px) scaleY(.66);transform-origin:top center}to{opacity:1;transform:none}}
+@keyframes open-prev{from{opacity:.15;transform:translateY(32px) scaleY(.66);transform-origin:bottom center}to{opacity:1;transform:none}}
+.stage.stage-open-next{animation:open-next .3s cubic-bezier(.16,1,.3,1)}
+.stage.stage-open-prev{animation:open-prev .3s cubic-bezier(.16,1,.3,1)}
+/* pile "à venir" au-dessus + barres d'insertion */
+/* DECK : zones à venir en cartes PLEINE TAILLE derrière la courante, tops qui dépassent */
+/* zone courante à HAUTEUR FIXE : le deck = espace des peeks (--room) + hauteur constante de la zone.
+   Ainsi la pile du passé (flex:1, scrollable) ne rétrécit JAMAIS la zone courante → plus d'overlap. */
+.deck{position:relative;flex:none;--stageH:clamp(360px,50vh,540px);height:calc(var(--room,0px) + var(--stageH));min-height:0}
+.deck .stage{position:absolute;left:0;right:0;top:var(--room,0);bottom:0;z-index:10}
+.upCard{position:absolute;left:0;right:0;top:var(--room,0);bottom:0;background:var(--c-surface2);border:1px solid var(--c-border2);border-radius:var(--r-lg);box-shadow:0 -8px 24px #0006;cursor:pointer;overflow:hidden;transition:opacity var(--t-fast),border-color var(--t-fast)}
+.upCard:hover{border-color:var(--c-wake)88}
+.upHdr{display:flex;gap:10px;align-items:center;padding:7px 16px 0}
+.upn{font-weight:800;font-size:11px;color:var(--c-faint);text-transform:uppercase;letter-spacing:.05em;flex:none}
+.upl{font-size:13px;font-weight:600;color:var(--c-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.insertBar{width:100%;border:1px dashed var(--c-border2);background:transparent;color:var(--c-seated);font:inherit;font-weight:700;font-size:12px;padding:7px;border-radius:var(--r-sm);cursor:pointer;margin:6px 0}
+.insertBar:hover{border-color:var(--c-seated);background:#a855f712}
+.stage.ghost{overflow:hidden;box-shadow:0 24px 60px #000a}
+.animpick{display:flex;align-items:center;gap:8px;max-width:720px;margin:8px auto 0;font-size:12px;color:var(--c-faint)}
+.animpick select{background:var(--c-surface2);border:1px solid var(--c-border2);color:var(--c-text);font:inherit;font-size:12px;padding:5px 8px;border-radius:var(--r-sm);cursor:pointer}
+/* en-tête = orientation secondaire → dégradé (le n° de zone n'est pas le geste) */
+.stageTop{display:flex;align-items:center;gap:8px;margin-bottom:2px;opacity:.8}
+.stageIdx{font-family:var(--font-display);font-weight:800;font-size:12.5px;color:var(--c-faint);text-transform:uppercase;letter-spacing:.06em}
+.kbadge{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:5px;color:#001;white-space:nowrap}
+.kbadge.kicker{background:var(--c-ws)} .kbadge.jib{background:var(--cat-jib)} .kbadge.air{background:var(--c-wake)} .kbadge.adhoc{background:var(--c-seated)}
+.kbadge.pass{background:transparent;color:var(--c-seated);border:1px solid #a855f766;margin-left:6px}
+.stageHint{font-size:11.5px;color:var(--c-faint);margin-bottom:14px;line-height:1.35}
+/* corps : ne rétrécit pas sous son contenu (module) → la note ne chevauche plus les actions.
+   Variante air : le seau scrolle DEDANS, le bouton dicter reste visible en bas. */
+.stageBody{flex:1 0 auto;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.stageBody.air-body{flex:1 1 auto;justify-content:flex-start;gap:8px;min-height:0}
+.stageBody.air-body .bucket{flex:1;min-height:0;overflow-y:auto;margin:0}
+.airmicRow{flex:none;display:flex;margin-top:2px}
+
+/* choix de côté = deux gros boutons placés gauche/droite selon le sens du câble */
+.sideRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:6px 0}
+.bigSide{border:1.5px solid var(--c-border2);background:var(--c-surface3);color:var(--c-text);font:inherit;padding:20px 14px;border-radius:var(--r-md);cursor:pointer;text-align:center;transition:var(--t-fast)}
+.bigSide:hover{border-color:var(--c-accent);background:#3b82f612}
+.bigSide .lr{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--c-faint);display:block;margin-bottom:5px}
+.bigSide .sd{font-weight:800;font-size:17px;display:block}
+.bigSide .kd{font-size:12px;font-weight:600;margin-top:5px}
+.bigSide .kd.kicker{color:var(--c-ws)} .bigSide .kd.jib{color:var(--cat-jib)} .bigSide .kd.empty{color:var(--c-faint);font-weight:500;font-style:italic}
+.riderMark{text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--c-faint);margin-top:6px}
+
+/* trick/jib saisi dans la zone courante */
+.chosenSide{display:flex;align-items:center;gap:9px;margin-bottom:12px;font-size:13px;color:var(--c-muted)}
+.chosenSide b{color:var(--c-text);font-size:15px}
+.chosenSide .lrtag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--c-faint);border:1px solid var(--c-border2);border-radius:4px;padding:1px 6px}
+.chosenSide .swap{margin-left:auto;border:1px solid var(--c-border2);background:transparent;color:var(--c-muted);font:inherit;font-weight:600;font-size:12px;padding:5px 11px;border-radius:var(--r-sm);cursor:pointer}
+.chosenSide .swap:hover{color:var(--c-text);border-color:var(--c-text)}
+.fillrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* geste principal = héros : bouton dicter grand et surélevé */
+.micbtn{border:0;border-radius:999px;background:var(--c-wake);color:#001;font-weight:800;font-size:18px;padding:18px 34px;min-height:60px;cursor:pointer;box-shadow:0 6px 20px #06b6d43a}
+.micbtn:active{transform:scale(.96)}
+.freein{flex:1;min-width:180px;background:var(--c-surface3);border:1px solid var(--c-border2);border-radius:var(--r-sm);color:var(--c-text);font:inherit;font-size:15px;padding:11px 13px}
+.freein:focus{outline:0;border-color:var(--c-seated)}
+.trickName{font-family:var(--font-display);font-weight:800;font-size:24px;margin:2px 0 12px}
+/* figure définie = champ ÉDITABLE (même dictée), police standard, s'agrandit sur 2 lignes (passes jib longues) */
+.trickEdit{font-family:var(--font-body);font-weight:600;font-size:16px;line-height:1.35;background:var(--c-surface3);border:1px solid var(--c-border2);border-radius:var(--r-sm);color:var(--c-text);padding:9px 12px;min-width:150px;max-width:340px;flex:1;resize:none;overflow:hidden}
+.trickEdit:focus{outline:0;border-color:var(--c-wake)}
+.micbtn.micxs{min-height:46px;padding:0 16px;font-size:17px;box-shadow:none}
+.airedit{flex:1;min-width:90px;background:transparent;border:0;border-bottom:1px dashed var(--c-border2);color:var(--c-text);font:inherit;font-weight:700;font-size:15px;padding:3px 2px}
+.airedit:focus{outline:0;border-bottom-color:var(--c-wake)}
+/* bloc réduit à son contenu → gauche/droite le plaquent VRAIMENT sur un bord (int = un côté, ext = l'autre) */
+.entryWrap{width:fit-content;max-width:100%;display:flex;flex-direction:column;gap:11px}
+.entryWrap.pos-c{align-self:center;align-items:center;text-align:center}
+.entryWrap.pos-l{align-self:flex-start;align-items:flex-start;text-align:left}
+.entryWrap.pos-r{align-self:flex-end;align-items:flex-end;text-align:right}
+.pickSidePrompt{font-family:var(--font-display);font-weight:800;font-size:19px;color:var(--c-muted);letter-spacing:.01em;text-align:center}
+.sideRail{display:flex;justify-content:space-between;gap:12px;width:100%;margin-bottom:10px}
+/* rail physique : deux gros blocs plaqués aux bords, colorés par côté (int rose / ext indigo) */
+.sopt{flex:1;max-width:47%;border:2px solid var(--c-border2);background:var(--c-surface3);color:var(--c-text);font:inherit;font-weight:800;font-size:16px;padding:18px 18px;min-height:62px;border-radius:var(--r-md);cursor:pointer;transition:var(--t-fast)}
+.sopt.disabled{opacity:.3;cursor:not-allowed;filter:grayscale(.6);pointer-events:none}
+.sopt.s-int{border-color:var(--c-int)}
+.sopt.s-ext{border-color:var(--c-ext)}
+.sopt:hover{filter:brightness(1.12)}
+.sopt.s-int.on{background:var(--c-int);color:#0a0a0f;border-color:var(--c-int)}
+.sopt.s-ext.on{background:var(--c-ext);color:#0a0a0f;border-color:var(--c-ext)}
+/* liseré de côté sur la carte : barre verticale colorée sur le bord physique (gauche/droite) du côté choisi */
+.stage.has-side::before{content:"";position:absolute;top:16px;bottom:16px;width:6px;border-radius:3px;background:var(--sideCol);box-shadow:0 0 10px 0 var(--sideCol);z-index:2}
+.stage.sd-l::before{left:7px}
+.stage.sd-r::before{right:7px}
+.tags{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.tag{font-size:12px;color:var(--c-muted);background:var(--c-surface3);padding:5px 11px;border-radius:999px;border:1px solid var(--c-border);cursor:pointer}
+.tag.on{color:#001;background:var(--c-ws);border-color:var(--c-ws)}
+.chips{display:flex;gap:7px;margin-top:6px;flex-wrap:wrap}
+.chip{font-size:13px;font-weight:600;color:var(--c-text);background:var(--c-surface3);border:1px solid var(--c-border2);padding:7px 12px;border-radius:var(--r-sm);cursor:pointer;user-select:none}
+.chip:active{transform:scale(.95)} .chip .lab{color:var(--c-faint);font-size:10px;text-transform:uppercase;margin-right:6px} .chip.empty{color:var(--c-faint);border-style:dashed}
+
+/* note ANCRÉE en bas de carte : toujours au même endroit, centrée, séparée par un filet */
+.noteAnchor{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid var(--c-border)}
+.noteAnchor .rl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-faint)}
+.rateRow{display:flex;align-items:center;gap:10px;margin-top:16px}
+.rateRow .rl{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-faint)}
+.rate{display:flex;gap:8px}
+.dot{width:32px;height:32px;border-radius:50%;cursor:pointer;border:2px solid var(--c-faint);background:transparent;padding:0;transition:var(--t-fast)}
+.dot[data-v="bad"].on{background:var(--c-orange);border-color:var(--c-orange)}
+.dot[data-v="ok"].on{background:var(--c-muted);border-color:var(--c-muted)}
+.dot[data-v="top"].on{background:var(--c-success);border-color:var(--c-success)}
+.dot.dim{opacity:.35}
+
+/* air bucket dans la zone courante */
+.bucket{display:flex;flex-direction:column;gap:8px;margin:4px 0}
+.airitem{display:flex;align-items:center;gap:10px;background:var(--c-surface3);border:1px solid transparent;border-radius:var(--r-sm);padding:9px 12px;flex-wrap:wrap}
+.airitem .nm{font-weight:600;font-size:15px;flex:1;min-width:90px}
+.airitem .x{border:0;background:transparent;color:var(--c-faint);cursor:pointer;font-size:15px}
+.airitem.draft{border:1px dashed #a855f766;background:#a855f70e}
+.airitem.draft .airedit{color:var(--c-muted);font-style:italic}
+.airidem{border:1.5px solid #22c55e;background:#22c55e1e;color:#22c55e;font:inherit;font-weight:800;font-size:12.5px;padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;white-space:nowrap;font-style:normal}
+.airidem:hover{background:#22c55e30}
+.airempty{color:var(--c-faint);font-style:italic;font-size:13px;text-align:center;padding:6px}
+.postog{display:inline-flex;border:1px solid var(--c-border2);border-radius:999px;overflow:hidden}
+.postog button{border:0;background:transparent;color:var(--c-faint);font:inherit;font-weight:700;font-size:11px;padding:4px 10px;cursor:pointer}
+.postog button.on{background:var(--c-accent);color:#fff}
+
+/* actions bas de zone courante */
+/* barre d'actions = chrome secondaire (skip / vider / chute) → boutons fantômes discrets, centrés */
+.stageActions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;align-items:center;justify-content:center}
+.actbtn{border:1px solid var(--c-border);background:transparent;color:var(--c-faint);font:inherit;font-weight:600;font-size:12.5px;padding:8px 13px;min-height:36px;border-radius:var(--r-sm);cursor:pointer;display:flex;gap:6px;align-items:center;transition:var(--t-fast)}
+.actbtn:hover{color:var(--c-text);border-color:var(--c-border2)}
+.actbtn:disabled{opacity:.3;cursor:default}
+.actbtn:disabled:hover{color:var(--c-faint);border-color:var(--c-border)}
+.actbtn.fall{color:#f87171;border-color:#f8717148}
+.actbtn.fall:hover{color:#fca5a5;background:#ef444416;border-color:#f87171}
+.fallBanner{display:flex;align-items:center;gap:10px;background:#ef444414;border:1px solid var(--c-danger)55;border-radius:var(--r-sm);padding:10px 13px;margin-top:10px;font-size:13px;font-weight:600;color:#fca5a5}
+.fallBanner button{margin-left:auto;border:1px solid var(--c-danger)66;background:transparent;color:#fca5a5;font:inherit;font-weight:700;font-size:12px;padding:5px 11px;border-radius:var(--r-sm);cursor:pointer}
+
+/* pile (zones saisies, passé, départ en bas) */
+.stackWrap{flex:1;min-height:0;overflow-y:auto;padding-top:2px}
+.stackHead{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-faint);text-align:center;margin:6px 0 4px}
+.stackitem{display:flex;align-items:center;gap:10px;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-sm);padding:9px 13px;cursor:pointer;transition:var(--t-fast)}
+.stackitem:hover{border-color:var(--c-border2);background:var(--c-surface2)}
+.stackitem .si{width:20px;height:20px;border-radius:50%;background:var(--c-surface3);display:grid;place-items:center;font-weight:800;font-size:10px;color:var(--c-muted);flex:none}
+.stackitem .rdot{width:9px;height:9px;border-radius:50%;flex:none}
+.stackitem .lrtag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-faint);border:1px solid var(--c-border2);border-radius:4px;padding:1px 5px;flex:none}
+.stackitem .st{font-weight:600;font-size:14px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stackitem .stsub{font-size:11px;color:var(--c-faint)}
+.stackitem.skip .st{color:var(--c-faint);font-style:italic;font-weight:500}
+.stackitem.fallen{border-color:var(--c-danger)44}
+.stackitem.after{opacity:.4}
+.rdot.bad{background:var(--c-orange)} .rdot.ok{background:var(--c-muted)} .rdot.top{background:var(--c-success)} .rdot.none{background:transparent;border:1px solid var(--c-faint)}
+.startMark{text-align:center;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--c-faint);padding:6px 0 2px}
+
+.dock{flex:none;padding:12px 24px 18px;background:linear-gradient(0deg,var(--c-bg) 55%,transparent);display:flex;justify-content:center;gap:12px;align-items:center;position:relative}
+.movePop{position:absolute;bottom:calc(100% - 4px);left:50%;transform:translateX(-50%);width:min(340px,90vw);max-height:46vh;overflow-y:auto;background:var(--c-surface2);border:1.5px solid var(--c-border2);border-radius:var(--r-md);box-shadow:0 12px 40px #000a;padding:8px;z-index:40}
+.movePop .mpHead{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--c-faint);padding:6px 8px 8px}
+.movePop button{display:flex;width:100%;align-items:center;gap:10px;border:1px solid var(--c-border2);background:var(--c-surface3);color:var(--c-text);font:inherit;font-weight:700;font-size:14px;padding:12px 14px;border-radius:var(--r-sm);cursor:pointer;margin-bottom:6px;text-align:left}
+.movePop button:hover{border-color:var(--c-wake);color:var(--c-wake)}
+.movePop button .mpNum{width:24px;height:24px;border-radius:50%;background:var(--c-surface);display:grid;place-items:center;font-size:12px;font-weight:800;color:var(--c-muted);flex:none}
+.movePop button .mpMeta{margin-left:auto;font-size:11px;font-weight:600;color:var(--c-faint)}
+.movePop .mpCancel{justify-content:center;color:var(--c-muted);margin-bottom:0}
+.navbtn{border:1px solid var(--c-border2);background:var(--c-surface2);color:var(--c-text);font:inherit;font-weight:700;font-size:15px;width:48px;height:48px;border-radius:var(--r-md);cursor:pointer;display:grid;place-items:center}
+.navbtn:hover:not(:disabled){background:var(--c-surface3)} .navbtn:disabled{opacity:.3;cursor:default}
+.navpos{font-size:12px;color:var(--c-muted);min-width:120px;text-align:center;white-space:nowrap}
+.btn{border:1px solid var(--c-border2);background:var(--c-surface2);color:var(--c-text);font:inherit;font-weight:700;font-size:15px;padding:13px 20px;border-radius:var(--r-md);cursor:pointer;display:flex;gap:9px;align-items:center}
+.btn:hover{background:var(--c-surface3)} .btn.primary{background:var(--c-wake);color:#001;border-color:var(--c-wake)} .btn .gly{font-size:17px}
+.btn:disabled{opacity:.4;cursor:not-allowed} .btn:disabled:hover{background:var(--c-surface2)}
+::-webkit-scrollbar{width:8px;height:8px} ::-webkit-scrollbar-thumb{background:var(--c-surface3);border-radius:8px}
+
+/* ───── POULE (matrice) ───── */
+.poulewrap{max-width:100%;margin:0 auto;padding:0 18px;overflow-x:auto}
+.mtitle{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.mtitle h2{margin:0}
+.mt-left{flex:1;display:flex;align-items:center;gap:14px;flex-wrap:wrap}   /* Poule + nombre de runs, à gauche */
+.mt-right{flex:1;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}   /* Sauvegarder le heat + Ajouter un rider, à droite */
+.matrixmode{flex:none}                                                    /* vue compacte, centrée entre les deux */
+.matrix{border-collapse:separate;border-spacing:0;font-size:13px;min-width:100%}
+.matrix th,.matrix td{border-bottom:1px solid var(--c-border);padding:9px 11px;vertical-align:top;text-align:left}
+.matrix thead th{position:sticky;top:0;z-index:3;background:#13131c;border-bottom:1px solid var(--c-border2)}
+.matrix .rider{min-width:170px}
+/* séparation nette des colonnes de riders : filet vertical + légère alternance */
+.matrix td{border-left:1px solid var(--c-border2)}
+.matrix thead th.rider{border-left:1px solid var(--c-border2)}
+.matrix thead th.rider:nth-child(even){background:#181824}
+.matrix tbody td:nth-child(even){background:#ffffff05}
+.matrix tbody td.fellTd{background:#ef444422}   /* case de la zone de chute : fond rouge léger (après la règle even → gagne) */
+.rhead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.rhctrls{display:flex;gap:3px;flex:none}
+.rhbtn{width:24px;height:24px;border-radius:6px;border:1px solid var(--c-border2);background:var(--c-surface);color:var(--c-muted);cursor:pointer;display:grid;place-items:center;font-size:12px}
+.rhbtn:hover{color:var(--c-text)} .rhbtn.del:hover{color:var(--c-danger);border-color:var(--c-danger)}
+.rhbtn.del.armed{width:auto;padding:0 8px;background:var(--c-danger);color:#fff;border-color:var(--c-danger);font-size:10px;font-weight:800;white-space:nowrap}
+/* toast : retour visuel d'une action (ex. suppression rider) */
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(12px);background:var(--c-surface3);border:1px solid var(--c-border2);color:var(--c-text);font-weight:700;font-size:13px;padding:11px 18px;border-radius:999px;box-shadow:0 10px 34px #000b;opacity:0;pointer-events:none;transition:opacity .2s ease,transform .2s ease;z-index:200;display:flex;align-items:center;gap:8px}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast .ti{color:var(--c-danger);font-size:15px}
+.matrix .rider .rn{font-family:var(--font-display);font-weight:700;font-size:14px;display:flex;align-items:center;gap:5px}
+.rnum{color:var(--c-muted);flex:none}
+.rnameInp{font:inherit;font-family:var(--font-display);font-weight:700;font-size:14px;color:var(--c-text);background:transparent;border:0;border-bottom:1px dashed transparent;padding:1px 2px;min-width:60px;width:110px;max-width:150px}
+.rnameInp:hover{border-bottom-color:var(--c-border2)} .rnameInp:focus{outline:0;border-bottom-color:var(--c-wake)}
+.judgeBtns{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.judgebtn{width:100%;border:1px solid #06b6d466;background:#06b6d418;color:var(--c-wake);font:inherit;font-weight:800;font-size:12px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;white-space:nowrap}
+.judgebtn:hover{background:#06b6d42e}
+.cellFall{text-align:center;color:var(--c-danger);font-weight:800;font-size:11px;margin-top:5px}
+.frsbtn.dns{color:#f2a3a3;border-color:#f2a3a344} .frsbtn.dns:hover{color:#fff;background:var(--c-danger);border-color:var(--c-danger)}
+.matrix .rider .rmeta{font-size:11px;color:var(--c-faint);font-weight:500;margin-top:2px}
+.matrix .sech{position:sticky;left:0;z-index:2;background:#13131c;min-width:150px;border-right:1px solid var(--c-border2)}
+.matrix thead .corner{left:0;z-index:4;background:#13131c}
+.secname{font-weight:700;font-size:13px;display:flex;align-items:center;gap:7px}
+.secsub{font-size:10px;color:var(--c-faint);margin-top:3px;text-transform:uppercase;letter-spacing:.04em}
+.sbadge{font-size:9px;font-weight:800;text-transform:uppercase;padding:1px 5px;border-radius:4px;color:#001}
+.sbadge.kicker{background:var(--c-ws)} .sbadge.jib{background:var(--cat-jib)} .sbadge.air{background:var(--c-wake)} .sbadge.adhoc{background:var(--c-seated)}
+.sbadge.pass{background:transparent;color:var(--c-seated);border:1px solid #a855f766}
+.matrix tbody tr:hover td{background:#ffffff06}
+.matrix tbody tr.airrow td{background:#06b6d40a}
+.matrix tbody tr.adhocrow td{background:#a855f70a}
+.runline{display:flex;align-items:flex-start;gap:7px}
+.runline + .runline{margin-top:5px;padding-top:5px;border-top:1px dashed var(--c-border)}
+.runtag{font-size:9px;font-weight:800;color:var(--c-wake);background:#06b6d418;border:1px solid #06b6d433;border-radius:3px;padding:1px 4px;flex:none;margin-top:2px}
+.rlbody{flex:1;min-width:0}
+.runbadge{font-size:12px;font-weight:800;color:#001;background:var(--c-wake);border-radius:999px;padding:4px 11px}
+.poulehdr{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.poolname{flex:1;min-width:220px;background:var(--c-surface2);border:1.5px solid var(--c-border2);border-radius:var(--r-md);color:var(--c-text);font:inherit;font-family:var(--font-display);font-weight:700;font-size:18px;padding:12px 16px}
+.poolname::placeholder{color:var(--c-faint);font-weight:600}
+.judgefield{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-muted)}
+.judgename{background:var(--c-surface2);border:1.5px solid var(--c-border2);border-radius:var(--r-sm);color:var(--c-text);font:inherit;font-weight:700;font-size:14px;padding:9px 13px;width:150px}
+.judgename::placeholder{color:var(--c-faint);text-transform:none;letter-spacing:0;font-weight:500}
+.scoreblock{display:flex;align-items:center;gap:5px;margin-top:6px}
+.scoreblock .sl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--c-faint)}
+.scoreinp{width:58px;background:var(--c-surface3);border:1.5px solid var(--c-border2);border-radius:var(--r-sm);color:var(--c-text);font:inherit;font-weight:800;font-size:15px;text-align:center;padding:6px 4px}
+.scoreinp::placeholder{color:var(--c-faint);font-weight:500}
+.runcount{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--c-muted)}
+.runcount button{border:1px solid var(--c-border2);background:var(--c-surface3);color:var(--c-muted);font:inherit;font-weight:800;font-size:13px;width:30px;height:30px;border-radius:var(--r-sm);cursor:pointer}
+.runcount button.on{background:var(--c-wake);color:#001;border-color:var(--c-wake)}
+.runcount button:disabled{opacity:.35;cursor:not-allowed}
+.matrixmode{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--c-muted)}
+.matrixmode button{border:1px solid var(--c-border2);background:var(--c-surface3);color:var(--c-muted);font:inherit;font-weight:700;font-size:12px;padding:6px 11px;border-radius:var(--r-sm);cursor:pointer}
+.matrixmode button.on{background:var(--c-wake);color:#001;border-color:var(--c-wake)}
+/* classement live : synthèse au-dessus de la matrice, se met à jour à chaque note */
+.ranking{margin:2px 0 12px}
+.rklabel{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--c-faint);margin-bottom:6px}
+.rkrow{display:flex;gap:8px;flex-wrap:wrap}
+.rkchip{display:flex;align-items:center;gap:8px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:999px;padding:5px 13px 5px 6px}
+.rkchip.lead{border-color:#f5c542;background:#f5c5421f}
+.rkpos{display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:var(--c-surface3);color:var(--c-muted);font-size:11px;font-weight:800;flex:none}
+.rkchip.lead .rkpos{background:#f5c542;color:#1a1400}
+.rkname{font-weight:700;font-size:13px}
+.rksc{font-family:var(--font-display);font-weight:800;font-size:16px}
+.rkgap{font-size:11px;color:var(--c-faint);font-weight:700}
+.rkwait{font-size:11px;color:var(--c-faint);margin-top:7px}
+.rkempty{font-size:12px;color:var(--c-faint);font-style:italic}
+.runtable{margin-bottom:28px}
+.rtlabel{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--c-text);margin:0 0 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ord2ctrl{display:flex;align-items:center;gap:8px;margin-left:auto;font-family:var(--font-body)}
+.ord2{border:1.5px solid var(--c-border2);background:var(--c-surface3);color:var(--c-muted);font:inherit;font-weight:700;font-size:12px;padding:7px 12px;border-radius:var(--r-sm);cursor:pointer}
+.ord2:hover{color:var(--c-text);border-color:var(--c-text)}
+.ord2.on{background:var(--c-wake);color:#001;border-color:var(--c-wake)}
+.passage{display:flex;align-items:center;gap:5px;margin-top:5px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--c-wake)}
+.pmv{width:22px;height:22px;border-radius:5px;border:1.5px solid var(--c-border2);background:var(--c-surface3);color:var(--c-muted);cursor:pointer;font-size:12px;font-weight:800;line-height:1;display:grid;place-items:center}
+.pmv:hover{color:var(--c-text);border-color:var(--c-text)}
+.pmv:disabled{opacity:.3;cursor:default}
+.mtrick.draft,.cell.draft,.skip.draft{opacity:.42;font-style:italic}
+.stackitem.draft{opacity:.5;font-style:italic}
+.draftCard{align-self:center;max-width:480px;width:100%;text-align:center;border:1.5px dashed #a855f766;border-radius:var(--r-md);padding:18px 18px;background:#a855f70e}
+.draftEyebrow{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--c-seated);margin-bottom:12px}
+.draftLabel{font-family:var(--font-display);font-weight:800;font-size:20px;color:var(--c-text);margin-bottom:16px;display:flex;flex-wrap:wrap;gap:8px 10px;justify-content:center;align-items:center}
+.draftName{color:var(--c-text)}
+.draftAirs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.draftAir{font-size:15px;font-weight:800;background:var(--c-surface3);border:1px solid var(--c-border2);border-radius:var(--r-sm);padding:6px 12px;display:inline-flex;align-items:center;gap:6px}
+.draftLabel .lrtag,.draftAir .lrtag{font-style:normal;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--c-faint);border:1px solid var(--c-border2);border-radius:4px;padding:1px 6px}
+.draftActs{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center}
+.confirmBtn{border:0;border-radius:999px;background:var(--c-success);color:#04140b;font:inherit;font-weight:800;font-size:16px;padding:13px 24px;min-height:50px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.confirmBtn:hover{filter:brightness(1.08)} .confirmBtn:active{transform:scale(.97)}
+.btn.primary.saved{background:var(--c-surface2);color:var(--c-success);border-color:var(--c-success)55}
+.cell{display:flex;flex-direction:column;gap:5px}
+.mtrick{display:flex;align-items:center;gap:7px;border-left:3px solid var(--c-faint);padding-left:8px;line-height:1.25}
+.mtrick.bad{border-color:var(--c-orange)} .mtrick.ok{border-color:var(--c-muted)} .mtrick.top{border-color:var(--c-success)}
+.mtrick .tn{font-weight:600}
+.pos{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--c-faint);border:1px solid var(--c-border2);border-radius:3px;padding:0 4px}
+.pos.pos-int{color:var(--c-int);border-color:var(--c-int)}
+.pos.pos-ext{color:var(--c-ext);border-color:var(--c-ext)}
+/* slots de section : int (haut) / ext (bas) toujours alignés (vide réservé) */
+.secslot{display:flex;align-items:center;gap:6px;min-height:22px}
+.secslot.empty{min-height:22px}
+/* FRS : reprend la note du run 1 */
+.frsbtn{border:1px solid var(--c-border2);background:transparent;color:var(--c-faint);font:inherit;font-weight:800;font-size:10px;letter-spacing:.04em;padding:4px 7px;border-radius:var(--r-sm);cursor:pointer}
+.frsbtn:hover{color:var(--c-text);border-color:var(--c-text)}
+.msub{font-size:11px;color:var(--c-muted)}
+.skip{color:var(--c-faint);font-style:italic}
+.blank{color:var(--c-faint);opacity:.4}
+.fallcell{color:var(--c-danger);font-size:11px;font-weight:700}
+.rdotM{width:8px;height:8px;border-radius:50%;flex:none}
+.rdotM.bad{background:var(--c-orange)} .rdotM.ok{background:var(--c-muted)} .rdotM.top{background:var(--c-success)}
+.legend{display:flex;gap:16px;margin-top:16px;font-size:12px;color:var(--c-muted);flex-wrap:wrap}
+.legend span{display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+<div class="tablet">
+  <div class="topbar">
+    <div class="brand">Wake<b>Ref</b></div>
+    <div class="code">parcours <b>WK-7Q2</b></div>
+    <div class="tabs"><button id="tabSetup">Setup</button><button id="tabPoule">Heat</button><button id="tabSaisie" class="on">Run</button></div>
+  </div>
+
+  <!-- SETUP -->
+  <div class="view hide" id="viewSetup">
+    <div class="wrap">
+      <h2>Setup du parcours</h2>
+      <div class="cablespin">
+        <span class="csLab">Sens du câble</span>
+        <div class="csToggle" id="csToggle">
+          <button data-spin="regular">↻ Regular<small>ext. gauche · int. droite</small></button>
+          <button data-spin="goofy">↺ Goofy<small>int. gauche · ext. droite</small></button>
+        </div>
+        <label class="csLab" style="display:flex;align-items:center;gap:8px">Nombre de poulies
+          <input id="nbPoulies" type="number" min="3" max="8" value="6" style="width:56px;background:var(--c-surface3);border:1.5px solid var(--c-border2);border-radius:var(--r-sm);color:var(--c-text);font:inherit;font-weight:800;font-size:15px;text-align:center;padding:7px 4px">
+        </label>
+      </div>
+      <div class="setupGrid">
+        <div class="setupMain">
+          <h2 style="margin-top:4px">Sections — intérieur / extérieur du câble</h2>
+          <div id="sections"></div>
+          <div class="addSection">
+            <button data-add="modules"><span style="color:var(--c-ws)">＋</span> Section module</button>
+            <button data-add="air"><span style="color:var(--c-wake)">＋</span> Blocage</button>
+          </div>
+          <p style="color:var(--c-faint);font-size:13px;margin-top:18px;line-height:1.5">
+            Remplis l'intérieur et/ou l'extérieur d'une section. Deux côtés remplis = le rider en choisit un.
+            Un seul = côté attendu (mais à la saisie tu peux toujours dévier). <b style="color:var(--c-muted)">Blocage</b> = seau ouvert, chaque trick noté intérieur ou extérieur.
+          </p>
+          <div class="clearWrap"><button id="clearParcours" class="clearParcours">✕ Vider le parcours</button></div>
+        </div>
+        <aside class="setupAside">
+          <div class="setupMapCard">
+            <div class="smTitle">Aperçu du câble</div>
+            <div id="setupMap" class="setupMap"></div>
+            <div id="setupSummary" class="smSummary"></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAISIE -->
+  <div class="view" id="viewSaisie">
+    <div class="saisieHead">
+      <div class="riderbar">
+        <span class="num" id="riderNum">1</span>
+        <span id="riderName" class="ridernameRo">Léo M.</span>
+        <span class="runsdone">rider <b id="riderPosTop">1</b> / <b id="riderTotal">6</b></span>
+        <span class="runbadge hide" id="runBadge">Run 1 / 2</span>
+      </div>
+    </div>
+    <div class="saisieBody">
+      <aside class="minimap">
+        <div class="setupMapCard">
+          <div class="smTitle">Aperçu du câble</div>
+          <div id="minimap" class="setupMap"></div>
+        </div>
+      </aside>
+      <div class="runstage" id="runstage"></div>
+    </div>
+    <div class="dock">
+      <button class="navbtn" id="riderPrev" title="rider précédent">‹</button>
+      <span class="navpos" id="riderPos">1 / 6</span>
+      <button class="navbtn" id="riderNext" title="rider suivant">›</button>
+      <button class="btn primary hide" id="saveRun1"><span class="gly">✓</span> Enregistrer le run 1</button>
+      <button class="btn" id="resetRun"><span class="gly">↺</span> Vider ce run</button>
+      <button class="btn" id="moveRun"><span class="gly">⇄</span> Ce run est à…</button>
+      <div class="movePop hide" id="movePop"></div>
+    </div>
+  </div>
+
+  <!-- POULE -->
+  <div class="view hide" id="viewPoule">
+    <div class="poulewrap">
+      <div class="poulehdr">
+        <input id="poolName" class="poolname" placeholder="Nom du heat — ex. U18 ladies · finale">
+        <label class="judgefield">juge <input id="judgeName" class="judgename" placeholder="ton nom"></label>
+      </div>
+      <div class="mtitle">
+        <div class="mt-left">
+          <h2>Heat</h2>
+          <div class="runcount">nombre de runs <button data-rc="1">1</button><button data-rc="2">2</button></div>
+        </div>
+        <div class="matrixmode"><button class="mmtoggle" data-mm="stacked">vue compacte</button></div>
+        <div class="mt-right">
+          <button class="btn" id="saveHeat" style="padding:8px 14px;font-size:13px" disabled title="disponible quand tous les runs sont notés">Sauvegarder le heat</button>
+          <button class="btn" id="addRider" style="padding:8px 14px;font-size:13px"><span class="gly">＋</span> Ajouter un rider</button>
+        </div>
+      </div>
+      <div id="ranking" class="ranking"></div>
+      <div id="matrix"></div>
+      <div class="legend">
+        <span><i class="rdotM top"></i> extra</span>
+        <span><i class="rdotM ok"></i> ok</span>
+        <span><i class="rdotM bad"></i> pas terrible</span>
+        <span style="color:var(--c-danger)">⚠ chute</span>
+        <span style="color:var(--c-faint)">— skip (non pris) · case vide = non saisi</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───── parcours ─────
+let cableSpin = 'goofy'; // 'regular' (horaire) | 'goofy' (anti-horaire)
+let nbPoulies = 6; // nombre de poulies du câble (Pn = poulie moteur, ponton de départ)
+let poulieStart = 1; // numéro de la 1re poulie du parcours ; les suivantes s'enchaînent (wrap après n). moteur = poulie n, toujours.
+// parcours = suite ordonnée de zones ET de poulies (type:'pulley', p = numéro).
+// Les zones entre deux poulies sont sur l'arête correspondante. Une zone air peut
+// couvrir plusieurs arêtes (span). redundant = 2e passage au même endroit (>1 tour).
+// parcours par défaut = l'exemple 6 poulies (goofy) :
+// jib i+e > jib ext > P1 > jib i+e > P2 > air > P3 > jib ext > jib i+e > P4 > jib i+e > P5 > air > P6 (moteur) > kicker i+e
+let parcours = [
+  {id:1, type:'modules', int:{kind:'jib',label:'rail'}, ext:{kind:'jib',label:'box'}},
+  {id:2, type:'modules', int:null, ext:{kind:'jib',label:'rail'}},
+  {id:11, type:'pulley', p:1},
+  {id:3, type:'modules', int:{kind:'jib',label:'rail'}, ext:{kind:'jib',label:'box'}},
+  {id:12, type:'pulley', p:2},
+  {id:4, type:'air', span:1},
+  {id:13, type:'pulley', p:3},
+  {id:5, type:'modules', int:null, ext:{kind:'jib',label:'box'}},
+  {id:6, type:'modules', int:{kind:'jib',label:'rail'}, ext:{kind:'jib',label:'box'}},
+  {id:14, type:'pulley', p:4},
+  {id:7, type:'modules', int:{kind:'jib',label:'rail'}, ext:{kind:'jib',label:'box'}},
+  {id:15, type:'pulley', p:5},
+  {id:8, type:'air', span:1},
+  {id:16, type:'pulley', p:6},
+  {id:9, type:'modules', int:{kind:'kicker',label:''}, ext:{kind:'kicker',label:''}},
+];
+let pid=17;
+const zonesOnly = () => parcours.filter(s=>s.type!=='pulley');
+
+const POOL={kicker:['Tantrum','Pete Rose','Scarecrow','Moby Dick','Backroll','S-Bend'],air:['HS FS 360','TS BS 540','Half Cab Roll','Backside 313','Roll to Blind']};
+let pi=0;
+const JIB_CHIPS={appr:{lab:'appr',vals:['HS','TS']},in:{lab:'in',vals:['–','270','450','BS','FS']},slide:{lab:'slide',vals:['bs board','fs board','nose','tail','lip']},out:{lab:'out',vals:['–','270','450','BS','FS']}};
+const RATES=['bad','ok','top']; const RLAB={bad:'pas terrible',ok:'ok',top:'extra'};
+
+// mapping côté (int/ext) → position visuelle gauche/droite selon le sens du câble
+function leftSide(){ return cableSpin==='regular' ? 'ext' : 'int'; }
+function rightSide(){ return cableSpin==='regular' ? 'int' : 'ext'; }
+function sideLabel(s){ return s==='int' ? 'intérieur' : 'extérieur'; }
+function visualTag(s){ // renvoie le tag gauche/droite du côté
+  const l = leftSide()===s;
+  return l ? '◂ gauche' : 'droite ▸';
+}
+// rail de choix du côté — boutons physiques gauche/droite, colorés par int/ext
+// valid = liste des côtés autorisés (undefined = tous, ex. hors-parcours). Un côté sans module est désactivé.
+function sideRailHTML(chosen, valid){ const ls=leftSide(), rs=rightSide();
+  const ok=s=> !valid || valid.includes(s);
+  const btn=(s,l,r)=> `<button class="sopt s-${s} ${chosen===s?'on':''}${ok(s)?'':' disabled'}" data-setside="${s}"${ok(s)?'':' disabled'}>${l}${sideLabel(s)}${r}</button>`;
+  return `<div class="sideRail">${btn(ls,'◂ ','')}${btn(rs,'',' ▸')}</div>`; }
+function escA(s){ return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+// suppression rider = double-clic (le confirm() natif est bloqué dans l'artifact) : 1er clic arme, 2e confirme
+let pendingDelRider=null, delTimer=null;
+function delBtn(i){ const armed=pendingDelRider===i; return `<button class="rhbtn del${armed?' armed':''}" data-del-run="${i}" title="${armed?'confirmer la suppression':'supprimer'}">${armed?'sûr ?':'✕'}</button>`; }
+function toast(msg,icon='✕'){ let t=document.getElementById('toast'); if(!t){ t=document.createElement('div'); t.id='toast'; t.className='toast'; document.body.appendChild(t); }
+  t.innerHTML=`<span class="ti">${icon}</span>${msg}`; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  clearTimeout(toast._t); toast._t=setTimeout(()=>t.classList.remove('show'),2000); }
+
+// ───── run ─────
+let runRows=[];
+let curIdx=0, pendingAnim=0;
+let fallIdx=null;
+let riderCursor=0, runCursor=0;
+let runCount=2; // nombre de runs par poule (1 ou 2), réglé dans l'onglet Poule
+let activeSide=null; // côté actif (flèches ← →), null = centre par défaut
+let matrixMode='split'; // vue poule : 'split' (2 tableaux R1/R2) | 'stacked' (R1/R2 empilés)
+let poolName='', judgeName=''; // en-tête de poule enregistré avec la saisie
+// champ note (score global du run) par rider/run, saisi dans la vue poule
+function scoreCell(ri,ru,label){ const v=(savedRuns[ri].score&&savedRuns[ri].score[ru]!=null)?savedRuns[ri].score[ru]:'';
+  const frs = ru>=1 ? `<button class="frsbtn" data-frs="${ri}-${ru}">FRS</button>` : '';   // 2e run non amélioré = reprend la note du run 1
+  const dns = `<button class="frsbtn dns" data-dns="${ri}-${ru}" title="Did Not Start — run entier en skip, note 0">DNS</button>`;
+  return `<div class="scoreblock">${label?`<span class="sl">${label}</span>`:'<span class="sl">note</span>'}<input class="scoreinp" data-score="${ri}-${ru}" value="${escA(v)}" placeholder="–" inputmode="text">${frs}${dns}</div>`; }
+
+// rider = { name, runs:[ rows, rows? ] } — jusqu'à runCount runs
+let savedRuns=[
+  {name:'Léo M.', saved:[false,false], score:[], runs:[
+    [
+      {kind:'module',secId:1,side:'int',trick:'jib',chips:{appr:'HS',in:'–',slide:'rail',out:'270'},rate:'ok'},
+      {kind:'module',secId:2,side:'ext',trick:'jib',chips:{appr:'TS',in:'270',slide:'box',out:'–'},rate:'top'},
+      {kind:'module',secId:3,side:'int',trick:'jib',chips:{appr:'HS',in:'–',slide:'rail',out:'–'},rate:'ok'},
+      {kind:'air',secId:4,airs:[{name:'HS FS 360',side:'int',rate:'ok'}]},
+      {kind:'module',secId:5,side:'ext',trick:'jib',chips:{appr:'TS',in:'450',slide:'box',out:'–'},rate:'top'},
+      {kind:'module',secId:6,side:'int',trick:'jib',chips:{appr:'HS',in:'–',slide:'rail',out:'270'},rate:'ok'},
+      {kind:'module',secId:7,side:'int',trick:'jib',chips:{appr:'HS',in:'–',slide:'rail',out:'–'},rate:'ok'},
+      {kind:'air',secId:8,airs:[{name:'TS BS 540',side:'ext',rate:'top'}]},
+      {kind:'module',secId:9,side:'int',trick:'Tantrum',approach:'ts',rate:'top'},
+    ],
+  ]},
+  {name:'Tom R.', saved:[false,false], score:[], runs:[]},
+  {name:'Zoé K.', saved:[false,false], score:[], runs:[]},
+];
+
+// côtés d'une section portant réellement un module (int/ext). Un seul → côté fixé, on ne peut pas dévier.
+function moduleSides(sec){ return ['int','ext'].filter(s=>sec&&sec[s]); }
+function singleSide(sec){ const s=moduleSides(sec); return s.length===1?s[0]:null; }
+function blankRows(){
+  return zonesOnly().map(sec=> sec.type==='air'
+    ? {kind:'air', secId:sec.id, airs:[]}
+    : {kind:'module', secId:sec.id, side:singleSide(sec), trick:null, approach:null, chips:null, rate:'ok', rien:false});
+}
+function rowHasContent(r){ return !!(r.kind==='air'?(r.airs&&r.airs.length):r.kind==='adhoc'?(r.text&&r.text.trim()):(r.trick||r.chips||r.rien||r.fell)); }
+// une ligne "confirmée" (hors brouillon) : air = au moins un air non-draft ; autres = pas draft + du contenu
+// brouillon : au niveau de la ZONE pour module/hors-parcours (1 entrée) ; PAR TRICK pour un blocage (N entrées,
+// on garde/retire chacun). rowConfirmed = au moins une saisie confirmée.
+function rowConfirmed(x){ return x.kind==='air' ? (x.airs&&x.airs.some(a=>!a.draft)) : (!x.draft && rowHasContent(x)); }
+// run 2 pré-rempli depuis run 1 : mêmes séquences, chute retirée. Module/hors-parcours = draft de zone ; blocage = draft par trick.
+function draftFromRun1(rows){
+  return rows.map(r=>{
+    const c=JSON.parse(JSON.stringify(r));
+    delete c.fell;
+    if(c.fallAuto){ delete c.fallAuto; if(c.kind==='module'){ c.side=singleSide(secOf(c)); c.trick=null; c.chips=null; c.approach=null; c.rien=false; } }
+    if(c.kind==='air'){ (c.airs||[]).forEach(a=>a.draft=true); }
+    else if(rowHasContent(c)) c.draft=true;
+    return c;
+  });
+}
+function run2Confirmed(rider){ const r2=rider.runs[1]; return !!r2 && r2.some(rowConfirmed); }
+// à la validation : tout ce qui est resté en brouillon (non confirmé) est retiré — airs non confirmés
+// supprimés, module/hors-parcours brouillon vidé (case non saisie) → le run validé ne garde que le confirmé.
+function finalizeRun(rows){ if(!rows) return; rows.forEach(x=>{
+  if(x.kind==='air'){ x.airs=(x.airs||[]).filter(a=>!a.draft); }   // blocage : les tricks non confirmés (draft) sont retirés
+  else if(x.draft){ x.draft=false; if(x.kind==='adhoc'){ x.text=''; } else { x.trick=null; x.chips=null; x.approach=null; x.rien=false; } }
+}); }
+function snapRun(rider,ru){ rider.snap=rider.snap||[]; rider.snap[ru]=JSON.stringify(rider.runs[ru]); }
+function saveRun1(){
+  const rider=savedRuns[riderCursor]; if(!rider) return;
+  rider.saved = rider.saved||[false,false];
+  finalizeRun(rider.runs[0]);
+  rider.saved[0]=true;
+  if(runCount>1 && !run2Confirmed(rider)) rider.runs[1]=draftFromRun1(rider.runs[0]);
+  snapRun(rider,0);
+  selectTab('tabPoule'); renderPoule();   // run validé → retour vue Heat
+}
+function saveRun2(){
+  const rider=savedRuns[riderCursor]; if(!rider) return;
+  rider.saved = rider.saved||[false,false];
+  finalizeRun(rider.runs[1]);
+  rider.saved[1]=true; // marque terminé ; n'empêche pas les modifs ultérieures
+  snapRun(rider,1);
+  selectTab('tabPoule'); renderPoule();   // run validé → retour vue Heat
+}
+function entrySummary(r){
+  if(r.kind==='air') return r.airs&&r.airs.length? r.airs.map(a=>a.name).join(', ') : 'blocage (rien)';
+  if(r.kind==='adhoc') return r.text||'hors parcours';
+  if(r.rien) return 'skip';
+  if(r.chips) return jibSummary(r.chips);
+  return r.trick||'—';
+}
+// « Saisir autre chose » : lève juste le brouillon → la zone repasse en saisie normale, contenu du run 1
+// gardé et ÉDITABLE (module = trick éditable, blocage = seau éditable, hors-parcours = texte éditable). Uniforme.
+function changeDraft(r){ r.draft=false; renderRun(); }
+// contenu d'une zone reprise du run 1, affiché dans la carte de confirmation (uniforme, tous types)
+function draftContent(r){
+  if(r.kind==='air') return r.airs&&r.airs.length
+    ? `<div class="draftAirs">${r.airs.map(a=>`<span class="draftAir">${escA(a.name)}${a.side?`<span class="lrtag">${sideLabel(a.side)}</span>`:''}</span>`).join('')}</div>`
+    : `<span class="draftName">blocage vide</span>`;
+  const side = r.side?` <span class="lrtag">${sideLabel(r.side)}</span>`:'';
+  return `<span class="draftName">${escA(entrySummary(r))}</span>${side}`;
+}
+// remet une zone à vide sans la supprimer (garde la structure du parcours)
+function clearZone(r){
+  if(r.kind==='module'){ r.trick=null; r.chips=null; r.approach=null; r.rien=false; r.fell=false; r.side=singleSide(secOf(r)); }
+  else if(r.kind==='air'){ r.airs=[]; }
+  else if(r.kind==='adhoc'){ r.text=''; r.side=null; r.rate='ok'; }
+  r.draft=false; activeSide=null; renderRun();
+}
+function loadRun(ri,ru){
+  if(!savedRuns.length){ runRows=[]; curIdx=0; return; }
+  riderCursor=Math.max(0,Math.min(ri,savedRuns.length-1));
+  runCursor=Math.max(0,Math.min(ru,runCount-1));
+  const rider=savedRuns[riderCursor];
+  if(!rider.runs[runCursor]) rider.runs[runCursor]=blankRows();
+  runRows=rider.runs[runCursor]; curIdx=0; activeSide=null;
+}
+function loadRider(i){ loadRun(i, runCursor<runCount?runCursor:0); }
+// ── ordre de passage du run 2 (souvent reverse : moins bon du run 1 en premier) ──
+// stocké en RÉFÉRENCES d'objets rider (robuste aux ajouts/suppressions), null = comme run 1
+let run2Order=null;
+function order2(){ // renvoie l'ordre de passage du run 2 en INDEX riders (assaini)
+  const all=savedRuns;
+  if(!run2Order) return all.map((_,i)=>i);
+  const seen=new Set(), out=[];
+  run2Order.forEach(r=>{ const i=all.indexOf(r); if(i>=0 && !seen.has(i)){ seen.add(i); out.push(i); } });
+  all.forEach((r,i)=>{ if(!seen.has(i)) out.push(i); }); // nouveaux riders → en fin de passage
+  return out;
+}
+function orderFor(ru){ return ru===1 ? order2() : savedRuns.map((_,i)=>i); }
+function reverseRun2(){ // moins bonne note du run 1 en premier, meilleure en dernier
+  const idx=savedRuns.map((_,i)=>i).sort((a,b)=>(parseFloat(savedRuns[a].score&&savedRuns[a].score[0])||0)-(parseFloat(savedRuns[b].score&&savedRuns[b].score[0])||0));
+  run2Order=idx.map(i=>savedRuns[i]); renderPoule();
+}
+function resetRun2Order(){ run2Order=null; renderPoule(); }
+function moveRun2(pos,delta){ const ord=order2(), j=pos+delta; if(j<0||j>=ord.length) return; [ord[pos],ord[j]]=[ord[j],ord[pos]]; run2Order=ord.map(i=>savedRuns[i]); renderPoule(); }
+
+// navigation linéaire A1 › B1 › … puis run 2 dans l'ordre de passage (index = ru*N + position)
+function linearPos(){ const N=savedRuns.length; const pos = runCursor===1 ? order2().indexOf(riderCursor) : riderCursor; return runCursor*N + (pos<0?0:pos); }
+function goLinear(idx){
+  const N=savedRuns.length; if(!N) return;
+  idx=Math.max(0,Math.min(idx,N*runCount-1));
+  const run=Math.floor(idx/N), pos=idx%N;
+  const ri = run===1 ? order2()[pos] : pos;
+  loadRun(ri, run); renderRun(); syncRiderBar();
+}
+function goToRider(i){ if(!savedRuns.length) return; loadRun(i,runCursor); renderRun(); syncRiderBar(); }
+function riderNav(dir){ if(!savedRuns.length) return; goLinear(linearPos()+dir); }
+function secOf(r){return parcours.find(s=>s.id===r.secId)}
+// type d'un module : côté choisi → son slot ; sinon type par défaut de la section (kicker si présent, sinon jib)
+function defaultKind(sec){ const ks=[sec.int&&sec.int.kind, sec.ext&&sec.ext.kind].filter(Boolean); if(!ks.length) return 'kicker'; return ks.includes('kicker')?'kicker':'jib'; }
+function moduleKind(r){ const sec=secOf(r); return r.side ? (sec[r.side]?.kind||'kicker') : defaultKind(sec); }
+// change le côté d'un module en gardant le trick tant que le type de slot ne change pas (kicker↔jib)
+function setModuleSide(r,side){
+  const sec=secOf(r);
+  if(!sec || !sec[side]) return;   // pas de module de ce côté → on ne peut pas s'y mettre (jamais de kicker inventé)
+  const oldKind = moduleKind(r);
+  const newKind = sec[side].kind;
+  r.side=side; r.rien=false;
+  if(oldKind!==newKind){ r.trick=null; r.chips=null; r.approach=null; }
+}
+
+// ───── tabs ─────
+const vSetup=document.getElementById('viewSetup'), vSaisie=document.getElementById('viewSaisie'), vPoule=document.getElementById('viewPoule');
+const allTabs=['tabSetup','tabSaisie','tabPoule'], allViews={tabSetup:vSetup,tabSaisie:vSaisie,tabPoule:vPoule};
+function selectTab(id){allTabs.forEach(t=>{document.getElementById(t).classList.toggle('on',t===id);allViews[t].classList.toggle('hide',t!==id);});}
+document.getElementById('tabSetup').onclick=()=>{selectTab('tabSetup');renderSetup();};
+document.getElementById('tabSaisie').onclick=()=>{selectTab('tabSaisie');loadRider(riderCursor);renderRun();syncRiderBar();};
+document.getElementById('tabPoule').onclick=()=>{selectTab('tabPoule');renderPoule();};
+
+// ───── SETUP ─────
+const sectionsEl=document.getElementById('sections');
+function renderSpinToggle(){
+  document.querySelectorAll('#csToggle button').forEach(b=>b.classList.toggle('on',b.dataset.spin===cableSpin));
+}
+document.querySelectorAll('#csToggle button').forEach(b=>b.onclick=()=>{cableSpin=b.dataset.spin;renderSetup();renderMinimap({hdr:false});});
+{ const nbP=document.getElementById('nbPoulies'); if(nbP) nbP.oninput=()=>{ nbPoulies=Math.max(3,Math.min(8,+nbP.value||5)); if(poulieStart>nbPoulies) poulieStart=1; syncPoulies(); renderSetup(); }; }
+function slotHtml(sec,key){
+  const sl=sec[key];
+  if(!sl) return `<div class="slot empty" data-add-slot="${key}">＋ ${key==='int'?'intérieur':'extérieur'}</div>`;
+  return `<div class="slot">
+    <div class="kindToggle">
+      <button data-k="kicker" class="${sl.kind==='kicker'?'on':''}" data-slot="${key}">Kicker</button>
+      <button data-k="jib" class="${sl.kind==='jib'?'on':''}" data-slot="${key}">Jib</button>
+    </div>
+    <input placeholder="label (rail, box…)" value="${sl.label||''}" data-label="${key}" />
+    <button class="rm" data-rm="${key}">✕</button>
+  </div>`;
+}
+// les N poulies sont un squelette fixe (= nbPoulies). renumberPoulies() recalcule leur numéro
+// dans l'ordre de parcours à partir de poulieStart (wrap après n) ; moteur = poulie n.
+function renumberPoulies(){
+  const N=nbPoulies, ps=parcours.filter(s=>s.type==='pulley');
+  ps.forEach((s,k)=>{ s.p=((poulieStart-1+k)%N+N)%N+1; });
+}
+// cale le nombre de marqueurs poulie sur nbPoulies (ni ajout ni retrait manuel à l'écran)
+function syncPoulies(){
+  const N=nbPoulies; let ps=parcours.filter(s=>s.type==='pulley');
+  while(ps.length>N){ const last=[...parcours].reverse().find(s=>s.type==='pulley'); parcours.splice(parcours.indexOf(last),1); ps=parcours.filter(s=>s.type==='pulley'); }
+  while(ps.length<N){ parcours.push({id:pid++,type:'pulley',p:1}); ps=parcours.filter(s=>s.type==='pulley'); }
+  renumberPoulies();
+}
+// 2e passage : cocher sur une zone crée une COPIE liée (même contenu) tout au bas du parcours ;
+// décocher la retire. La copie (passOf = id du parent) est resynchronisée sur le parent à chaque rendu,
+// donc les deux passages ont toujours le même contenu → la minimap les replie de façon fiable (par lien, pas par contenu).
+function copyZoneContent(src,dst){
+  dst.type=src.type;
+  if(src.type==='air'){ dst.span=src.span||1; delete dst.int; delete dst.ext; }
+  else { dst.int=src.int?{kind:src.int.kind,label:src.int.label}:null; dst.ext=src.ext?{kind:src.ext.kind,label:src.ext.label}:null; delete dst.span; }
+}
+function syncTwins(){
+  for(let i=parcours.length-1;i>=0;i--){ const z=parcours[i]; if(z.passOf!=null && !parcours.some(p=>p.id===z.passOf)) parcours.splice(i,1); } // copie orpheline (parent supprimé)
+  parcours.forEach(z=>{ if(z.passOf!=null){ const p=parcours.find(o=>o.id===z.passOf); if(p) copyZoneContent(p,z); } });
+}
+function toggleSecondPass(sec){
+  const twin=parcours.find(z=>z.passOf===sec.id);
+  if(twin) parcours.splice(parcours.indexOf(twin),1);
+  else { const t={id:pid++, type:sec.type, passOf:sec.id, redundant:true}; copyZoneContent(sec,t); parcours.push(t); }
+  renderSetup();
+}
+function twinSummary(sec){
+  if(sec.type==='air') return `<span class="twinChip air">🎤 blocage</span>`;
+  const chip=(s,side)=> s?`<span class="twinChip ${s.kind}">${side} · ${s.kind==='jib'?(s.label||'jib'):'kicker'}</span>`:'';
+  return chip(sec.int,'int')+chip(sec.ext,'ext') || `<span class="twinChip">vide</span>`;
+}
+// insère une zone (module / blocage) à la position idx du parcours (avant la poulie qui suit)
+function insertZoneAt(idx,type){
+  const z = type==='air' ? {id:pid++,type:'air',span:1} : {id:pid++,type:'modules',int:{kind:'kicker',label:''},ext:null};
+  parcours.splice(idx,0,z); renderSetup();
+}
+// petite barre « ＋ Section module / ＋ Blocage » à insérer avant une poulie
+function pInsertBar(idx){
+  const bar=document.createElement('div'); bar.className='pInsert';
+  bar.innerHTML=`<button data-ins="modules"><span style="color:var(--c-ws)">＋</span> Section module</button><button data-ins="air"><span style="color:var(--c-wake)">＋</span> Blocage</button>`;
+  bar.querySelectorAll('[data-ins]').forEach(b=>b.onclick=()=>insertZoneAt(idx,b.dataset.ins));
+  return bar;
+}
+function renderSetup(){
+  renderSpinToggle();
+  renumberPoulies();
+  syncTwins();
+  sectionsEl.innerHTML='';
+  const zoneNo={}; { let n=0; parcours.forEach(s=>{ if(s.type!=='pulley'){ n++; zoneNo[s.id]=n; } }); }
+  let pseen=0;
+  parcours.forEach((sec,idx)=>{
+    if(sec.type==='pulley') sectionsEl.appendChild(pInsertBar(idx));   // insertion « entre les deux poulies », juste avant celle-ci
+    const el=document.createElement('div');
+    const ctrls=`<div class="sCtrls">
+        <button class="mini" data-mv="-1" ${idx===0?'disabled':''}>▲</button>
+        <button class="mini" data-mv="1" ${idx===parcours.length-1?'disabled':''}>▼</button>
+        <button class="mini del" data-del="1">✕</button>
+      </div>`;
+    if(sec.type==='pulley'){
+      el.className='pulleyrow';
+      const motor = sec.p>=nbPoulies;
+      const isFirst = !pseen; pseen++;
+      const label = isFirst
+        ? `<span class="plab">1re poulie</span><select class="pstart">${Array.from({length:nbPoulies},(_,i)=>`<option value="${i+1}"${poulieStart===i+1?' selected':''}>P${i+1}</option>`).join('')}</select>`
+        : `Poulie P${sec.p}`;
+      el.innerHTML=`<div class="pnode${motor?' motor':''}">${motor?'⚓':'●'}</div>
+        <div class="pinfo">${label}${motor?'<span class="ptag">moteur · ponton de départ</span>':''}</div>`;
+      const psel=el.querySelector('.pstart'); if(psel) psel.onchange=e=>{ poulieStart=+e.target.value; renumberPoulies(); renderSetup(); };
+    } else {
+      const zn=zoneNo[sec.id];
+      if(sec.passOf!=null){   // ── COPIE 2e passage : contenu miroir du parent, non éditable ici ──
+        el.className='section twin';
+        el.innerHTML=`<div class="sIdx">${zn}</div>
+          <div class="twinBody"><span class="twinTag">↺ 2e passage</span><span class="twinRef">copie de zone ${zoneNo[sec.passOf]||'—'}</span><div class="twinSum">${twinSummary(sec)}</div></div>
+          ${ctrls}`;
+      } else {
+        const mid = sec.type==='air'
+          ? `<div class="airband">🎤 Blocage <span class="tag">seau ouvert · chaque trick noté intérieur / extérieur</span></div>`
+          : `<div class="sides"><div class="sideCol"><span class="sideHead">intérieur</span>${slotHtml(sec,'int')}</div>
+             <div class="sideCol"><span class="sideHead">extérieur</span>${slotHtml(sec,'ext')}</div></div>`;
+        const spanCtrl = sec.type==='air'
+          ? `<label class="zx" title="sur combien de poulies consécutives le blocage s'étend (ex. de P1 à P3 = 3 poulies)">🎤 s'étend sur <select class="spansel">${[1,2,3,4].map(n=>`<option value="${n}"${(sec.span||1)===n?' selected':''}>${n+1} poulies</option>`).join('')}</select></label>` : '';
+        const hasTwin = parcours.some(z=>z.passOf===sec.id);
+        const redCtrl = `<button class="zx redtog${hasTwin?' on':''}" title="ajoute une copie de cette zone en bas du parcours (2e passage au même endroit)">↺ 2e passage${hasTwin?' ✓':''}</button>`;
+        el.className='section';
+        el.innerHTML=`<div class="sIdx">${zn}</div>${mid}${ctrls}<div class="zextra">${spanCtrl}${redCtrl}</div>`;
+        el.querySelectorAll('[data-add-slot]').forEach(b=>b.onclick=()=>{sec[b.dataset.addSlot]={kind:'kicker',label:''};renderSetup();});
+        el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{sec[b.dataset.slot].kind=b.dataset.k;renderSetup();});
+        el.querySelectorAll('[data-label]').forEach(inp=>inp.oninput=()=>{sec[inp.dataset.label].label=inp.value;});
+        el.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{sec[b.dataset.rm]=null;renderSetup();});
+        const sp=el.querySelector('.spansel'); if(sp) sp.onchange=e=>{ sec.span=+e.target.value; renderSetup(); };
+        const rt=el.querySelector('.redtog'); if(rt) rt.onclick=()=>{ toggleSecondPass(sec); };
+      }
+    }
+    const mvUp=el.querySelector('[data-mv="-1"]'); if(mvUp) mvUp.onclick=()=>{if(idx>0){[parcours[idx-1],parcours[idx]]=[parcours[idx],parcours[idx-1]];renderSetup();}};
+    const mvDn=el.querySelector('[data-mv="1"]'); if(mvDn) mvDn.onclick=()=>{if(idx<parcours.length-1){[parcours[idx+1],parcours[idx]]=[parcours[idx],parcours[idx+1]];renderSetup();}};
+    const delB=el.querySelector('[data-del]'); if(delB) delB.onclick=()=>{parcours.splice(idx,1);renderSetup();};
+    sectionsEl.appendChild(el);
+  });
+  renderMinimap({el:document.getElementById('setupMap'), hdr:false, cur:false});
+  const sum=document.getElementById('setupSummary'); if(sum) sum.innerHTML=setupSummary();
+}
+// récap descriptif (poulies = squelette fixe, numérotation auto → pas d'alerte de cohérence) :
+// nb de poulies du câble, 1re poulie du parcours si décalée, nb de zones, zones en 2e passage.
+function setupSummary(){
+  const zones=zonesOnly(), nz=zones.length, red=zones.filter(z=>z.passOf!=null).length;
+  const mods=parcours.filter(s=>s.type==='modules').reduce((n,s)=>n+(s.int?1:0)+(s.ext?1:0),0);
+  const chips=[`<span class="smChip">${nz} zone${nz>1?'s':''}</span>`,`<span class="smChip">${mods} module${mods>1?'s':''}</span>`];
+  if(poulieStart!==1) chips.push(`<span class="smChip">1re poulie P${poulieStart}</span>`);
+  if(red) chips.push(`<span class="smChip">2e passage ×${red}</span>`);
+  return chips.join('');
+}
+document.querySelectorAll('.addSection button').forEach(b=>b.onclick=()=>{
+  const t=b.dataset.add;
+  parcours.push(t==='air'?{id:pid++,type:'air',span:1}:{id:pid++,type:'modules',int:{kind:'kicker',label:''},ext:null});
+  renderSetup();
+});
+// vider le parcours = retirer toutes les zones (le squelette de poulies reste). Double-clic pour confirmer (confirm() bloqué en sandbox).
+let pendingClear=false, clearTimer=null;
+{ const cb=document.getElementById('clearParcours'); if(cb) cb.onclick=()=>{
+  if(!pendingClear){ pendingClear=true; cb.classList.add('armed'); cb.textContent='Confirmer — vider tout le parcours ?'; clearTimeout(clearTimer); clearTimer=setTimeout(()=>{ pendingClear=false; cb.classList.remove('armed'); cb.textContent='✕ Vider le parcours'; },2600); return; }
+  clearTimeout(clearTimer); pendingClear=false; cb.classList.remove('armed'); cb.textContent='✕ Vider le parcours';
+  parcours=parcours.filter(s=>s.type==='pulley'); renderSetup(); toast('Parcours vidé','✕');
+}; }
+
+// ───── SAISIE (immersive) ─────
+const runstage=document.getElementById('runstage');
+
+function rowResolved(r){
+  if(r.kind==='air') return true;
+  if(r.kind==='adhoc') return !!(r.text&&r.text.trim());
+  if(r.rien) return true;
+  return !!r.trick;
+}
+function insertBar(k,label){
+  const d=document.createElement('button'); d.className='insertBar';
+  d.innerHTML=`＋ ${label}`;
+  d.onclick=()=>insertAt(k);
+  return d;
+}
+function insertAt(k){
+  runRows.splice(k,0,{kind:'adhoc',side:null,text:'',rate:'ok'});
+  curIdx=k; pendingAnim=1; renderRun();
+  setTimeout(()=>{const inp=runstage.querySelector('.stage .freein');if(inp)inp.focus();},20);
+}
+function markFall(){
+  const r0=runRows[curIdx]; if(!r0) return;
+  r0.fell=true;
+  for(let i=curIdx+1;i<runRows.length;i++){ const r=runRows[i]; if(r.kind==='module' && !r.rien){ r.rien=true; r.fallAuto=true; } }
+  renderRun();
+}
+function undoFall(){ runRows.forEach(r=>{ if(r.fell)delete r.fell; if(r.fallAuto){r.rien=false;delete r.fallAuto;} }); renderRun(); }
+// déplace la zone hors-parcours courante dans le run (delta -1 = plus tôt / vers le bas, +1 = plus tard / vers le haut)
+function moveAdhoc(delta){
+  const j=curIdx+delta;
+  if(j<0||j>=runRows.length) return;
+  [runRows[curIdx],runRows[j]]=[runRows[j],runRows[curIdx]];
+  pendingAnim = delta>0?1:-1;
+  curIdx=j; renderRun();
+}
+
+function insertBtn(k,label){
+  const d=document.createElement('div'); d.className='insert';
+  d.innerHTML=`<button title="insérer une zone hors-parcours${label?' — '+label:''}">＋</button>`;
+  d.querySelector('button').onclick=()=>insertAt(k);
+  return d;
+}
+
+function badgeLabel(k){ return k==='air'?'blocage':k==='adhoc'?'hors parcours':k; }
+function zoneShortLabel(r){
+  if(r.kind==='adhoc') return 'Hors parcours';
+  const sec=secOf(r);
+  const pass = sec&&sec.passOf!=null ? ' · 2e passage' : '';
+  if(r.kind==='air') return 'Blocage'+pass;
+  const parts=[]; if(sec.int)parts.push(sec.int.kind==='jib'?(sec.int.label||'jib'):'kicker'); if(sec.ext)parts.push(sec.ext.kind==='jib'?(sec.ext.label||'jib'):'kicker');
+  return 'Module · '+(parts.join(' / ')||'—')+pass;
+}
+// badge "2e passage" ajouté à l'en-tête d'une zone-copie (en saisie)
+function markTwinStage(stage,r){
+  if(r.kind!=='module' && r.kind!=='air') return;
+  const s=secOf(r); if(!s || s.passOf==null) return;
+  const top=stage.querySelector('.stageTop'); if(top) top.insertAdjacentHTML('beforeend','<span class="kbadge pass">↺ 2e passage</span>');
+}
+
+function buildStage(r,idx){
+  const stage=document.createElement('div');
+  const kindCls = r.kind==='air'?'air':r.kind==='adhoc'?'adhoc':sec_kind(r);
+  stage.className=`stage cur-${kindCls}${fallIdx===idx?' fallen':''}`;
+  if(pendingAnim){ stage.classList.add(pendingAnim>0?'stage-open-next':'stage-open-prev'); pendingAnim=0; }
+  // axe côté : liseré coloré (int rose / ext indigo) sur le bord physique gauche/droite du côté choisi
+  const cardSide = r.kind==='air' ? activeSide : r.side;
+  if(cardSide){ stage.classList.add('has-side', leftSide()===cardSide?'sd-l':'sd-r'); stage.style.setProperty('--sideCol', cardSide==='int'?'var(--c-int)':'var(--c-ext)'); }
+
+  let body='';
+  const isFall = fallIdx===idx;
+
+  // — BROUILLON run 2 : repris du run 1. MÊME carte quel que soit le type (kicker / jib / blocage / hors-parcours). —
+  if(r.draft){
+    stage.innerHTML=`<div class="stageTop"><span class="stageIdx">Zone ${idx+1}</span><span class="kbadge ${kindCls}">${badgeLabel(kindCls)}</span></div>
+      <div class="stageBody"><div class="draftCard">
+        <div class="draftEyebrow">↩ repris du run 1</div>
+        <div class="draftLabel">${draftContent(r)}</div>
+        <div class="draftActs">
+          <button class="confirmBtn confirm-draft">✓ Valider (idem run 1)</button>
+          <button class="actbtn change-draft">✎ Saisir autre chose</button>
+        </div>
+      </div></div>`;
+    stage.querySelector('.confirm-draft').onclick=()=>{ r.draft=false; if(curIdx<runRows.length-1) navigate(1); else renderRun(); };
+    stage.querySelector('.change-draft').onclick=()=>changeDraft(r);
+    markTwinStage(stage,r);
+    return stage;
+  }
+
+  if(r.kind==='air'){
+    const hasDraft = r.airs.some(a=>a.draft);
+    const airs=r.airs.map((a,i)=>`<div class="airitem${a.draft?' draft':''}"><input class="airedit" data-aednm="${i}" value="${escA(a.name)}" aria-label="trick dicté">
+      ${a.draft?`<button class="airidem" data-cfa="${i}">✓ idem</button>`:''}
+      <span class="postog"><button data-apos="${i}" data-pos="int" class="${a.side==='int'?'on':''}">int</button><button data-apos="${i}" data-pos="ext" class="${a.side==='ext'?'on':''}">ext</button></span>
+      <span class="rate">${RATES.map(v=>`<button class="dot ${a.rate===v?'on':'dim'}" data-air="${i}" data-v="${v}"></button>`).join('')}</span>
+      <button class="x" data-rmair="${i}">✕</button></div>`).join('');
+    const micPos = activeSide ? (leftSide()===activeSide?'l':'r') : 'c';
+    const micJustify = micPos==='l'?'flex-start':micPos==='r'?'flex-end':'center';
+    const micLabel = activeSide ? `${micPos==='l'?'◂ ':''}🎤 dicter · ${sideLabel(activeSide)}${micPos==='r'?' ▸':''}` : '🎤 dicter un trick';
+    body=`<div class="stageHint">${hasDraft?'↩ <b style="color:var(--c-seated)">Repris du run 1</b> — <b>✓ idem</b> pour garder un trick, <b>✕</b> pour le retirer, ou dicte les nouveaux.':'Blocage — ← → pour le côté (optionnel), dicte chaque trick.'}</div>
+      <div class="stageBody air-body"><div class="bucket">${airs||'<div class="airempty">aucun trick pour l\'instant</div>'}</div>
+      <div class="airmicRow" style="justify-content:${micJustify}"><button class="micbtn airmic">${micLabel}</button></div></div>`;
+  }
+  else if(r.kind==='adhoc'){
+    const pos = r.side ? (leftSide()===r.side?'l':'r') : 'c';
+    const sideRail=sideRailHTML(r.side);
+    body=`<div class="stageHint">Zone hors-parcours — côté optionnel (← → ou tap)${r.side?` · <b style="color:var(--c-muted)">${sideLabel(r.side)}</b>`:''}.</div>
+      ${sideRail}
+      <div class="stageBody"><div class="entryWrap pos-${pos}">
+        <div class="fillrow"><input class="freein" placeholder="ce que le rider a fait…" value="${r.text||''}"><button class="micbtn micsm">🎤</button></div>
+      </div></div>`;
+  }
+  else { // module — TOUJOURS pris à gauche ou à droite (jamais au centre) ; sinon skip
+    const sec=secOf(r);
+    if(r.rien){
+      body=`<div class="stageBody" style="text-align:center;color:var(--c-faint)">
+        <div style="font-size:16px;font-weight:600;font-style:italic">module non pris — skip</div>
+        <div style="margin-top:14px"><button class="actbtn undo-rien" style="display:inline-flex">↺ finalement, il l'a pris</button></div></div>`;
+    } else {
+      const kind=moduleKind(r);
+      const sides=moduleSides(sec);
+      const sideRail=sideRailHTML(r.side, sides);
+      if(!r.side){
+        // côté pas encore choisi (section à 2 modules) : le centre n'est PAS un état de repos → choisir, ou skip
+        body=`<div class="stageHint">Un module se prend à <b>gauche</b> ou à <b>droite</b> — choisis le côté (← → ou tap), ou <b>skip</b> si le rider l'a contourné.</div>
+          ${sideRail}
+          <div class="stageBody"><div class="entryWrap pos-c" style="align-items:center;gap:16px">
+            <div class="pickSidePrompt">◂ &nbsp;de quel côté ?&nbsp; ▸</div>
+            <button class="actbtn skip-mod">⤳ skip · le rider n'a pas pris ce module</button>
+          </div></div>`;
+      } else {
+        const pos = leftSide()===r.side?'l':'r';
+        const canSwitch = sides.length>1;   // un seul module → côté fixé, pas de changement possible
+        // jib comme kicker : on DICTE (modèle dédié), puis le texte reste ÉDITABLE. Pas de heelside/toeside
+        // (le trick le définit), pas de composeur à chips.
+        let entry;
+        if(!r.trick){
+          entry=`<div class="fillrow"><button class="micbtn micsm">🎤 dicter ${kind==='jib'?'la passe':'le trick'}</button></div>`;
+        } else {
+          entry=`<div class="fillrow"><textarea class="trickEdit" rows="1" aria-label="figure">${escA(r.trick)}</textarea><button class="micbtn micxs redict" title="re-dicter">🎤</button></div>`;
+        }
+        body=`<div class="stageHint">${kind==='jib'?'Passe jib':'Trick'} · <b style="color:var(--c-muted)">${sideLabel(r.side)}</b>${canSwitch?' (← → pour changer de côté)':''}.</div>
+          ${sideRail}
+          <div class="stageBody"><div class="entryWrap pos-${pos}">${entry}</div></div>`;
+      }
+    }
+  }
+
+  // actions bas de zone
+  let actions='<div class="stageActions">';
+  if(!r.draft) actions+=`<button class="actbtn insert-here">＋ insérer une zone</button>`;   // insère entre la précédente et la courante
+  if(r.kind==='module' && !r.rien && r.side) actions+=`<button class="actbtn set-rien">⤳ skip (non pris)</button>`;
+  if(r.kind==='adhoc'){
+    actions+=`<button class="actbtn mv-adhoc" data-mv="-1"${curIdx<=0?' disabled':''}>↓ plus tôt</button>`;
+    actions+=`<button class="actbtn mv-adhoc" data-mv="1"${curIdx>=runRows.length-1?' disabled':''}>↑ plus tard</button>`;
+    actions+=`<button class="actbtn del-adhoc">✕ supprimer</button>`;
+  }
+  if(rowHasContent(r) && !r.draft) actions+=`<button class="actbtn clear-zone">↺ vider la zone</button>`;
+  if(!isFall) actions+=`<button class="actbtn fall">⚠ chute ici · fin du run</button>`;
+  actions+='</div>';
+
+  const badge = r.kind==='air'?'<span class="kbadge air">blocage</span>'
+    : r.kind==='adhoc'?'<span class="kbadge adhoc">hors parcours</span>'
+    : `<span class="kbadge ${sec_kind(r)}">${sec_kind(r)}</span>`;
+
+  // note ANCRÉE : bandeau fixe en bas de carte (toujours au même endroit, trouvable à l'aveugle), pas pour l'air (note par item)
+  const showNote=(r.kind==='module' && r.side && !r.rien) || r.kind==='adhoc';
+  const noteBar= showNote ? `<div class="noteAnchor"><span class="rl">note</span>${rateDots(r)}</div>` : '';
+  stage.innerHTML=`<div class="stageTop"><span class="stageIdx">Zone ${idx+1}</span>${badge}</div>${body}${noteBar}${actions}
+    ${isFall?`<div class="fallBanner">⚠ Chute sur cette zone — la suite du run est marquée « skip ». <button class="undo-fall">annuler la chute</button></div>`:''}`;
+
+  // wiring
+  stage.querySelectorAll('[data-pos]').forEach(b=>{ if(b.dataset.apos===undefined) b.onclick=()=>{r.side=b.dataset.pos;renderRun();}; });
+  stage.querySelectorAll('[data-apos]').forEach(b=>b.onclick=()=>{const a=r.airs[+b.dataset.apos];a.side=b.dataset.pos;a.draft=false;renderRun();});
+  stage.querySelectorAll('[data-air]').forEach(d=>d.onclick=()=>{const a=r.airs[+d.dataset.air];a.rate=d.dataset.v;a.draft=false;renderRun();});
+  stage.querySelectorAll('[data-cfa]').forEach(b=>b.onclick=()=>{r.airs[+b.dataset.cfa].draft=false;renderRun();});
+  stage.querySelectorAll('[data-rmair]').forEach(b=>b.onclick=()=>{r.airs.splice(+b.dataset.rmair,1);renderRun();});
+  stage.querySelectorAll('[data-setside]').forEach(b=>b.onclick=()=>{ const s=b.dataset.setside; if(r.kind==='module'){ setModuleSide(r,s); } else { r.side=s; } activeSide=r.side; renderRun(); });
+  stage.querySelectorAll('[data-ap]').forEach(b=>b.onclick=()=>{r.approach=b.dataset.ap;renderRun();});
+  stage.querySelectorAll('[data-chip]').forEach(c=>c.onclick=()=>{const cf=JIB_CHIPS[c.dataset.chip];const i=cf.vals.indexOf(r.chips[c.dataset.chip]);r.chips[c.dataset.chip]=cf.vals[(i+1)%cf.vals.length];renderRun();});
+  stage.querySelectorAll('.rate .dot[data-v]:not([data-air])').forEach(d=>d.onclick=()=>{r.rate=d.dataset.v;renderRun();});
+  const sw=stage.querySelector('.swap'); if(sw) sw.onclick=()=>{ setModuleSide(r, r.side==='int'?'ext':'int'); renderRun(); };
+  const am=stage.querySelector('.airmic'); if(am) am.onclick=()=>{r.airs.push({name:POOL.air[pi++%POOL.air.length],side:activeSide,rate:'ok'});renderRun();};
+  const ms=stage.querySelector('.micsm'); if(ms) ms.onclick=()=>{r.trick=POOL.kicker[pi++%POOL.kicker.length];renderRun();};
+  const fi=stage.querySelector('.freein'); if(fi) fi.oninput=()=>{r.text=fi.value;};
+  const te=stage.querySelector('.trickEdit'); if(te){ const grow=()=>{te.style.height='auto';te.style.height=te.scrollHeight+'px';};
+    te.oninput=()=>{r.trick=te.value;grow();}; requestAnimationFrame(grow); }   // figure dictée reste éditable, s'agrandit sur 2 lignes
+  const rd=stage.querySelector('.redict'); if(rd) rd.onclick=()=>{r.trick=POOL.kicker[pi++%POOL.kicker.length];renderRun();};
+  stage.querySelectorAll('[data-aednm]').forEach(inp=>inp.oninput=()=>{r.airs[+inp.dataset.aednm].name=inp.value;});
+  const ih=stage.querySelector('.insert-here'); if(ih) ih.onclick=()=>insertAt(idx);
+  const goNext=()=>{ if(curIdx<runRows.length-1) navigate(1); else renderRun(); };   // skip → zone suivante
+  const sr=stage.querySelector('.set-rien'); if(sr) sr.onclick=()=>{r.rien=true; goNext();};
+  const sm=stage.querySelector('.skip-mod'); if(sm) sm.onclick=()=>{r.rien=true; r.side=null; activeSide=null; goNext();};
+  const ur=stage.querySelector('.undo-rien'); if(ur) ur.onclick=()=>{r.rien=false;renderRun();};
+  const da=stage.querySelector('.del-adhoc'); if(da) da.onclick=()=>{runRows.splice(idx,1);if(curIdx>=runRows.length)curIdx=Math.max(0,runRows.length-1);renderRun();};
+  const cz=stage.querySelector('.clear-zone'); if(cz) cz.onclick=()=>clearZone(r);
+  stage.querySelectorAll('.mv-adhoc').forEach(b=>b.onclick=()=>moveAdhoc(+b.dataset.mv));
+  const fb=stage.querySelector('.actbtn.fall'); if(fb) fb.onclick=()=>markFall();
+  const uf=stage.querySelector('.undo-fall'); if(uf) uf.onclick=()=>undoFall();
+  // insertion désormais via le bouton « ＋ insérer une zone » de la barre d'actions (insère avant la zone courante)
+  markTwinStage(stage,r);
+  return stage;
+}
+function sec_kind(r){ return moduleKind(r); }
+function bigSideBtn(sec,side){
+  const slot=sec[side];
+  const lr = leftSide()===side?'◂ gauche':'droite ▸';
+  const kd = slot?`<span class="kd ${slot.kind}">${slot.kind==='jib'?(slot.label||'jib'):'kicker'}</span>`:`<span class="kd empty">hors module</span>`;
+  return `<button class="bigSide" data-pick="${side}"><span class="lr">${lr}</span><span class="sd">${sideLabel(side)}</span>${kd}</button>`;
+}
+function rateDots(r){
+  return `<div class="rate">${RATES.map(v=>`<button class="dot ${r.rate===v?'on':'dim'}" data-v="${v}" title="${RLAB[v]}"></button>`).join('')}</div>`;
+}
+function rateBlock(r){ return `<div class="rateRow"><span class="rl">note</span>${rateDots(r)}</div>`; }
+
+function buildStackItem(r,idx){
+  const el=document.createElement('div');
+  const after = fallIdx!=null && idx>fallIdx;
+  el.className=`stackitem${idx===fallIdx?' fallen':''}${after?' after':''}${(r.kind==='module'&&r.rien)?' skip':''}${r.draft?' draft':''}`;
+  el.dataset.zi=idx;
+  let label, sub='', side=r.side, rate=r.rien?'none':r.rate;
+  if(r.kind==='air'){ label = r.airs.length?r.airs.map(a=>a.name).join(', '):'blocage (rien)'; sub='blocage'; side=null; rate=r.airs.length?'ok':'none'; }
+  else if(r.kind==='adhoc'){ label=r.text||'hors parcours (vide)'; sub='hors parcours'; }
+  else if(r.rien){ label='skip · non pris'; }
+  else { label=r.trick||(r.chips?jibSummary(r.chips):'—'); sub=sec_kind(r); }
+  const dot = side ? `<span class="rdot ${rate}"></span>` : `<span class="rdot ${rate}"></span>`;
+  el.innerHTML=`<span class="si">${idx+1}</span>${dot}
+    ${side?`<span class="lrtag">${sideLabel(side)}</span>`:''}
+    <span class="st">${label}${idx===fallIdx?' ⚠':''}</span>${sub?`<span class="stsub">${sub}</span>`:''}`;
+  el.onclick=()=>goTo(idx);
+  return el;
+}
+
+function renderRun(){
+  runstage.innerHTML='';
+  if(!savedRuns.length){ runstage.innerHTML='<p style="color:var(--c-faint);text-align:center;margin-top:40px">Aucun rider — ajoute des riders dans l\'onglet Poule.</p>'; updateRiderNav(); return; }
+  if(!runRows.length){ runstage.innerHTML='<p style="color:var(--c-faint);text-align:center;margin-top:40px">Parcours vide — ajoute des sections dans l\'onglet Parcours.</p>'; updateRiderNav(); return; }
+  const rider=savedRuns[riderCursor];
+  if(runCount>1 && runCursor===1 && rider && !(rider.saved&&rider.saved[0])){
+    runstage.innerHTML=`<div style="text-align:center;color:var(--c-faint);margin-top:50px">
+      <div style="font-size:34px">🔒</div>
+      <p style="margin:12px 0 4px;font-weight:700;color:var(--c-text)">Run 2 verrouillé</p>
+      <p style="font-size:13px">Enregistre d'abord le run 1 de ${rider.name}.</p>
+      <button class="btn" id="goRun1" style="margin-top:16px;display:inline-flex"><span class="gly">→</span> Aller au run 1</button>
+    </div>`;
+    const g=document.getElementById('goRun1'); if(g) g.onclick=()=>{ loadRun(riderCursor,0); renderRun(); syncRiderBar(); };
+    updateRiderNav(); return;
+  }
+  fallIdx=runRows.findIndex(x=>x.fell); if(fallIdx<0)fallIdx=null;
+  curIdx=Math.max(0,Math.min(curIdx,runRows.length-1));
+  const cur=runRows[curIdx];
+
+  const upcoming = runRows.length-1-curIdx;
+
+  // DECK : les zones à venir sont des cartes PLEINE TAILLE posées DERRIÈRE la
+  // courante ; seuls leurs bords hauts dépassent au-dessus (paquet de cartes).
+  // (les barres « insérer une zone » sont désormais DANS la zone courante, cf. buildStage)
+  const deck=document.createElement('div'); deck.className='deck';
+  const nUp=Math.min(3,upcoming), PEEK=26;
+  deck.style.setProperty('--room', (nUp?nUp*PEEK+6:0)+'px');
+  for(let d=nUp; d>=1; d--){ const zi=curIdx+d; const z=runRows[zi];
+    const c=document.createElement('div'); c.className='upCard'; c.dataset.zi=zi;
+    c.style.cssText=`transform:translateY(${-PEEK*d}px);z-index:${10-d};opacity:${(1-(d-1)*0.22).toFixed(2)}`;
+    const more = (d===nUp && upcoming>nUp) ? `<span class="upl" style="margin-left:auto;color:var(--c-faint)">＋${upcoming-nUp} après</span>` : '';
+    c.innerHTML=`<div class="upHdr"><span class="upn">Z${zi+1}</span><span class="upl">${zoneShortLabel(z)}</span>${more}</div>`;
+    c.onclick=()=>goTo(zi);
+    deck.appendChild(c);
+  }
+  deck.appendChild(buildStage(cur,curIdx)); // zone courante = carte de devant
+  runstage.appendChild(deck);
+
+  // — PILE (zones saisies, départ en bas) —
+  const stackWrap=document.createElement('div'); stackWrap.className='stackWrap';
+  if(curIdx>0){
+    stackWrap.innerHTML='<div class="stackHead">↓ déjà passé (récent → départ)</div>';
+    for(let p=curIdx-1;p>=0;p--){ stackWrap.appendChild(buildStackItem(runRows[p],p)); }
+    const sm=document.createElement('div'); sm.className='startMark'; sm.textContent='▼ départ du run'; stackWrap.appendChild(sm);
+  } else {
+    stackWrap.innerHTML='<div class="startMark">▼ départ du run — zone courante</div>';
+  }
+  runstage.appendChild(stackWrap);
+
+  updateRiderNav();
+  renderMinimap({hdr:false});
+}
+// minimap câble : polygone de N poulies, zones sur les arêtes, zone courante en gros
+function renderMinimap(opt){
+  opt=opt||{};
+  const el=opt.el||document.getElementById('minimap'); if(!el) return;
+  const showHdr=opt.hdr!==false, showCur=opt.cur!==false;
+  const zones=zonesOnly();
+  const pulleys=parcours.filter(s=>s.type==='pulley');
+  const rider=savedRuns[riderCursor];
+  const hdr=showHdr?`<div class="mmRider">${rider?rider.name:'—'}</div><div class="mmRun">Run ${runCursor+1}${runCount>1?' / '+runCount:''}</div>`:'';
+  if(!pulleys.length){ el.innerHTML=hdr+`<div class="mmEmpty">Ajoute des poulies dans le parcours pour afficher la carte du câble.</div>`; return; }
+  const N=nbPoulies, dir=(cableSpin==='regular')?1:-1;   // regular → moteur bas-GAUCHE ; goofy → miroir (bas-DROITE)
+  // ---- CÂBLE = polygone inscrit dans une ellipse étirée verticalement (N=5 → maison, N=6 → hexagone),
+  // lignes droites. Moteur en bas ; regular = horaire (monte à gauche), goofy = miroir (anti-horaire).
+  // ÉLASTIQUE DOUX : chaque arête reçoit un secteur d'angle ∝ (BASE + nb de zones) → une ligne chargée
+  // (P6→P1, P3→P4…) est un peu plus longue qu'une ligne à une seule zone (P1→P2, P4→P5). Sommets sur
+  // l'ellipse ⇒ le polygone reste propre, convexe et fermé.
+  const cx=60, cy=100, Rx=34, Ry=84;
+  const wrap=p=>((p-1)%N+N)%N+1;
+  const travel=[N]; for(let p=1;p<=N-1;p++) travel.push(p);            // ordre de parcours : moteur, P1..P(n-1)
+  const pI=parcours.map((s,i)=>s.type==='pulley'?{i,p:s.p}:null).filter(Boolean);
+  // phase = position physique le long de l'arête : 0 = après la dernière poulie (côté moteur/fromP),
+  // 1 = entre deux poulies (ordre normal), 2 = avant la première poulie (côté toP). Sert au tri.
+  const zoneEdge=sec=>{ const i=parcours.indexOf(sec); let prev=null,next=null;
+    for(const q of pI){ if(q.i<i) prev=q; if(q.i>i && next===null) next=q; }
+    if(prev&&next) return {fromP:prev.p,toP:next.p,phase:1};
+    if(!prev&&next) return {fromP:wrap(next.p-1),toP:next.p,phase:2};
+    if(prev&&!next) return {fromP:prev.p,toP:wrap(prev.p+1),phase:0};
+    return {fromP:N,toP:1,phase:1};
+  };
+  zones.forEach(z=>{ z._edge=zoneEdge(z); z._pi=parcours.indexOf(z); z._ek=travel.indexOf(z._edge.fromP); });
+  // contenu par arête de parcours (travel edge k = travel[k]→travel[k+1])
+  const cnt=new Array(N).fill(0); zones.forEach(z=>{ if(z.passOf!=null) return; cnt[z._ek]+= (z.type==='air'?(z.span||1):1); });
+  // secteur angulaire par arête géométrique g (poly(g)→poly(g+1)) ; travel edge k ↔ geom edge g=N-1-k
+  const BASE=2.2, wg=[]; for(let g=0;g<N;g++) wg.push(BASE + cnt[((N-1-g)%N+N)%N]);
+  const Wg=wg.reduce((a,b)=>a+b,0), step=wg.map(x=> 2*Math.PI*x/Wg);   // radians, Σ = 2π
+  // angles cumulés : arête géométrique 0 (= le fond, poly0→poly1) centrée en bas (-90°)
+  const phi=new Array(N); phi[0]=-Math.PI/2 - step[0]/2;
+  for(let m=1;m<N;m++) phi[m]= (m===1) ? (-Math.PI/2 + step[0]/2) : phi[m-1]+step[m-1];
+  const poly=m=>({x:cx + dir*Rx*Math.cos(phi[m]), y:cy - Ry*Math.sin(phi[m])});
+  // sommets en ORDRE DE PARCOURS : moteur = coin du fond (m=0), puis on remonte le côté (m=N-1,…,1)
+  const V=[]; for(let k=0;k<N;k++) V.push(poly((N-k)%N));
+  const Vp=k=>V[((k%N)+N)%N];                                          // sommet de la poulie travel[k]
+  const cen={x:0,y:0}; V.forEach(v=>{cen.x+=v.x;cen.y+=v.y;}); cen.x/=N; cen.y/=N;
+  const lerp=(A,B,t)=>({x:A.x+(B.x-A.x)*t, y:A.y+(B.y-A.y)*t});
+  // câble : une ligne droite par arête (poulie → poulie), trait fin
+  let edges='';
+  for(let k=0;k<N;k++){ const a=Vp(k), b=Vp(k+1); edges+=`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="#565d70" stroke-width="1" stroke-linejoin="round"/>`; }
+  // poulies : petits points + nom (P1..Pn), label décalé vers l'EXTÉRIEUR (jamais sur le câble/zones)
+  let pnodes='';
+  for(let k=0;k<N;k++){ const a=Vp(k), motor=travel[k]===N;
+    let ox=a.x-cen.x, oy=a.y-cen.y; const ol=Math.hypot(ox,oy)||1; ox/=ol; oy/=ol;
+    pnodes+=`<circle cx="${a.x.toFixed(1)}" cy="${a.y.toFixed(1)}" r="${motor?3:2}" fill="${motor?'#06b6d4':'#8891a6'}"/>`;
+    pnodes+=`<text x="${(a.x+ox*7).toFixed(1)}" y="${(a.y+oy*7+2.2).toFixed(1)}" fill="${motor?'#06b6d4':'#9aa3b8'}" font-size="6.5" font-weight="800" text-anchor="middle">P${travel[k]}${motor?' ⚓':''}</text>`;
+  }
+  // les copies 2e passage (passOf) ne se dessinent pas : elles se replient sur leur zone parent (même lieu) → ×N fiable
+  const twinIds={}; zones.forEach(z=>{ if(z.passOf!=null) (twinIds[z.passOf]=twinIds[z.passOf]||[]).push(z.id); });
+  const groups={};
+  zones.forEach(z=>{ if(z.passOf!=null) return; (groups[z._ek]=groups[z._ek]||[]).push(z); });
+  const kindColor=z=> z.type==='air'?'#06b6d4': ((z.int&&z.int.kind==='jib')||(z.ext&&z.ext.kind==='jib'))?'#22c55e':'#f59e0b';
+  const mult=(q,col,n)=>`<text x="${(q.x+3.5).toFixed(1)}" y="${(q.y-3).toFixed(1)}" fill="${col}" font-size="7" font-weight="800">×${n}</text>`;
+  const curRow=runRows[curIdx], curSecId=(showCur&&curRow&&curRow.kind!=='adhoc')?curRow.secId:null;
+  const OVER=0.14;   // débord air = fraction de l'arête voisine
+  let znodes='', curTop='';
+  Object.keys(groups).forEach(kk=>{
+    const k=+kk, A=Vp(k), B=Vp(k+1);
+    const dx=B.x-A.x, dy=B.y-A.y, dl=Math.hypot(dx,dy)||1, tg={x:dx/dl,y:dy/dl};
+    let perp={x:-tg.y,y:tg.x}; const mid=lerp(A,B,.5);
+    if((cen.x-mid.x)*perp.x+(cen.y-mid.y)*perp.y<0) perp={x:-perp.x,y:-perp.y};   // perp orienté vers l'INTÉRIEUR
+    // ordre PHYSIQUE le long de l'arête : après-dernière-poulie (côté moteur) d'abord, puis normal, puis avant-première-poulie
+    const arr=groups[k].slice().sort((a,b)=> (a._edge.phase-b._edge.phase) || (a._pi-b._pi));
+    // chaque zone dessinée porte ses copies 2e passage : un seul tracé, ×(1+nb copies), highlight si l'une d'elles est la zone courante
+    const entries=arr.map(z=>{ const tw=twinIds[z.id]||[]; return {z, n:1+tw.length, ids:[z.id,...tw]}; });
+    const len=entries.length;
+    entries.forEach((ent,j)=>{
+      const z=ent.z, e=z._edge, col=kindColor(z), cur=ent.ids.includes(curSecId);
+      if(z.type==='air'){ // AIR : bande DROITE passant par les poulies franchies (débord avant/après)
+        const span=z.span||1, k0=travel.indexOf(e.fromP), verts=[]; for(let ss=0;ss<=span;ss++) verts.push(Vp(k0+ss));
+        const pre=lerp(verts[0], Vp(k0-1), OVER), post=lerp(verts[span], Vp(k0+span+1), OVER);
+        z._pt=lerp(verts[0],verts[span],.5); z._start=pre; z._end=post; { const ex=verts[span].x-verts[0].x, ey=verts[span].y-verts[0].y, el2=Math.hypot(ex,ey)||1; z._tg={x:ex/el2,y:ey/el2}; }
+        const band=`<polyline points="${[pre,...verts,post].map(q=>q.x.toFixed(1)+','+q.y.toFixed(1)).join(' ')}" fill="none" stroke="${col}" stroke-width="${cur?4:2.2}" stroke-linecap="round" stroke-linejoin="round" opacity="${cur?1:.75}"/>`;
+        if(cur) curTop+=band; else znodes+=band;
+        if(ent.n>1) znodes+=mult(verts[Math.round(span/2)],col,ent.n);
+      } else { // MODULE : segment DROIT sur l'arête + rectangle(s) int (dedans) / ext (dehors)
+        const f0=(j+0.5)/len, spanF=Math.min(0.32/len, 0.15);
+        const mc=lerp(A,B,f0), p0=lerp(A,B,f0-spanF), p1=lerp(A,B,f0+spanF);
+        z._pt=mc; z._start=p0; z._end=p1; z._tg={x:tg.x,y:tg.y};
+        const rectAt=(c,rc)=>{ const Lh=2.6, Hh=1.6;   // rc = couleur du TYPE (kicker ambre / jib vert) ; l'axe int/ext reste lu par le côté du câble
+          const Q=(sa,sb)=>`${(c.x+sa*tg.x*Lh+sb*perp.x*Hh).toFixed(1)},${(c.y+sa*tg.y*Lh+sb*perp.y*Hh).toFixed(1)}`;
+          return `<polygon points="${Q(-1,-1)} ${Q(1,-1)} ${Q(1,1)} ${Q(-1,1)}" fill="none" stroke="${rc}" stroke-width="1.1"/>`; };
+        const seg=`<line x1="${p0.x.toFixed(1)}" y1="${p0.y.toFixed(1)}" x2="${p1.x.toFixed(1)}" y2="${p1.y.toFixed(1)}" stroke="${col}" stroke-width="${cur?4:2.2}" stroke-linecap="round" opacity="${cur?1:.85}"/>`;
+        const modCol=s=> s&&s.kind==='jib' ? '#22c55e' : '#f59e0b';
+        let rects='';
+        if(z.int) rects+=rectAt({x:mc.x+perp.x*3.6, y:mc.y+perp.y*3.6}, modCol(z.int));
+        if(z.ext) rects+=rectAt({x:mc.x-perp.x*3.6, y:mc.y-perp.y*3.6}, modCol(z.ext));
+        if(cur) curTop+=seg+rects; else znodes+=seg+rects;
+        if(ent.n>1) znodes+=mult(mc,col,ent.n);
+      }
+    });
+  });
+  // ---- marqueurs DÉPART / ARRIVÉE : petits traits perpendiculaires, hors de la boucle. Départ juste
+  // avant la 1re zone, arrivée juste après la dernière (même écart → arrivée avant départ, via le tri par phase).
+  let marks='';
+  if(zones.length){
+    // départ = un peu AVANT le début du segment coloré de la 1re zone ; arrivée = un peu APRÈS la fin de la dernière.
+    // une copie 2e passage n'a pas de géométrie propre (repliée) → on la résout vers son parent dessiné (même lieu).
+    const rep=z=> (z.passOf!=null && zones.find(o=>o.id===z.passOf)) || z;
+    const zf=rep(zones[0]), zl=rep(zones[zones.length-1]), GAP=4.5;
+    const mk=(pt,tgv,col,lab)=>{ let pp={x:-tgv.y,y:tgv.x};
+      if((cen.x-pt.x)*pp.x+(cen.y-pt.y)*pp.y>0) pp={x:-pp.x,y:-pp.y};   // pp orienté vers l'EXTÉRIEUR de la boucle
+      return {pt,pp,tg:tgv,col,lab}; };
+    const items=[];
+    if(zf._start) items.push(mk({x:zf._start.x-zf._tg.x*GAP, y:zf._start.y-zf._tg.y*GAP}, zf._tg, '#34d399', 'départ'));
+    if(zl._end)   items.push(mk({x:zl._end.x+zl._tg.x*GAP,   y:zl._end.y+zl._tg.y*GAP},   zl._tg, '#f87171', 'arrivée'));
+    // anti-collision (boucle complète, même arête) : label d'arrivée vers l'INTÉRIEUR / départ vers l'extérieur,
+    // + petit décalage le long du câble (arrivée en amont, départ en aval) pour que les 2 traits restent visibles.
+    const side=items.map(()=>1);
+    if(items.length===2 && Math.hypot(items[0].pt.x-items[1].pt.x, items[0].pt.y-items[1].pt.y)<22){
+      side[1]=-1; const SEP=3;
+      items[0].pt={x:items[0].pt.x+items[0].tg.x*SEP, y:items[0].pt.y+items[0].tg.y*SEP};   // départ en aval
+      items[1].pt={x:items[1].pt.x-items[1].tg.x*SEP, y:items[1].pt.y-items[1].tg.y*SEP};   // arrivée en amont
+    }
+    items.forEach((it,i)=>{ const {pt,pp,col,lab}=it, s=side[i];
+      const a={x:pt.x+pp.x*5.5,y:pt.y+pp.y*5.5}, b={x:pt.x-pp.x*5.5,y:pt.y-pp.y*5.5};
+      marks+=`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${b.x.toFixed(1)}" y2="${b.y.toFixed(1)}" stroke="${col}" stroke-width="1.6" stroke-linecap="round"/>`
+        +`<text x="${(pt.x+pp.x*15*s).toFixed(1)}" y="${(pt.y+pp.y*15*s+2).toFixed(1)}" fill="${col}" stroke="#0a0a0f" stroke-width="2.2" paint-order="stroke" stroke-linejoin="round" font-size="6.3" font-weight="800" text-anchor="middle">${lab}</text>`;
+    });
+  }
+  // viewBox calé au plus près de la forme (remplit la largeur de la colonne) ; marge basse pour départ/arrivée
+  let minx=1e9,maxx=-1e9,miny=1e9,maxy=-1e9;
+  V.forEach(v=>{ minx=Math.min(minx,v.x); maxx=Math.max(maxx,v.x); miny=Math.min(miny,v.y); maxy=Math.max(maxy,v.y); });
+  const vb=`${(minx-14).toFixed(1)} ${(miny-12).toFixed(1)} ${(maxx-minx+28).toFixed(1)} ${(maxy-miny+34).toFixed(1)}`;
+  // glow autour de la zone en cours (saisie) : flou coloré derrière le tracé courant
+  const defs = curTop ? `<defs><filter id="curGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>` : '';
+  const cur = curTop ? `<g filter="url(#curGlow)">${curTop}</g>` : '';
+  const svg=`<svg class="mmSvg" viewBox="${vb}" preserveAspectRatio="xMidYMid meet">${defs}${edges}${pnodes}${znodes}${cur}${marks}</svg>`;
+  el.innerHTML=hdr+svg;
+}
+function jibSummary(c){const p=[];if(c.appr)p.push(c.appr);if(c.in&&c.in!=='–')p.push(c.in+' in');if(c.slide)p.push(c.slide);if(c.out&&c.out!=='–')p.push(c.out+' out');return p.join(' · ')||'50-50';}
+
+function updateRiderNav(){
+  const N=savedRuns.length;
+  const name=N?(savedRuns[riderCursor]?.name||'—'):'—';
+  const runLbl = N&&runCount>1 ? ` · <b style="color:var(--c-wake)">Run ${runCursor+1}</b>` : '';
+  document.getElementById('riderPos').innerHTML = N?`${riderCursor+1} / ${N} · ${name}${runLbl}`:'—';
+  document.getElementById('riderPrev').disabled = linearPos()<=0;
+  document.getElementById('riderNext').disabled = linearPos()>=N*runCount-1;
+  const sb=document.getElementById('saveRun1');
+  const rider=N?savedRuns[riderCursor]:null;
+  // modifier un run déjà validé le repasse « à valider » (le contenu diffère du snapshot pris à la validation)
+  if(rider && rider.saved && rider.saved[runCursor] && rider.snap && rider.snap[runCursor]!=null && JSON.stringify(rider.runs[runCursor])!==rider.snap[runCursor]){ rider.saved[runCursor]=false; }
+  const locked = rider && runCursor===1 && !(rider.saved&&rider.saved[0]);
+  if(N && runCount>1 && !locked){
+    sb.classList.remove('hide');
+    const saved = rider.saved && rider.saved[runCursor];
+    if(runCursor===0){ sb.innerHTML = saved?'<span class="gly">✓</span> Run 1 enregistré':'<span class="gly">✓</span> Enregistrer le run 1 → prépare run 2'; sb.onclick=saveRun1; }
+    else { sb.innerHTML = saved?'<span class="gly">✓</span> Run 2 validé':'<span class="gly">✓</span> Valider le run 2'; sb.onclick=saveRun2; }
+    sb.classList.toggle('saved', !!saved);
+  } else sb.classList.add('hide');
+}
+let navBusy=false;
+const flipEase='cubic-bezier(.16,1,.3,1)';
+function rectOf(el){ return el?el.getBoundingClientRect():null; }
+function flip(el,first,last,fromOpacity){ // anime el depuis la position/taille 'first' vers sa position naturelle 'last'
+  const dx=(first.left+first.width/2)-(last.left+last.width/2);
+  const dy=(first.top+first.height/2)-(last.top+last.height/2);
+  const sx=Math.max(.15,first.width/last.width), sy=Math.max(.08,first.height/last.height);
+  return el.animate([{transform:`translate(${dx}px,${dy}px) scale(${sx},${sy})`,opacity:fromOpacity},{transform:'none',opacity:1}],{duration:360,easing:flipEase});
+}
+function goTo(idx){
+  idx=Math.max(0,Math.min(idx,runRows.length-1));
+  if(idx===curIdx||navBusy) return;
+  const dir=Math.sign(idx-curIdx);
+  const oldStage=runstage.querySelector('.stage');
+  const firstOut=rectOf(oldStage);
+  const ghost=oldStage?oldStage.cloneNode(true):null;
+  // FIRST de l'entrante : où la zone-cible est actuellement représentée (carte du deck si on avance, item de pile si on recule)
+  const firstIn=rectOf(runstage.querySelector(`.upCard[data-zi="${idx}"], .stackitem[data-zi="${idx}"]`));
+  const prev=curIdx;
+  navBusy=true;
+  curIdx=idx; activeSide=null;
+  renderRun();
+  // ENTRANTE : la carte grandit depuis sa place dans le deck/pile jusqu'au centre
+  const newStage=runstage.querySelector('.stage');
+  if(newStage){
+    if(firstIn) flip(newStage, firstIn, rectOf(newStage), .35);
+    else newStage.animate([{opacity:.1,transform:`translateY(${dir>0?-30:30}px) scaleY(.6)`},{opacity:1,transform:'none'}],{duration:340,easing:flipEase});
+  }
+  // SORTANTE : la courante (clone) file se ranger à sa nouvelle place
+  if(ghost&&firstOut){
+    const dst = dir>0 ? runstage.querySelector(`.stackitem[data-zi="${prev}"]`) : runstage.querySelector(`.upCard[data-zi="${prev}"]`);
+    const lastOut=rectOf(dst);
+    ghost.classList.add('ghost');
+    ghost.style.cssText=`position:fixed;left:${firstOut.left}px;top:${firstOut.top}px;width:${firstOut.width}px;height:${firstOut.height}px;margin:0;z-index:60;pointer-events:none`;
+    document.body.appendChild(ghost);
+    if(lastOut){
+      const dx=(lastOut.left+lastOut.width/2)-(firstOut.left+firstOut.width/2);
+      const dy=(lastOut.top+lastOut.height/2)-(firstOut.top+firstOut.height/2);
+      const sx=Math.max(.15,lastOut.width/firstOut.width), sy=Math.max(.08,lastOut.height/firstOut.height);
+      if(dst) dst.style.visibility='hidden';
+      const a=ghost.animate([{transform:'none',opacity:1},{transform:`translate(${dx}px,${dy}px) scale(${sx},${sy})`,opacity:.3}],{duration:360,easing:'cubic-bezier(.5,0,.2,1)'});
+      a.onfinish=()=>{ ghost.remove(); if(dst) dst.style.visibility=''; };
+    } else {
+      const a=ghost.animate([{opacity:1,transform:'none'},{opacity:0,transform:`translateY(${dir>0?70:-70}px) scale(.8)`}],{duration:320,easing:'ease-in'});
+      a.onfinish=()=>ghost.remove();
+    }
+  }
+  setTimeout(()=>{ navBusy=false; }, 340);
+}
+function navigate(dir){ goTo(curIdx+dir); }
+// flèches ← → : choisit le côté gauche/droite (int/ext selon le sens du câble)
+function pickSideLR(vis){
+  const side = vis==='l'?leftSide():rightSide();
+  const r=runRows[curIdx];
+  if(r && r.kind==='module'){ const sec=secOf(r); if(!sec || !sec[side]) return; setModuleSide(r,side); activeSide=r.side; }
+  else if(r && r.kind==='adhoc'){ r.side=side; activeSide=r.side; }
+  else { activeSide=side; }
+  renderRun();
+}
+document.getElementById('riderPrev').onclick=()=>riderNav(-1);
+document.getElementById('riderNext').onclick=()=>riderNav(1);
+
+// molette / trackpad = navigation entre zones (laisse le scroll natif quand un bloc doit défiler)
+function scrollableAncestor(el,dir){
+  while(el && el!==runstage){
+    if(el.scrollHeight>el.clientHeight+1){
+      const atTop=el.scrollTop<=0, atBot=el.scrollTop+el.clientHeight>=el.scrollHeight-1;
+      if(dir>0&&!atBot) return el; if(dir<0&&!atTop) return el;
+    }
+    el=el.parentElement;
+  }
+  return null;
+}
+let wheelAcc=0, wheelCd=false;
+runstage.addEventListener('wheel',e=>{
+  const dir=e.deltaY>0?1:-1;
+  if(scrollableAncestor(e.target,dir)) return;
+  e.preventDefault();
+  if(wheelCd) return;
+  if(Math.sign(e.deltaY)!==Math.sign(wheelAcc)) wheelAcc=0;
+  wheelAcc+=e.deltaY;
+  if(Math.abs(wheelAcc)>55){ wheelAcc=0; navigate(-dir); wheelCd=true; setTimeout(()=>wheelCd=false,420); }
+},{passive:false});
+
+// flèches : ↑/↓ = zone (haut = futur, bas = passé) · ←/→ = côté gauche/droite
+document.addEventListener('keydown',e=>{
+  if(vSaisie.classList.contains('hide')) return;
+  const t=e.target;
+  if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA')) return;
+  switch(e.key){
+    case 'ArrowUp':    e.preventDefault(); navigate(1);  break;
+    case 'ArrowDown':  e.preventDefault(); navigate(-1); break;
+    case 'ArrowLeft':  e.preventDefault(); pickSideLR('l'); break;
+    case 'ArrowRight': e.preventDefault(); pickSideLR('r'); break;
+  }
+});
+
+// swipe tablette (pas de clavier) : ↕ = zone (haut = futur) · ↔ = côté gauche/droite
+let tsx=0, tsy=0, tst=0, tsMulti=false;
+runstage.addEventListener('touchstart',e=>{ tsMulti=e.touches.length>1; const t=e.changedTouches[0]; tsx=t.clientX; tsy=t.clientY; tst=Date.now(); },{passive:true});
+runstage.addEventListener('touchend',e=>{
+  if(tsMulti) return;
+  const t=e.changedTouches[0];
+  const dx=t.clientX-tsx, dy=t.clientY-tsy, dt=Date.now()-tst;
+  if(dt>700) return;                       // trop lent = pas un swipe
+  const ax=Math.abs(dx), ay=Math.abs(dy);
+  if(ax>ay){ if(ax>50) pickSideLR(dx<0?'l':'r'); }        // horizontal → côté
+  else if(ay>70 && !scrollableAncestor(e.target, dy<0?1:-1)) navigate(dy<0?1:-1); // vertical → zone
+},{passive:true});
+
+function syncRiderBar(){
+  const total=savedRuns.length;
+  document.getElementById('riderNum').textContent = total?(riderCursor+1):'–';
+  const ri=document.getElementById('riderName');
+  ri.textContent = total?(savedRuns[riderCursor]?.name||'—'):'—';
+  document.getElementById('riderPosTop').textContent = total?(riderCursor+1):'0';
+  document.getElementById('riderTotal').textContent = total;
+  const rb=document.getElementById('runBadge');
+  if(total && runCount>1){ rb.classList.remove('hide'); rb.textContent=`Run ${runCursor+1} / ${runCount}`; }
+  else rb.classList.add('hide');
+  updateRiderNav();
+}
+document.getElementById('resetRun').onclick=()=>{
+  const rider=savedRuns[riderCursor]; if(!rider) return;
+  rider.runs[runCursor]=blankRows();
+  if(runCursor===0){ if(rider.saved) rider.saved[0]=false; if(runCount>1 && !run2Confirmed(rider)) rider.runs[1]=blankRows(); }
+  runRows=rider.runs[runCursor]; curIdx=0; renderRun(); syncRiderBar();
+};
+
+// ── déplacer le run courant vers un autre rider (erreur de saisie de nom) ──
+function moveRunToRider(ti){
+  const src=riderCursor, ru=runCursor;
+  const from=savedRuns[src], to=savedRuns[ti];
+  if(!from||!to||ti===src) return;
+  const toRows=to.runs[ru];
+  if(toRows && toRows.some(rowHasContent) && !confirm(`${to.name} a déjà un run ${ru+1} saisi. Le remplacer par celui de ${from.name} ?`)) return;
+  from.saved=from.saved||[]; to.saved=to.saved||[]; from.score=from.score||[]; to.score=to.score||[];
+  // le run (séquences + note + état enregistré) passe de la source à la cible
+  to.runs[ru]=from.runs[ru]; to.saved[ru]=from.saved[ru]; to.score[ru]=from.score[ru];
+  // la source (saisie par erreur) repart à blanc
+  from.runs[ru]=blankRows(); from.saved[ru]=false; from.score[ru]='';
+  // cohérence run 2 (brouillon) quand on déplace un run 1
+  if(ru===0 && runCount>1){
+    if(!run2Confirmed(from)) from.runs[1]=blankRows();               // draft périmé côté source
+    if(to.saved[0] && !run2Confirmed(to)) to.runs[1]=draftFromRun1(to.runs[0]); // re-prépare le draft côté cible
+  }
+  closeMovePop();
+  loadRun(ti, ru); renderRun(); syncRiderBar(); // on bascule sur le bon rider pour vérifier
+}
+function closeMovePop(){ const p=document.getElementById('movePop'); if(p) p.classList.add('hide'); }
+function openMovePop(){
+  const p=document.getElementById('movePop'); if(!p) return;
+  if(!p.classList.contains('hide')){ closeMovePop(); return; }
+  const ru=runCursor;
+  let html=`<div class="mpHead">Déplacer ce run (run ${ru+1}) vers…</div>`;
+  savedRuns.forEach((r,i)=>{ if(i===riderCursor) return;
+    const rows=r.runs[ru]; const filled=rows&&rows.some(rowHasContent);
+    html+=`<button data-move="${i}"><span class="mpNum">${i+1}</span>${r.name}<span class="mpMeta">${filled?'run déjà saisi':'run vide'}</span></button>`;
+  });
+  html+=`<button class="mpCancel">annuler</button>`;
+  p.innerHTML=html; p.classList.remove('hide');
+  p.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>moveRunToRider(+b.dataset.move));
+  p.querySelector('.mpCancel').onclick=closeMovePop;
+}
+document.getElementById('moveRun').onclick=e=>{ e.stopPropagation(); openMovePop(); };
+document.addEventListener('click',e=>{ const p=document.getElementById('movePop'); if(p&&!p.classList.contains('hide')&&!p.contains(e.target)&&e.target.id!=='moveRun'&&!e.target.closest('#moveRun')) closeMovePop(); });
+
+// ───── POULE ─────
+const matrixEl=document.getElementById('matrix');
+function posTag(s){return s?`<span class="pos pos-${s}">${s}</span>`:''}
+function cellModule(row){
+  if(!row) return `<span class="blank">·</span>`;
+  const fall = row.fell?'<div class="cellFall">⚠ chute</div>':'';
+  const dc=row.draft?' draft':'';
+  if(row.rien) return `<span class="skip${dc}">—</span>${fall}`;
+  if(!row.trick && !row.chips) return fall||`<span class="blank">·</span>`;
+  const isJib=!!row.chips;
+  const label=isJib?jibSummary(row.chips):row.trick;
+  const sub=isJib?'jib':(row.approach||'');
+  return `<div class="mtrick ${row.rate}${dc}"><span class="rdotM ${row.rate}"></span><span class="tn">${label}</span>${posTag(row.side)}</div>${sub?`<div class="msub">${sub}</div>`:''}${fall}`;
+}
+function cellAir(row){
+  const fall = row&&row.fell?'<div class="cellFall">⚠ chute</div>':'';
+  if(!row || !row.airs || !row.airs.length) return fall||`<span class="blank">·</span>`;
+  return `<div class="cell">${row.airs.map(a=>`<div class="mtrick ${a.rate}${a.draft?' draft':''}"><span class="rdotM ${a.rate}"></span><span class="tn">${a.name}</span>${posTag(a.side)}</div>`).join('')}</div>${fall}`;
+}
+// un run "rempli" = au moins une saisie
+// "rempli" ignore les brouillons (draft) : un run 2 seulement pré-rempli ne bloque pas
+function runTouched(rows){ return !!rows && rows.some(rowConfirmed); }
+function anyRun2Touched(){ return savedRuns.some(r=> runTouched(r.runs[1])); }
+function riderNotes(rider){ let n=0; for(let k=0;k<runCount;k++){ const rows=rider.runs[k]; if(!rows) continue; rows.forEach(x=>{ if(x.kind==='air'){ n+=(x.airs?x.airs.filter(a=>!a.draft).length:0); } else if(!x.draft && (x.kind==='adhoc'?(x.text&&x.text.trim()):(!x.rien&&x.trick))) n++; }); } return n; }
+function validatedMeta(r){ const s=r.saved||[]; const p=[]; if(s[0])p.push('R1'); if(s[1])p.push('R2'); return p.length?` · <span style="color:var(--c-success)">✓ ${p.join(' ')}</span>`:''; }
+// empile R1/R2 dans une cellule (render(k) → html du run k)
+function runlines(render){ let out=''; for(let k=0;k<runCount;k++){ out+=`<div class="runline">${runCount>1?`<span class="runtag">R${k+1}</span>`:''}<div class="rlbody">${render(k)}</div></div>`; } return out; }
+
+// en-tête de section : slots int (haut) / ext (bas) TOUJOURS alignés (slot vide réservé si absent), sans n° de zone
+function secBadges(sec){
+  const pass = sec.passOf!=null ? `<span class="sbadge pass">↺ 2e passage</span>` : '';
+  if(sec.type==='air') return `<div class="secslot"><span class="sbadge air">blocage</span>${pass}</div>`;
+  const slot=(m,side)=> m
+    ? `<div class="secslot"><span class="sbadge ${m.kind}">${m.kind==='kicker'?'kicker':(m.label||'jib')}</span><span class="pos pos-${side}">${side}</span></div>`
+    : `<div class="secslot empty"></div>`;
+  return slot(sec.int,'int')+slot(sec.ext,'ext')+(pass?`<div class="secslot">${pass}</div>`:'');
+}
+function mtrickAdhoc(row){ return `<div class="mtrick ${row.rate}${row.draft?' draft':''}"><span class="rdotM ${row.rate}"></span><span class="tn">${row.text||'hors parcours'}</span>${posTag(row.side)}</div>`; }
+function runNotes(rows){ if(!rows) return 0; let n=0; rows.forEach(x=>{ if(x.kind==='air'){ n+=(x.airs?x.airs.filter(a=>!a.draft).length:0); } else if(!x.draft && (x.kind==='adhoc'?(x.text&&x.text.trim()):(!x.rien&&x.trick))) n++; }); return n; }
+
+// ── vue "2 tableaux" : un tableau par run ──
+function runHead(ru){
+  let head=`<thead><tr><th class="corner sech"></th>`;
+  const cols=orderFor(ru);
+  cols.forEach((i,pos)=>{ const r=savedRuns[i]; const rows=r.runs[ru]; const fell=!!(rows&&rows.some(x=>x.fell)); const saved=!!(r.saved&&r.saved[ru]);
+    const passage = ru===1 ? `<div class="passage"><button class="pmv" data-mv2="${pos}" data-d="-1" ${pos===0?'disabled':''}>‹</button><span>passage ${pos+1}</span><button class="pmv" data-mv2="${pos}" data-d="1" ${pos===cols.length-1?'disabled':''}>›</button></div>` : '';
+    head+=`<th class="rider"><div class="rhead">
+        <div><div class="rn"><span class="rnum">${i+1}.</span> <input class="rnameInp" data-rn="${i}" value="${escA(r.name)}" aria-label="nom du rider"></div><div class="rmeta">${runNotes(rows)} notés${fell?' · <span style="color:var(--c-danger)">chute</span>':''}${saved?' · <span style="color:var(--c-success)">✓</span>':''}</div>${scoreCell(i,ru)}${passage}
+          <div class="judgeBtns"><button class="judgebtn" data-edit-run="${i}" data-run="${ru}">⚖ Juger ce run</button></div></div>
+        <div class="rhctrls">${ru===0?delBtn(i):''}</div>
+      </div></th>`; });
+  return head+`</tr></thead>`;
+}
+function runBody(ru){
+  const cols=orderFor(ru);
+  const byAnchor={};
+  cols.forEach(ri=>{ const rider=savedRuns[ri]; const rows=rider.runs[ru]; if(!rows) return; rows.forEach((row,j)=>{ if(row.kind!=='adhoc') return; let anchor='end'; for(let k=j+1;k<rows.length;k++){ if(rows[k].secId!=null){anchor=rows[k].secId;break;} } (byAnchor[anchor]=byAnchor[anchor]||[]).push({ri,row}); }); });
+  const adhocRow=list=>{ let tds=''; cols.forEach(ri=>{ const mine=list.filter(a=>a.ri===ri); tds+= mine.length?`<td><div class="cell">${mine.map(a=>mtrickAdhoc(a.row)).join('')}</div></td>`:`<td><span class="blank">·</span></td>`; }); return `<tr class="adhocrow"><th class="sech"><div class="secname"><span class="sbadge adhoc">+</span> hors parcours</div></th>${tds}</tr>`; };
+  let body='';
+  zonesOnly().forEach((sec,idx)=>{
+    if(byAnchor[sec.id]) body+=adhocRow(byAnchor[sec.id]);
+    const isAir=sec.type==='air';
+    let tds=''; cols.forEach(ri=>{ const rider=savedRuns[ri]; const rows=rider.runs[ru]; const row=rows?rows.find(x=>x.secId===sec.id):null; tds+=`<td class="${row&&row.fell?'fellTd':''}">${isAir?cellAir(row):cellModule(row)}</td>`; });
+    body+=`<tr class="${isAir?'airrow':''}"><th class="sech">${secBadges(sec)}</th>${tds}</tr>`;
+  });
+  if(byAnchor['end']) body+=adhocRow(byAnchor['end']);
+  return body;
+}
+function tableForRun(ru){ return `<table class="matrix">${runHead(ru)}<tbody>${runBody(ru)}</tbody></table>`; }
+
+// ── vue "empilée" : R1/R2 dans la même case ──
+function stackedTable(){
+  let head=`<thead><tr><th class="corner sech"></th>`;
+  savedRuns.forEach((r,i)=>{ const anyFall=r.runs.some((rows,k)=>k<runCount&&rows&&rows.some(x=>x.fell));
+    const judgeBtns=Array.from({length:runCount},(_,k)=>`<button class="judgebtn" data-edit-run="${i}" data-run="${k}">⚖ Juger ${runCount>1?('run '+(k+1)):'ce run'}</button>`).join('');
+    head+=`<th class="rider"><div class="rhead"><div><div class="rn"><span class="rnum">${i+1}.</span> <input class="rnameInp" data-rn="${i}" value="${escA(r.name)}" aria-label="nom du rider"></div><div class="rmeta">${riderNotes(r)} notés${anyFall?' · <span style="color:var(--c-danger)">chute</span>':''}${runCount>1?validatedMeta(r):''}</div>${Array.from({length:runCount},(_,k)=>scoreCell(i,k,runCount>1?('R'+(k+1)):'note')).join('')}
+        <div class="judgeBtns">${judgeBtns}</div></div>
+      <div class="rhctrls">${delBtn(i)}</div></div></th>`; });
+  head+=`</tr></thead>`;
+  const byAnchor={};
+  savedRuns.forEach((rider,ri)=>{ for(let ru=0;ru<runCount;ru++){ const rows=rider.runs[ru]; if(!rows) continue; rows.forEach((row,j)=>{ if(row.kind!=='adhoc') return; let anchor='end'; for(let k=j+1;k<rows.length;k++){ if(rows[k].secId!=null){anchor=rows[k].secId;break;} } (byAnchor[anchor]=byAnchor[anchor]||[]).push({ri,ru,row}); }); } });
+  const adhocRow=list=>{ let tds=''; savedRuns.forEach((rider,ri)=>{ const mine=list.filter(a=>a.ri===ri); tds+=`<td>${runlines(k=>{ const es=mine.filter(a=>a.ru===k); return es.length?es.map(a=>mtrickAdhoc(a.row)).join(''):`<span class="blank">·</span>`; })}</td>`; }); return `<tr class="adhocrow"><th class="sech"><div class="secname"><span class="sbadge adhoc">+</span> hors parcours</div></th>${tds}</tr>`; };
+  let body='';
+  zonesOnly().forEach((sec,idx)=>{
+    if(byAnchor[sec.id]) body+=adhocRow(byAnchor[sec.id]);
+    const isAir=sec.type==='air';
+    let tds=''; savedRuns.forEach(rider=>{ const anyFell=rider.runs.some((rows,k)=>k<runCount&&rows&&(rows.find(x=>x.secId===sec.id)||{}).fell); tds+=`<td class="${anyFell?'fellTd':''}">${runlines(k=>{ const rows=rider.runs[k]; if(!rows) return `<span class="blank">·</span>`; const row=rows.find(x=>x.secId===sec.id); return isAir?cellAir(row):cellModule(row); })}</td>`; });
+    body+=`<tr class="${isAir?'airrow':''}"><th class="sech">${secBadges(sec)}</th>${tds}</tr>`;
+  });
+  if(byAnchor['end']) body+=adhocRow(byAnchor['end']);
+  return `<table class="matrix">${head}<tbody>${body}</tbody></table>`;
+}
+
+// note numérique d'un run (/100). "FRS" (First Run Score) sur un run 2+ = reprend la note du run 1.
+function scoreVal(r,k){ let s=r.score&&r.score[k]; if(s==null) return null; s=String(s).trim(); if(!s) return null;
+  if(/^dns$/i.test(s)) return 0;                      // Did Not Start = note 0
+  if(k>0 && /^frs$/i.test(s)) return scoreVal(r,0);
+  const v=parseFloat(s.replace(',','.')); return isNaN(v)?null:v; }
+// meilleure note d'un rider (best-of sur ses runs) — null si aucune note
+function bestScore(r){ let b=null; for(let k=0;k<runCount;k++){ const v=scoreVal(r,k); if(v!=null) b=(b==null)?v:Math.max(b,v); } return b; }
+// tous les runs de tous les riders ont une note (chiffre, FRS ou DNS) → autorise la sauvegarde du heat
+function allScored(){ return savedRuns.length>0 && savedRuns.every(r=>{ for(let k=0;k<runCount;k++){ if(scoreVal(r,k)==null) return false; } return true; }); }
+// DNS (Did Not Start) : le run entier passe en skip (note 0). N'empêche pas un run 2.
+function markDNS(ri,ru){
+  const rider=savedRuns[ri]; if(!rider) return;
+  if(!rider.runs[ru]) rider.runs[ru]=blankRows();
+  rider.runs[ru].forEach(x=>{ x.draft=false; x.fell=false; delete x.fallAuto;
+    if(x.kind==='air'){ x.airs=[]; } else if(x.kind==='adhoc'){ x.text=''; } else { x.rien=true; x.trick=null; x.chips=null; x.approach=null; } });
+  (rider.score=rider.score||[])[ru]='DNS';
+  rider.saved=rider.saved||[false,false]; rider.saved[ru]=true;
+  renderPoule();
+}
+function renderRanking(){
+  const el=document.getElementById('ranking'); if(!el) return;
+  const fmt=v=>Number.isInteger(v)?String(v):v.toFixed(1);
+  const scored=savedRuns.map((r,i)=>({i,r,s:bestScore(r)})).filter(x=>x.s!=null).sort((a,b)=>b.s-a.s);
+  const waiting=savedRuns.filter(r=>bestScore(r)==null);
+  if(!scored.length){ el.innerHTML=`<div class="rkempty">Classement — pose des notes pour le voir se former.</div>`; return; }
+  const chips=scored.map((x,pos)=>`<div class="rkchip${pos===0?' lead':''}"><span class="rkpos">${pos+1}</span><span class="rkname">${x.r.name}</span><span class="rksc">${fmt(x.s)}</span></div>`).join('');
+  el.innerHTML=`<div class="rklabel">classement live</div><div class="rkrow">${chips}</div>${waiting.length?`<div class="rkwait">en attente de note : ${waiting.map(r=>r.name).join(', ')}</div>`:''}`;
+}
+function renderPoule(){
+  syncPoolControls();
+  if(!savedRuns.length){ matrixEl.innerHTML='<p style="color:var(--c-faint)">Aucun rider — ajoute des riders ci-dessus.</p>'; return; }
+  if(runCount>1 && matrixMode==='split'){
+    matrixEl.innerHTML = `<div class="runtable"><div class="rtlabel"><span class="runtag">R1</span> Run 1</div>${tableForRun(0)}</div>
+      <div class="runtable"><div class="rtlabel"><span class="runtag">R2</span> Run 2
+        <span class="ord2ctrl"><button class="ord2 nat${run2Order?'':' on'}">natural order</button><button class="ord2 rev${run2Order?' on':''}">reverse order</button></span>
+      </div>${tableForRun(1)}</div>`;
+  } else if(matrixMode==='split'){
+    matrixEl.innerHTML = tableForRun(0);
+  } else {
+    matrixEl.innerHTML = stackedTable();
+  }
+  matrixEl.querySelectorAll('[data-del-run]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.delRun;
+    if(pendingDelRider!==i){ pendingDelRider=i; clearTimeout(delTimer); delTimer=setTimeout(()=>{pendingDelRider=null;renderPoule();},2500); renderPoule(); return; }
+    clearTimeout(delTimer); pendingDelRider=null;
+    const nm=savedRuns[i]?savedRuns[i].name:'';
+    savedRuns.splice(i,1);
+    if(riderCursor>=savedRuns.length) riderCursor=Math.max(0,savedRuns.length-1);
+    renderPoule();
+    toast(`Rider « ${nm} » supprimé`);
+  });
+  matrixEl.querySelectorAll('[data-edit-run]').forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.editRun, ru=+(b.dataset.run||0);
+    loadRun(i,ru); selectTab('tabSaisie'); renderRun(); syncRiderBar();
+  });
+  matrixEl.querySelectorAll('.scoreinp').forEach(inp=>inp.oninput=()=>{
+    const [ri,ru]=inp.dataset.score.split('-').map(Number);
+    (savedRuns[ri].score=savedRuns[ri].score||[])[ru]=inp.value;
+    renderRanking();   // MAJ ciblée du classement, sans re-render de la matrice (garde le focus)
+    const sh=document.getElementById('saveHeat'); if(sh) sh.disabled=!allScored();   // active « Sauvegarder le heat » dès la dernière note
+  });
+  renderRanking();
+  // renommage : MAJ donnée + classement + l'autre tableau (vue 2 tableaux) sans re-render (garde le focus)
+  matrixEl.querySelectorAll('.rnameInp').forEach(inp=>inp.oninput=()=>{ const i=+inp.dataset.rn, r=savedRuns[i]; if(!r) return; r.name=inp.value;
+    matrixEl.querySelectorAll(`.rnameInp[data-rn="${i}"]`).forEach(o=>{ if(o!==inp) o.value=inp.value; }); renderRanking(); });
+  matrixEl.querySelectorAll('.frsbtn:not(.dns)').forEach(b=>b.onclick=()=>{ const [ri,ru]=b.dataset.frs.split('-').map(Number); (savedRuns[ri].score=savedRuns[ri].score||[])[ru]='FRS'; renderPoule(); });
+  matrixEl.querySelectorAll('.dns').forEach(b=>b.onclick=()=>{ const [ri,ru]=b.dataset.dns.split('-').map(Number); markDNS(ri,ru); });
+  matrixEl.querySelectorAll('.pmv').forEach(b=>b.onclick=()=>moveRun2(+b.dataset.mv2, +b.dataset.d));
+  const rev=matrixEl.querySelector('.ord2.rev'); if(rev) rev.onclick=reverseRun2;
+  const nat=matrixEl.querySelector('.ord2.nat'); if(nat) nat.onclick=resetRun2Order;
+}
+
+// ── réglage 1/2 runs ──
+function syncPoolControls(){
+  const blocked=anyRun2Touched();
+  document.querySelectorAll('.runcount button').forEach(b=>{ const v=+b.dataset.rc; b.classList.toggle('on', v===runCount); b.disabled=(v===1&&blocked); });
+  const mm=document.querySelector('.matrixmode'); if(mm) mm.style.display = runCount>1?'':'none';
+  document.querySelectorAll('.matrixmode button').forEach(b=>b.classList.toggle('on', b.dataset.mm===matrixMode));
+  const sh=document.getElementById('saveHeat'); if(sh) sh.disabled = !allScored();
+}
+document.getElementById('saveHeat').onclick=()=>{ if(allScored()) toast('Sauvegarde du heat — persistance à venir','✓'); };
+document.querySelectorAll('.matrixmode button').forEach(b=>b.onclick=()=>{ matrixMode = matrixMode==='stacked'?'split':'stacked'; renderPoule(); });
+{ const pn=document.getElementById('poolName'), jn=document.getElementById('judgeName');
+  if(pn) pn.oninput=()=>{ poolName=pn.value; };
+  if(jn) jn.oninput=()=>{ judgeName=jn.value; }; }
+function setRunCount(n){
+  if(n===runCount) return;
+  if(n===1 && anyRun2Touched()){ toast('Un rider a déjà un 2e run rempli — vide-le d\'abord (onglet Run → Run 2 → Vider ce run).','⚠'); syncPoolControls(); return; }
+  runCount=n; if(runCursor>=runCount) runCursor=0;
+  renderPoule();
+}
+document.querySelectorAll('.runcount button').forEach(b=>b.onclick=()=>setRunCount(+b.dataset.rc));
+document.getElementById('addRider').onclick=()=>{
+  const runs=[blankRows()]; if(runCount>1) runs.push(blankRows());
+  savedRuns.push({name:'Rider '+(savedRuns.length+1), saved:[false,false], runs});
+  const ni=savedRuns.length-1; riderCursor=ni;
+  renderPoule();
+  const inp=matrixEl.querySelector(`.rnameInp[data-rn="${ni}"]`); if(inp){ inp.focus(); inp.select(); }
+};
+
+loadRun(0,0); renderRun(); syncRiderBar();
+</script>
+</body>
+</html>
