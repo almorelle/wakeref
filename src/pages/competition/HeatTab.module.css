@@ -115,3 +115,21 @@
 .runline { display: flex; align-items: flex-start; gap: 7px; }
 .runline + .runline { margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--c-border); }
 .rlbody { flex: 1; min-width: 0; }
+
+/* préchargement des modèles voix */
+.voice { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: -4px 0 12px; }
+.voiceLab { font-size: 12px; font-weight: 700; color: var(--c-muted); }
+.voiceBtn {
+  position: relative; overflow: hidden; isolation: isolate;
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; line-height: 1;
+  padding: 6px 11px; border-radius: 7px;
+  border: 1px solid var(--c-border2); background: var(--c-surface2, var(--c-surface));
+  color: var(--c-text); cursor: pointer;
+}
+.voiceBtn:hover:not(:disabled) { border-color: var(--c-wake); }
+.voiceBtn:disabled { cursor: default; }
+.voiceBtn[data-state="ready"] { border-color: var(--c-success); color: var(--c-success); }
+.voiceBtn[data-state="error"] { border-color: var(--c-danger); color: var(--c-danger); cursor: pointer; }
+.voiceBar { position: absolute; inset: 0 auto 0 0; z-index: -1; background: color-mix(in srgb, var(--c-wake) 22%, transparent); transition: width .2s ease; }
+.voiceTxt { position: relative; }

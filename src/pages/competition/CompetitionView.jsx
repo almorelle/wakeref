@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getParcoursByCode } from '../../lib/competition/api'
 import { useHeatStore } from '../../lib/competition/heatStore'
+import { useCompetitionVoice } from '../../lib/competition/voice'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import HeatTab from './HeatTab'
@@ -72,6 +73,8 @@ export default function CompetitionView() {
 function HeatRunApp({ code, row }) {
   const [state, dispatch] = useHeatStore(code, row)
   const { toasts, toast } = useToast()
+  // Moteur voix au niveau app : la file de transcription survit aux changements d'onglet.
+  const voice = useCompetitionVoice(dispatch, (msg) => toast(msg, 'error'))
 
   return (
     <div className={styles.app}>
@@ -86,8 +89,8 @@ function HeatRunApp({ code, row }) {
       </header>
 
       {state.tab === 'heat'
-        ? <HeatTab state={state} dispatch={dispatch} toast={toast} />
-        : <RunTab state={state} dispatch={dispatch} />}
+        ? <HeatTab state={state} dispatch={dispatch} toast={toast} voice={voice} />
+        : <RunTab state={state} dispatch={dispatch} voice={voice} />}
     </div>
   )
 }

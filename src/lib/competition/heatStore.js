@@ -7,11 +7,12 @@ import { singleSide } from './model'
 import {
   blankRows, blankRider, secOf, setModuleSide,
   run2Confirmed, draftFromRun1, finalizeRun, scoreVal,
-  pickTrick, pickAir,
 } from './runModel'
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi))
 const cloneRows = (rows) => JSON.parse(JSON.stringify(rows || []))
+let uidSeq = 0
+const uid = () => `z${Date.now().toString(36)}${(uidSeq += 1).toString(36)}` // id stable air/adhoc
 
 export function initHeat({ code, name, snapshot }) {
   const snap = snapshot || {}
@@ -86,6 +87,25 @@ function editCurrent(state, mutate) {
   return { ...state, riders, ...patch }
 }
 
+// édite le run d'un rider ciblé par ID (remplissage voix asynchrone : le juge a pu
+// naviguer / changer de rider avant la fin de la transcription). Dé-validation incluse.
+function editRiderRun(state, riderId, ru, mutate) {
+  const ri = state.riders.findIndex((r) => r.id === riderId)
+  if (ri < 0) return state
+  const riders = state.riders.slice()
+  const rider = { ...riders[ri] }
+  const runs = rider.runs.slice()
+  const rows = cloneRows(runs[ru])
+  mutate(rows)
+  runs[ru] = rows
+  rider.runs = runs
+  if (rider.saved && rider.saved[ru] && rider.snap && rider.snap[ru] != null && JSON.stringify(rows) !== rider.snap[ru]) {
+    rider.saved = rider.saved.slice(); rider.saved[ru] = false
+  }
+  riders[ri] = rider
+  return { ...state, riders }
+}
+
 // « skip → zone suivante » : avance si possible, sinon reste.
 function advance(state, rows) {
   return state.curIdx < rows.length - 1 ? { curIdx: state.curIdx + 1, navDir: 1, activeSide: null } : {}
@@ -136,9 +156,14 @@ export function heatReducer(state, action) {
         return { activeSide: r.side }
       })
 
-    // ───── saisie module / jib ─────
-    case 'dictTrick':
-      return editCurrent(state, (rows) => { rows[state.curIdx].trick = pickTrick() })
+    // ───── saisie module / jib (voix) ─────
+    case 'pendTrick': // marque le module courant « transcription en cours »
+      return editCurrent(state, (rows) => { rows[state.curIdx].pending = true })
+    case 'fillTrick': // remplissage asynchrone d'un module ciblé (rider/run/secId)
+      return editRiderRun(state, action.riderId, action.ru, (rows) => {
+        const r = rows.find((x) => x.secId === action.secId); if (!r) return
+        r.pending = false; if (action.text) r.trick = action.text
+      })
     case 'editTrick':
       return editCurrent(state, (rows) => { rows[state.curIdx].trick = action.value })
     case 'setRate':
@@ -150,9 +175,16 @@ export function heatReducer(state, action) {
     case 'undoRien':
       return editCurrent(state, (rows) => { rows[state.curIdx].rien = false })
 
-    // ───── blocage (airs) ─────
-    case 'addAir':
-      return editCurrent(state, (rows) => { rows[state.curIdx].airs.push({ name: pickAir(), side: state.activeSide, rate: 'ok' }) })
+    // ───── blocage (airs, voix) ─────
+    case 'addAir': // crée un air « en cours » (id fourni par le composant pour le cibler)
+      return editCurrent(state, (rows) => { rows[state.curIdx].airs.push({ id: action.id || uid(), name: '', side: action.side ?? state.activeSide, rate: 'ok', pending: true }) })
+    case 'fillAir': // remplissage asynchrone d'un air ciblé (texte vide → on le retire)
+      return editRiderRun(state, action.riderId, action.ru, (rows) => {
+        const r = rows.find((x) => x.secId === action.secId); if (!r) return
+        const i = r.airs.findIndex((a) => a.id === action.airId); if (i < 0) return
+        if (action.text) r.airs[i] = { ...r.airs[i], name: action.text, pending: false }
+        else r.airs.splice(i, 1)
+      })
     case 'editAir':
       return editCurrent(state, (rows) => { rows[state.curIdx].airs[action.i].name = action.value })
     case 'setAirSide':
@@ -166,9 +198,15 @@ export function heatReducer(state, action) {
 
     // ───── hors-parcours ─────
     case 'insertAdhoc':
-      return editCurrent(state, (rows) => { rows.splice(action.k, 0, { kind: 'adhoc', side: null, text: '', rate: 'ok' }); return { curIdx: action.k, navDir: 1, activeSide: null } })
+      return editCurrent(state, (rows) => { rows.splice(action.k, 0, { kind: 'adhoc', id: uid(), side: null, text: '', rate: 'ok' }); return { curIdx: action.k, navDir: 1, activeSide: null } })
     case 'editAdhoc':
       return editCurrent(state, (rows) => { rows[state.curIdx].text = action.value })
+    case 'pendAdhoc': // hors-parcours courant « transcription en cours »
+      return editCurrent(state, (rows) => { rows[state.curIdx].pending = true })
+    case 'fillAdhoc': // remplissage asynchrone d'un hors-parcours ciblé (par id)
+      return editRiderRun(state, action.riderId, action.ru, (rows) => {
+        const r = rows.find((x) => x.id === action.adhocId); if (r) { r.pending = false; r.text = action.text || '' }
+      })
     case 'moveAdhoc': {
       const j = state.curIdx + action.delta
       if (j < 0 || j >= currentRows(state).length) return state
@@ -322,10 +360,26 @@ function loadPersisted(code) {
   try { const raw = localStorage.getItem(heatKey(code)); return raw ? JSON.parse(raw) : null } catch { return null }
 }
 
+// À l'hydratation : rien ne doit rester bloqué « transcription en cours » (worker perdu
+// au reload). On retire le flag pending ; un air resté vide+pending (jamais rempli) est supprimé.
+function clearPending(state) {
+  const riders = state.riders.map((rider) => ({
+    ...rider,
+    runs: rider.runs.map((run) => (run ? run.map((row) => {
+      const c = { ...row }; delete c.pending
+      if (c.kind === 'air' && Array.isArray(c.airs)) {
+        c.airs = c.airs.filter((a) => a.name || !a.pending).map((a) => { const x = { ...a }; delete x.pending; return x })
+      }
+      return c
+    }) : run)),
+  }))
+  return { ...state, riders }
+}
+
 export function useHeatStore(code, row) {
   const [state, dispatch] = useReducer(heatReducer, { code, row }, ({ code: c, row: r }) => {
     const saved = loadPersisted(c)
-    if (saved && Array.isArray(saved.parcours)) return { ...saved, navDir: 0 }
+    if (saved && Array.isArray(saved.parcours)) return clearPending({ ...saved, navDir: 0 })
     return initHeat({ code: c, name: r.name, snapshot: r.data })
   })
   useEffect(() => {

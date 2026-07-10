@@ -14,6 +14,14 @@
 .runsdone { margin-left: auto; font-size: 13px; color: var(--c-muted); }
 .runsdone b { color: var(--c-text); }
 .runBadge { font-size: 12px; font-weight: 800; color: #001; background: var(--c-wake); border-radius: 999px; padding: 4px 11px; }
+.transcribing { font-size: 12px; font-weight: 700; color: var(--c-seated); background: #a855f71e; border: 1px solid #a855f755; border-radius: 999px; padding: 4px 11px; }
+
+/* push-to-talk : bouton en cours d'enregistrement */
+.recording { background: var(--c-danger) !important; color: #fff !important; box-shadow: 0 0 0 4px #ef444433 !important; animation: pulseRec 1s ease-in-out infinite; }
+@keyframes pulseRec { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+/* état « transcription en cours » (remplace le champ tant que le worker n'a pas répondu) */
+.pendingBox { display: inline-flex; align-items: center; gap: 8px; color: var(--c-seated); font-weight: 700; font-size: 14px; font-style: italic; background: #a855f70e; border: 1px dashed #a855f766; border-radius: var(--r-sm); padding: 11px 14px; }
+.pendFlex { flex: 1; }
 
 .saisieBody { flex: 1; display: flex; min-height: 0; justify-content: center; gap: 18px; padding-right: 24px; }
 .minimap { flex: none; width: 270px; padding: 8px 0 6px 24px; display: flex; flex-direction: column; overflow: hidden; }

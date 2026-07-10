@@ -2,18 +2,59 @@ import { useEffect, useRef, useState } from 'react'
 import CableMinimap from '../../components/competition/CableMinimap'
 import { sideLabel } from '../../lib/competition/model'
 import { linearPos } from '../../lib/competition/heatStore'
+import { micSupported } from '../../lib/competition/voice'
+import { loadWhisper } from '../../lib/whisperStt'
 import {
   RATES, RLAB, leftSide, rightSide, secOf, moduleKind, moduleSides,
   entrySummary, zoneShortLabel,
 } from '../../lib/competition/runModel'
 import styles from './RunTab.module.css'
 
+// Bouton micro PUSH-TO-TALK : maintien = enregistre, relâche = stop → transcription.
+// `prepare()` (au pointerDown) pose le marqueur « en cours » et renvoie { kind, target }
+// (target = { fill, ...coords }) ; null pour annuler.
+function MicButton({ className, children, voice, disabled, prepare }) {
+  const [rec, setRec] = useState(false)
+  const capRef = useRef(null)
+  const down = async (e) => {
+    e.preventDefault()
+    if (disabled || rec) return
+    const cap = prepare(); if (!cap) return
+    capRef.current = cap
+    const ok = await voice.startRec()
+    if (!ok) { voice.enqueue(cap.kind, null, cap.target); capRef.current = null; return } // micro refusé → libère
+    setRec(true)
+  }
+  const up = async () => {
+    if (!rec) return
+    setRec(false)
+    const cap = capRef.current; capRef.current = null
+    const blob = await voice.stopRec()
+    voice.enqueue(cap.kind, blob, cap.target)
+  }
+  return (
+    <button
+      type="button"
+      className={`${className} ${rec ? styles.recording : ''}`}
+      disabled={disabled}
+      onPointerDown={down}
+      onPointerUp={up}
+      onPointerLeave={up}
+      onPointerCancel={up}
+    >{rec ? '🎙️ écoute…' : children}</button>
+  )
+}
+
 // Onglet Run : saisie immersive zone par zone (deck / stage / pile). Port de
 // renderRun + buildStage + buildStackItem + dock (proto). Transitions de zone par
 // classe CSS (pas de FLIP JS). Le micro est simulé (pioche dans un pool).
-export default function RunTab({ state, dispatch }) {
+export default function RunTab({ state, dispatch, voice }) {
   const { riders, riderCursor, runCursor, runCount, curIdx, parcours } = state
   const stageRef = useRef(null)
+
+  // Préchargement best-effort du modèle tricks au montage du Run (le jib se précharge
+  // dans le Heat, plus lourd). loadWhisper est idempotent (cache global).
+  useEffect(() => { loadWhisper('wakeref').catch(() => {}) }, [])
 
   // clavier : ↑/↓ = zone · ←/→ = côté (ignore quand un champ a le focus)
   useEffect(() => {
@@ -100,6 +141,7 @@ export default function RunTab({ state, dispatch }) {
           <span className={styles.ridernameRo}>{rider.name}</span>
           <span className={styles.runsdone}>rider <b>{riderCursor + 1}</b> / <b>{riders.length}</b></span>
           {runCount > 1 && <span className={styles.runBadge}>Run {runCursor + 1} / {runCount}</span>}
+          {voice.pendingCount > 0 && <span className={styles.transcribing}>⏳ {voice.pendingCount} en transcription</span>}
         </div>
       </div>
 
@@ -129,7 +171,7 @@ export default function RunTab({ state, dispatch }) {
                 </div>
               )
             })}
-            <Stage key={idx} state={state} dispatch={dispatch} r={cur} idx={idx} fallIdx={fallIdx} />
+            <Stage key={idx} state={state} dispatch={dispatch} voice={voice} r={cur} idx={idx} fallIdx={fallIdx} />
           </div>
 
           <div className={styles.stackWrap}>
@@ -211,13 +253,19 @@ function RateDots({ rate, onSet }) {
 }
 
 // ── carte de la zone courante ──────────────────────────────────────────────────
-function Stage({ state, dispatch, r, idx, fallIdx }) {
+function Stage({ state, dispatch, voice, r, idx, fallIdx }) {
   const { parcours, cableSpin, activeSide } = state
   const teRef = useRef(null)
   useEffect(() => { const te = teRef.current; if (te) { te.style.height = 'auto'; te.style.height = `${te.scrollHeight}px` } })
 
   const kindCls = r.kind === 'air' ? 'air' : r.kind === 'adhoc' ? 'adhoc' : moduleKind(parcours, r)
   const isFall = fallIdx === idx
+  // cible du remplissage voix (coordonnées stables : le juge peut naviguer avant la fin)
+  const riderId = state.riders[state.riderCursor]?.id
+  const ru = state.runCursor
+  const trickPrepare = () => { dispatch({ type: 'pendTrick' }); return { kind: kindCls === 'jib' ? 'jib' : 'trick', target: { fill: 'fillTrick', riderId, ru, secId: r.secId } } }
+  const adhocPrepare = () => { dispatch({ type: 'pendAdhoc' }); return { kind: 'trick', target: { fill: 'fillAdhoc', riderId, ru, adhocId: r.id } } }
+  const airPrepare = () => { const id = `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`; dispatch({ type: 'addAir', id, side: activeSide }); return { kind: 'trick', target: { fill: 'fillAir', riderId, ru, secId: r.secId, airId: id } } }
   const sec = r.kind === 'module' || r.kind === 'air' ? secOf(parcours, r) : null
   const isTwin = sec && sec.passOf != null
   const cardSide = r.kind === 'air' ? activeSide : r.side
@@ -267,20 +315,27 @@ function Stage({ state, dispatch, r, idx, fallIdx }) {
         <div className={`${styles.stageBody} ${styles.airBody}`}>
           <div className={styles.bucket}>
             {r.airs.length === 0 ? <div className={styles.airempty}>aucun trick pour l’instant</div> : r.airs.map((a, i) => (
-              <div key={i} className={`${styles.airitem} ${a.draft ? styles.draft : ''}`}>
-                <input className={styles.airedit} value={a.name} aria-label="trick dicté" onChange={(e) => dispatch({ type: 'editAir', i, value: e.target.value })} />
-                {a.draft && <button className={styles.airidem} onClick={() => dispatch({ type: 'confirmAir', i })}>✓ idem</button>}
-                <span className={styles.postog}>
-                  <button className={a.side === 'int' ? styles.on : ''} onClick={() => dispatch({ type: 'setAirSide', i, side: 'int' })}>int</button>
-                  <button className={a.side === 'ext' ? styles.on : ''} onClick={() => dispatch({ type: 'setAirSide', i, side: 'ext' })}>ext</button>
-                </span>
-                <RateDots rate={a.rate} onSet={(v) => dispatch({ type: 'setAirRate', i, v })} />
-                <button className={styles.x} onClick={() => dispatch({ type: 'removeAir', i })}>✕</button>
-              </div>
+              a.pending ? (
+                <div key={a.id || i} className={styles.airitem}>
+                  <span className={`${styles.pendingBox} ${styles.pendFlex}`}>⏳ transcription en cours…</span>
+                  <button className={styles.x} onClick={() => dispatch({ type: 'removeAir', i })}>✕</button>
+                </div>
+              ) : (
+                <div key={a.id || i} className={`${styles.airitem} ${a.draft ? styles.draft : ''}`}>
+                  <input className={styles.airedit} value={a.name} aria-label="trick dicté" onChange={(e) => dispatch({ type: 'editAir', i, value: e.target.value })} />
+                  {a.draft && <button className={styles.airidem} onClick={() => dispatch({ type: 'confirmAir', i })}>✓ idem</button>}
+                  <span className={styles.postog}>
+                    <button className={a.side === 'int' ? styles.on : ''} onClick={() => dispatch({ type: 'setAirSide', i, side: 'int' })}>int</button>
+                    <button className={a.side === 'ext' ? styles.on : ''} onClick={() => dispatch({ type: 'setAirSide', i, side: 'ext' })}>ext</button>
+                  </span>
+                  <RateDots rate={a.rate} onSet={(v) => dispatch({ type: 'setAirRate', i, v })} />
+                  <button className={styles.x} onClick={() => dispatch({ type: 'removeAir', i })}>✕</button>
+                </div>
+              )
             ))}
           </div>
           <div className={styles.airmicRow} style={{ justifyContent: micPos === 'l' ? 'flex-start' : micPos === 'r' ? 'flex-end' : 'center' }}>
-            <button className={styles.micbtn} onClick={() => dispatch({ type: 'addAir' })}>{micLabel}</button>
+            <MicButton className={styles.micbtn} voice={voice} disabled={!micSupported} prepare={airPrepare}>{micLabel}</MicButton>
           </div>
         </div>
       </>
@@ -293,10 +348,12 @@ function Stage({ state, dispatch, r, idx, fallIdx }) {
         <SideRail state={state} dispatch={dispatch} chosen={r.side} />
         <div className={styles.stageBody}>
           <div className={`${styles.entryWrap} ${posCls}`}>
-            <div className={styles.fillrow}>
-              <input className={styles.freein} placeholder="ce que le rider a fait…" value={r.text || ''} onChange={(e) => dispatch({ type: 'editAdhoc', value: e.target.value })} />
-              <button className={`${styles.micbtn} ${styles.micsm}`} onClick={() => dispatch({ type: 'dictTrick' })}>🎤</button>
-            </div>
+            {r.pending ? <div className={styles.pendingBox}>⏳ transcription en cours…</div> : (
+              <div className={styles.fillrow}>
+                <input className={styles.freein} placeholder="ce que le rider a fait…" value={r.text || ''} onChange={(e) => dispatch({ type: 'editAdhoc', value: e.target.value })} />
+                <MicButton className={`${styles.micbtn} ${styles.micsm}`} voice={voice} disabled={!micSupported} prepare={adhocPrepare}>🎤</MicButton>
+              </div>
+            )}
           </div>
         </div>
       </>
@@ -334,9 +391,11 @@ function Stage({ state, dispatch, r, idx, fallIdx }) {
             <SideRail state={state} dispatch={dispatch} chosen={r.side} valid={sides} />
             <div className={styles.stageBody}>
               <div className={`${styles.entryWrap} ${posCls}`}>
-                {!r.trick
-                  ? <div className={styles.fillrow}><button className={`${styles.micbtn} ${styles.micsm}`} onClick={() => dispatch({ type: 'dictTrick' })}>🎤 dicter {kind === 'jib' ? 'la passe' : 'le trick'}</button></div>
-                  : <div className={styles.fillrow}><textarea ref={teRef} className={styles.trickEdit} rows={1} aria-label="figure" value={r.trick} onChange={(e) => dispatch({ type: 'editTrick', value: e.target.value })} /><button className={`${styles.micbtn} ${styles.micxs}`} title="re-dicter" onClick={() => dispatch({ type: 'dictTrick' })}>🎤</button></div>}
+                {r.pending ? <div className={styles.pendingBox}>⏳ transcription en cours…</div> : !r.trick
+                  ? (micSupported
+                    ? <div className={styles.fillrow}><MicButton className={`${styles.micbtn} ${styles.micsm}`} voice={voice} prepare={trickPrepare}>🎤 dicter {kind === 'jib' ? 'la passe' : 'le trick'}</MicButton></div>
+                    : <div className={styles.fillrow}><input className={styles.freein} placeholder={kind === 'jib' ? 'passe jib…' : 'trick…'} value="" onChange={(e) => dispatch({ type: 'editTrick', value: e.target.value })} /></div>)
+                  : <div className={styles.fillrow}><textarea ref={teRef} className={styles.trickEdit} rows={1} aria-label="figure" value={r.trick} onChange={(e) => dispatch({ type: 'editTrick', value: e.target.value })} />{micSupported && <MicButton className={`${styles.micbtn} ${styles.micxs}`} voice={voice} prepare={trickPrepare}>🎤</MicButton>}</div>}
               </div>
             </div>
           </>

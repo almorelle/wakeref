@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { zonesOnly } from '../../lib/competition/model'
 import { order2, orderFor } from '../../lib/competition/heatStore'
+import { micSupported } from '../../lib/competition/voice'
+import { loadWhisper, isWhisperLoaded } from '../../lib/whisperStt'
 import {
   scoreVal, bestScore, allScored, runNotes, riderNotes,
   jibSummary, anyRun2Touched,
@@ -77,6 +79,8 @@ export default function HeatTab({ state, dispatch, toast }) {
         </div>
       </div>
 
+      {micSupported && <VoicePreload />}
+
       <Ranking riders={riders} runCount={runCount} />
 
       {riders.length === 0 ? (
@@ -107,6 +111,57 @@ export default function HeatTab({ state, dispatch, toast }) {
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── préchargement des modèles voix ─────────────────────────────────────────────
+// Le download (poids HF) + warmup se paient ici, AVANT la manche. Le cache de
+// `loadWhisper` est global → un modèle préchargé dans le Heat est prêt dans le Run.
+const VOICE_MODELS = [
+  { key: 'wakeref', label: 'tricks' },
+  { key: 'wakerefJib', label: 'jib' },
+]
+
+function VoicePreload() {
+  const initial = () => Object.fromEntries(VOICE_MODELS.map((m) => [m.key, { st: isWhisperLoaded(m.key) ? 'ready' : 'idle', pct: 0 }]))
+  const [models, setModels] = useState(initial)
+
+  const set = (key, patch) => setModels((m) => ({ ...m, [key]: { ...m[key], ...patch } }))
+
+  const load = (key) => {
+    const cur = models[key].st
+    if (cur === 'loading' || cur === 'ready') return
+    set(key, { st: 'loading', pct: 0 })
+    loadWhisper(key, (e) => { if (e && e.progress != null) set(key, { pct: Math.round(e.progress) }) })
+      .then(() => set(key, { st: 'ready', pct: 100 }))
+      .catch(() => set(key, { st: 'error' }))
+  }
+
+  return (
+    <div className={styles.voice}>
+      <span className={styles.voiceLab}>🎙️ Modèles voix</span>
+      {VOICE_MODELS.map(({ key, label }) => {
+        const { st, pct } = models[key]
+        return (
+          <button
+            key={key}
+            type="button"
+            className={styles.voiceBtn}
+            data-state={st}
+            disabled={st === 'loading' || st === 'ready'}
+            onClick={() => load(key)}
+          >
+            {st === 'loading' && <span className={styles.voiceBar} style={{ width: `${pct}%` }} />}
+            <span className={styles.voiceTxt}>
+              {st === 'ready' ? `✓ ${label} prêt`
+                : st === 'loading' ? `${label} ${pct}%`
+                  : st === 'error' ? `↻ ${label} (échec)`
+                    : `⤓ Précharger ${label}`}
+            </span>
+          </button>
+        )
+      })}
     </div>
   )
 }
