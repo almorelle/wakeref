@@ -1,0 +1,46 @@
+/* App juge d'un parcours partagé (hors Navbar) : topbar + onglets Heat/Run. */
+.app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+.topbar { flex: none; display: flex; align-items: center; gap: 14px; padding: 12px 22px; border-bottom: 1px solid var(--c-border); }
+.tabs { margin-left: auto; display: flex; gap: 6px; background: var(--c-surface); padding: 4px; border-radius: 999px; border: 1px solid var(--c-border); }
+.tabs button { border: 0; background: transparent; color: var(--c-muted); font: inherit; font-weight: 700; font-size: 13px; padding: 7px 18px; border-radius: 999px; cursor: pointer; transition: all 120ms ease; }
+.tabs button.on { background: var(--c-wake); color: #001; }
+
+.view { max-width: 880px; margin: 0 auto; padding: 22px 22px 60px; }
+.center { min-height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 22px; }
+.nf { color: var(--c-muted); font-size: 15px; }
+.nf code { color: var(--c-wake); }
+
+.header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--c-border); }
+.brand { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: -.02em; }
+.brand b { color: var(--c-wake); }
+.code { font-family: ui-monospace, monospace; font-size: 12px; letter-spacing: .12em; color: var(--c-wake); background: var(--c-surface2); border: 1px solid var(--c-border); padding: 4px 10px; border-radius: 999px; }
+.name { font-family: var(--font-display); font-weight: 800; font-size: 24px; margin: 16px 0 18px; }
+
+.grid { display: flex; gap: 20px; align-items: flex-start; }
+.mapCard { flex: none; width: 280px; background: var(--c-surface2); border: 1px solid var(--c-border); border-radius: 16px; padding: 12px 12px 10px; position: sticky; top: 14px; }
+.mapTitle { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--c-muted); margin-bottom: 4px; }
+.map { height: 300px; display: flex; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--c-border); }
+.chip { font-size: 11px; font-weight: 700; color: var(--c-muted); background: var(--c-surface3); border: 1px solid var(--c-border2); border-radius: 999px; padding: 4px 10px; }
+
+.zoneList { flex: 1; min-width: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; }
+.zone { display: flex; align-items: center; gap: 10px; background: var(--c-surface2); border: 1px solid var(--c-border); border-radius: 10px; padding: 10px 14px; }
+.zn { width: 24px; height: 24px; border-radius: 50%; background: var(--c-surface3); display: grid; place-items: center; font-weight: 800; font-size: 12px; color: var(--c-muted); flex: none; }
+.zbody { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; }
+.pass { font-size: 11px; font-weight: 800; color: var(--c-seated); background: #a855f71e; border: 1px solid #a855f755; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
+.foot { margin-top: 22px; color: var(--c-faint); font-size: 13px; font-style: italic; }
+
+/* saisie de code (/competition) */
+.gate { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 22px; }
+.gateForm { display: flex; flex-direction: column; gap: 10px; width: min(340px, 90vw); }
+.gateLab { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--c-faint); }
+.gateInput { background: var(--c-surface2); border: 1.5px solid var(--c-border2); border-radius: 10px; color: var(--c-text); font: inherit; font-weight: 700; font-size: 18px; letter-spacing: .08em; padding: 12px 16px; text-align: center; }
+.gateInput:focus { outline: 0; border-color: var(--c-wake); }
+.gateBtn { border: 1px solid var(--c-wake); background: var(--c-wake); color: #001; font: inherit; font-weight: 800; font-size: 15px; padding: 12px 18px; border-radius: 10px; cursor: pointer; }
+.gateBtn:hover { filter: brightness(1.08); }
+
+@media (max-width: 700px) {
+  .grid { flex-direction: column; }
+  .mapCard { width: 100%; position: static; }
+  .map { height: 240px; }
+}

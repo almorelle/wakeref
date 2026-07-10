@@ -219,6 +219,26 @@ set search_path = public as $$
   select name, data from compositions where id = cid;
 $$;
 
+-- Module compétition — lecture publique d'un parcours par son short-code (le juge
+-- charge un parcours partagé). Jumeau de get_composition : pas de SELECT global anon.
+create or replace function public.get_parcours(code text)
+returns table(id text, name text, data jsonb)
+language sql stable security definer
+set search_path = public as $$
+  select id, name, data from parcours where id = code;
+$$;
+
+-- Module compétition — maj automatique de parcours.updated_at.
+create or replace function public.parcours_touch()
+returns trigger
+language plpgsql
+set search_path = public as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 -- Module juge — catalogue public : runs PUBLIÉS filtrés par discipline/niveau,
 -- métadonnées SEULES (jamais la colonne solution). security definer pour lire
 -- sans grant table anon. Comparaison discipline en texte → pas d'erreur de cast
@@ -443,6 +463,11 @@ create trigger compositions_rate_limit
   before insert on compositions
   for each row execute function compositions_rate_limit();
 
+drop trigger if exists parcours_touch on parcours;
+create trigger parcours_touch
+  before update on parcours
+  for each row execute function parcours_touch();
+
 drop trigger if exists judge_runs_updated_at on judge_runs;
 create trigger judge_runs_updated_at
   before update on judge_runs
@@ -465,6 +490,7 @@ alter table video_submissions enable row level security;
 alter table compositions      enable row level security;
 alter table figure_views      enable row level security;
 alter table judge_runs        enable row level security;
+alter table parcours          enable row level security;
 
 -- Supprime les policies existantes avant de les recréer
 drop policy if exists "Lecture publique categories"    on categories;
@@ -508,6 +534,15 @@ create policy "Lecture admin figure_views"      on figure_views  for select usin
 -- judge_runs : accès admin total ; pas de policy anon (l'anon lit via les RPC story 2.2).
 drop policy if exists "Ecriture admin judge_runs" on judge_runs;
 create policy "Ecriture admin judge_runs"       on judge_runs    for all using ((select auth.role()) = 'authenticated') with check ((select auth.role()) = 'authenticated');
+-- parcours : écriture + liste admin ; l'anon lit un parcours par son code via get_parcours().
+drop policy if exists "Lecture admin parcours"     on parcours;
+drop policy if exists "Insertion admin parcours"   on parcours;
+drop policy if exists "Maj admin parcours"         on parcours;
+drop policy if exists "Suppression admin parcours" on parcours;
+create policy "Lecture admin parcours"     on parcours for select using ((select auth.role()) = 'authenticated');
+create policy "Insertion admin parcours"   on parcours for insert with check ((select auth.role()) = 'authenticated');
+create policy "Maj admin parcours"         on parcours for update using ((select auth.role()) = 'authenticated');
+create policy "Suppression admin parcours" on parcours for delete using ((select auth.role()) = 'authenticated');
 
 
 -- ────────────────────────────────────────────────────────────
@@ -561,6 +596,8 @@ grant select, update on public.video_submissions to authenticated;
 grant usage, select on sequence video_submissions_id_seq to anon, authenticated;
 grant insert on public.compositions to anon, authenticated;
 grant select, delete on public.compositions to authenticated;
+grant select, insert, update, delete on public.parcours to authenticated;
+grant execute on function public.get_parcours(text)       to anon, authenticated;
 -- judge_runs : admin uniquement (l'anon passe par les RPC de lecture, story 2.2).
 grant select, insert, update, delete on public.judge_runs to authenticated;
 grant select on public.figure_views to authenticated;

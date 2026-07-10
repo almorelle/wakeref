@@ -32,6 +32,10 @@ const AdminSubmissions = lazy(() => import('./pages/admin/AdminSubmissions'))
 const AdminCompositions = lazy(() => import('./pages/admin/AdminCompositions'))
 const AdminJudgeRuns = lazy(() => import('./pages/admin/AdminJudgeRuns'))
 const JudgeRunForm = lazy(() => import('./pages/admin/JudgeRunForm'))
+const AdminCompetitions = lazy(() => import('./pages/admin/AdminCompetitions'))
+const CompetitionSetup = lazy(() => import('./pages/admin/CompetitionSetup'))
+// Consommateur public d'un parcours partagé (hors Navbar, lazy) — comme le labo juge.
+const CompetitionView = lazy(() => import('./pages/competition/CompetitionView'))
 
 export default function App() {
   return (
@@ -68,7 +72,15 @@ export default function App() {
             <Route path="judge-runs" element={<AdminJudgeRuns />} />
             <Route path="judge-runs/new" element={<JudgeRunForm />} />
             <Route path="judge-runs/:id/edit" element={<JudgeRunForm />} />
+            <Route path="competitions" element={<AdminCompetitions />} />
+            <Route path="competitions/new" element={<CompetitionSetup />} />
+            <Route path="competitions/:id/edit" element={<CompetitionSetup />} />
           </Route>
+
+          {/* Compétition (public, hors Navbar) : le juge charge un parcours par son code */}
+          <Route path="/competition" element={<CompetitionView />} />
+          <Route path="/competition/:code" element={<CompetitionView />} />
+
           <Route path='*' element={<NotFound />} />
         </Routes>
       </Suspense>

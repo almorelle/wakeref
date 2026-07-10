@@ -42,6 +42,7 @@ export default function AdminLayout() {
     { to: '/admin/submissions',   icon: 'inbox',             label: 'Soumissions'           },
     { to: '/admin/compositions',  icon: 'list',              label: 'Runs'                  },
     { to: '/admin/judge-runs',    icon: 'star',              label: 'Runs juge'             },
+    { to: '/admin/competitions',  icon: 'arrow-zig-zag',     label: 'Compétition'           },
     { to: '/admin/no-videos',     icon: 'video-off',         label: 'À compléter'           },
   ]
 

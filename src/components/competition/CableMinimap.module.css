@@ -1,0 +1,4 @@
+/* Aperçu SVG du câble. Réutilisable Setup (admin) + /competition (saisie) plus tard. */
+.mmWrap { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; }
+.mmSvg { flex: 1; min-height: 0; width: 100%; }
+.mmEmpty { font-size: 11px; color: var(--c-faint); line-height: 1.4; padding: 8px 4px; }

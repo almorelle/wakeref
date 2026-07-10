@@ -20,6 +20,8 @@
   --c-seated:    #a855f7;
   --c-danger:    #ef4444;
   --c-success:   #22c55e;
+  --c-int:       #fb7185; /* axe côté câble : intérieur (rose) */
+  --c-ext:       #818cf8; /* axe côté câble : extérieur (indigo) */
 
   /* Catégories */
   --cat-grabs:        #3b82f6;

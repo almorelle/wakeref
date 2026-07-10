@@ -105,6 +105,14 @@ CREATE TABLE public.compositions (
                                      created_at timestamp with time zone NOT NULL DEFAULT now(),
                                      CONSTRAINT compositions_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.parcours (
+                                     id text NOT NULL,
+                                     name text NOT NULL UNIQUE CHECK (char_length(name) >= 1 AND char_length(name) <= 80),
+                                     data jsonb NOT NULL CHECK (pg_column_size(data) <= 51200),
+                                     created_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     updated_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     CONSTRAINT parcours_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.figure_views (
                                      figure_id integer NOT NULL,
                                      day date NOT NULL DEFAULT CURRENT_DATE,
