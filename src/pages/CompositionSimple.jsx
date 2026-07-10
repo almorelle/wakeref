@@ -72,17 +72,6 @@ export default function CompositionSimple() {
     })
   }
 
-  const gridTab = (key) => (
-    <button
-      key={key}
-      className={`${styles.gridTab} ${gridKey === key ? styles.gridTabActive : ''}`}
-      style={{ '--disc': DISCIPLINE_COLOR[GRIDS[key].discipline] || 'var(--c-accent)' }}
-      onClick={() => setGridKey(key)}
-    >
-      {tr.compoGrids?.[key] || key}
-    </button>
-  )
-
   return (
     <div className={styles.page} style={{ '--disc': disciplineColor }}>
       <SEO
@@ -93,13 +82,18 @@ export default function CompositionSimple() {
         path="/composition-simple"
       />
 
-      {/* Sélecteur de grille (discipline / niveau). Les deux grilles seated
-          (niveaux de handicap) sont empilées verticalement dans une colonne. */}
+      {/* Sélecteur de grille (discipline / niveau) — menu déroulant compact. */}
       <div className={styles.gridSelect}>
-        {GRID_OPTIONS.filter(key => GRIDS[key].discipline !== 'seated').map(gridTab)}
-        <div className={styles.gridColumn}>
-          {GRID_OPTIONS.filter(key => GRIDS[key].discipline === 'seated').map(gridTab)}
-        </div>
+        <select
+          className={styles.gridDropdown}
+          value={gridKey}
+          onChange={(e) => setGridKey(e.target.value)}
+          aria-label={tr.compoGridLabel || 'Discipline'}
+        >
+          {GRID_OPTIONS.map(key => (
+            <option key={key} value={key}>{tr.compoGrids?.[key] || key}</option>
+          ))}
+        </select>
       </div>
 
       {/* En-tête sticky : note /20 + reset */}

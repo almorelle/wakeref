@@ -6,36 +6,33 @@
   width: 100%;
 }
 
-/* ── Sélecteur de grille (discipline / niveau) ── */
+/* ── Sélecteur de grille (discipline / niveau) — menu déroulant ── */
 .gridSelect {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  align-items: flex-start;
   margin-bottom: 14px;
 }
 
-/* Colonne empilant les deux grilles seated (niveaux de handicap). */
-.gridColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.gridColumn .gridTab { text-align: left; }
-.gridTab {
-  padding: 6px 14px;
+.gridDropdown {
+  width: 100%;
+  padding: 9px 34px 9px 12px;
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  border: 1px solid var(--c-border2);
-  color: var(--c-muted);
+  color: var(--disc, var(--c-accent));
+  background-color: color-mix(in srgb, var(--disc, var(--c-accent)) 12%, transparent);
+  border: 1px solid var(--disc, var(--c-accent));
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  /* Chevron SVG inline, teinté via currentColor. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
   transition: all var(--t-fast);
 }
-.gridTab:hover { border-color: var(--disc, var(--c-accent)); color: var(--c-text); }
-.gridTabActive {
-  background: color-mix(in srgb, var(--disc, var(--c-accent)) 16%, transparent);
-  border-color: var(--disc, var(--c-accent));
-  color: var(--disc, var(--c-accent));
+.gridDropdown option {
+  color: var(--c-text);
+  background: var(--c-surface);
+  font-weight: 500;
 }
 
 /* ── Barre de note (sticky en haut) ── */
@@ -89,15 +86,20 @@
   color: var(--c-muted);
 }
 
-.items { display: flex; flex-direction: column; gap: 6px; }
+/* Grille fluide : plusieurs cases par ligne pour limiter le scroll mobile. */
+.items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
 
-/* Item = grosse cible tactile (saisie live au bord de l'eau). */
+/* Item = cible tactile (saisie live au bord de l'eau), compacte pour tenir à 2/ligne. */
 .item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 9px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 9px 11px;
   border-radius: var(--r-md);
   border: 1px solid var(--c-border2);
   background: var(--c-surface);
@@ -112,7 +114,7 @@
 }
 
 .itemBox {
-  width: 20px; height: 20px;
+  width: 18px; height: 18px;
   flex-shrink: 0;
   border-radius: var(--r-sm);
   border: 2px solid var(--c-border2);
@@ -127,8 +129,8 @@
 .itemOn .itemBox::after {
   content: '';
   position: absolute;
-  left: 6px; top: 2px;
-  width: 5px; height: 10px;
+  left: 5px; top: 2px;
+  width: 5px; height: 9px;
   border: solid #fff;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg);
@@ -136,7 +138,8 @@
 
 .itemLabel {
   flex: 1;
-  font-size: 15px;
+  font-size: 13.5px;
+  line-height: 1.25;
   font-weight: 500;
   color: var(--c-muted);
   transition: color var(--t-fast);
