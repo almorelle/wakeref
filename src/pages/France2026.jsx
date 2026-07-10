@@ -21,11 +21,11 @@ const RAW_GRIDS = {
     discipline: 'wakeboard',
     label: 'Wakeboard',
     sections: [
-      { title: 'Air tricks', items: ['Raley', 'Backroll', 'Front', 'Inside TS', 'Outside TS', 'Whip', 'Regular', 'Goofy'] },
+      { title: 'Air tricks', items: ['Raley', 'Backroll', 'Front', 'Whip', 'TS Regular', 'TS Goofy', 'Regular', 'Goofy'] },
       { title: 'Kicker',     items: ['Flip', 'Spin'] },
       { title: 'Jib',        items: ['FS Lip', 'FS Board', 'BS Lip', 'BS Board', 'Nose Press', 'Flip', 'Spin'] },
-      { title: 'Entrées',    items: ['Regular TS', 'Regular HS', 'Goofy TS', 'Goofy HS'] },
-      { title: 'Spins',      items: ['Regular FS', 'Regular BS', 'Goofy HS', 'Goofy BS'] },
+      { title: 'Entrées',    items: ['TS Regular', 'TS Goofy', 'HS Regular', 'HS Goofy'] },
+      { title: 'Spins',      items: ['BS Regular', 'BS Goofy', 'FS Regular', 'HS Goofy'] },
     ],
   },
   wakeskate: {
@@ -34,9 +34,9 @@ const RAW_GRIDS = {
     sections: [
       { title: 'Flat',    items: ['Ollie', 'Shov', 'Flip', 'Spin', 'Switch'] },
       { title: 'Kicker',  items: ['Shov', 'Flip', 'Spin'] },
-      { title: 'Jib',     items: ['Ollie In', 'Shov in/out', 'Flip in/out', 'FS Lip', 'FS Board', 'BS Lip', 'BS Board'] },
-      { title: 'Entrées', items: ['Regular TS', 'Regular HS', 'Goofy TS', 'Goofy HS'] },
-      { title: 'Spins',   items: ['Regular FS', 'Regular BS', 'Goofy HS', 'Goofy BS'] },
+      { title: 'Jib',     items: ['FS Lip', 'FS Board', 'BS Lip', 'BS Board', 'Ollie In', 'Shov in/out', 'Flip in/out'] },
+      { title: 'Entrées', items: ['TS Regular', 'TS Goofy', 'HS Regular', 'HS Goofy'] },
+      { title: 'Spins',   items: ['BS Regular', 'BS Goofy', 'FS Regular', 'HS Goofy'] },
     ],
   },
   seated: {
@@ -47,7 +47,7 @@ const RAW_GRIDS = {
       { title: 'Kicker',    items: ['Spin', 'Flip'] },
       { title: 'Jib',       items: ['50-50', 'Spin', 'Transfer'] },
       { title: 'Entrées',   items: ['Inside', 'Outside', 'SW Inside', 'SW Outside'] },
-      { title: 'Rotations', items: ['Inside FS', 'Outside FS', 'Inside BS', 'Outside BS'] },
+      { title: 'Rotations', items: ['FS Inside', 'FS Outside', 'BS Inside', 'BS Outside'] },
     ],
   },
 }
@@ -183,7 +183,11 @@ export default function France2026() {
                     aria-pressed={on}
                     onClick={() => toggle(key)}
                   >
-                    <span className={styles.itemLabel}>{label}</span>
+                    <span className={styles.itemLabel}>
+                      {label.split(' ').map((w, i) => (
+                        <span key={i} className={styles.itemWord}>{w}</span>
+                      ))}
+                    </span>
                   </button>
                 )
               })}

@@ -134,10 +134,14 @@
 }
 
 .itemLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   font-size: 15.5px;
   line-height: 1.15;
   font-weight: 700;
   color: var(--c-muted);
   transition: color var(--t-fast);
 }
+.itemWord { display: block; }
 .itemOn .itemLabel { color: #fff; font-weight: 700; }
