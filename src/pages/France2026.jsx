@@ -25,7 +25,7 @@ const RAW_GRIDS = {
       { title: 'Kicker',     items: ['Flip', 'Spin'] },
       { title: 'Jib',        items: ['FS Lip', 'FS Board', 'BS Lip', 'BS Board', 'Nose Press', 'Flip', 'Spin'] },
       { title: 'Entrées',    items: ['TS Regular', 'TS Goofy', 'HS Regular', 'HS Goofy'] },
-      { title: 'Spins',      items: ['BS Regular', 'BS Goofy', 'FS Regular', 'HS Goofy'] },
+      { title: 'Spins',      items: ['BS Regular', 'BS Goofy', 'FS Regular', 'FS Goofy'] },
     ],
   },
   wakeskate: {
@@ -36,7 +36,7 @@ const RAW_GRIDS = {
       { title: 'Kicker',  items: ['Shov', 'Flip', 'Spin'] },
       { title: 'Jib',     items: ['FS Lip', 'FS Board', 'BS Lip', 'BS Board', 'Ollie In', 'Shov in/out', 'Flip in/out'] },
       { title: 'Entrées', items: ['TS Regular', 'TS Goofy', 'HS Regular', 'HS Goofy'] },
-      { title: 'Spins',   items: ['BS Regular', 'BS Goofy', 'FS Regular', 'HS Goofy'] },
+      { title: 'Spins',   items: ['BS Regular', 'BS Goofy', 'FS Regular', 'FS Goofy'] },
     ],
   },
   seated: {
