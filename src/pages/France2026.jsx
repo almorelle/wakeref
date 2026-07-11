@@ -21,11 +21,11 @@ const RAW_GRIDS = {
     discipline: 'wakeboard',
     label: 'Wakeboard',
     sections: [
-      { title: 'Air tricks', items: ['Raley', 'Backroll', 'Front', 'Whip', 'TS Regular', 'TS Goofy', 'Regular', 'Goofy'] },
-      { title: 'Kicker',     items: ['Flip', 'Spin'] },
-      { title: 'Jib',        items: ['FS Lip', 'FS Board', 'BS Lip', 'BS Board', 'Nose Press', 'Flip', 'Spin'] },
-      { title: 'Entrées',    items: ['TS Regular', 'TS Goofy', 'HS Regular', 'HS Goofy'] },
+      { title: 'Air tricks', items: ['Raley', 'Backroll', 'Front/S-Bend', 'Whip', 'TS Regular', 'TS Goofy', 'HS Regular', 'HS Goofy'] },
       { title: 'Spins',      items: ['BS Regular', 'BS Goofy', 'FS Regular', 'FS Goofy'] },
+      { title: 'Kicker',     items: ['Flip', 'Spin'] },
+      { title: 'Jib',        items: ['Frontlip', 'Frontboard', 'Backlip', 'Boardslide', '50-50', 'Nose Press', 'Flip', 'Spin'] },
+      { title: 'Entrées',    items: ['TS Regular', 'TS Goofy', 'HS Regular', 'HS Goofy'] },
     ],
   },
   wakeskate: {
