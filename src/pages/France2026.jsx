@@ -130,7 +130,7 @@ export default function France2026() {
         titleEn="France 2026 — Score sheet"
         descriptionFr="Coche les critères de la grille et lis ta note sur 20."
         descriptionEn="Tick the grid criteria and read your score out of 20."
-        path="/france2026"
+        path="/composition-simple"
       />
 
       {/* Sélecteur de discipline + bascule thème, sur une même ligne. */}

@@ -51,7 +51,7 @@ export default function App() {
             <Route path="/quiz" element={<Quiz />} />
             <Route path="/compo" element={<Compo />} />
             <Route path="/compo/:id" element={<Compo />} />
-            <Route path="/composition-simple" element={<CompositionSimple />} />
+            <Route path="/compo-old" element={<CompositionSimple />} />
             <Route path="/judge" element={<JudgeTraining />} />
             <Route path="/judge/voix" element={<JudgeVoice />} />
             <Route path="/contact" element={<Contact />} />
@@ -78,8 +78,8 @@ export default function App() {
             <Route path="competitions/:id/edit" element={<CompetitionSetup />} />
           </Route>
 
-          {/* France 2026 (public, hors Navbar) : feuille de note plein écran */}
-          <Route path="/france2026" element={<France2026 />} />
+          {/* Feuille de note (public, hors Navbar) : plein écran, grilles France 2026 */}
+          <Route path="/composition-simple" element={<France2026 />} />
 
           {/* Compétition (public, hors Navbar) : le juge charge un parcours par son code */}
           <Route path="/competition" element={<CompetitionView />} />

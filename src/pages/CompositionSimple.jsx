@@ -79,7 +79,7 @@ export default function CompositionSimple() {
         titleEn="Score sheet"
         descriptionFr="Coche les critères de la grille et lis ta note sur 20."
         descriptionEn="Tick the grid criteria and read your score out of 20."
-        path="/composition-simple"
+        path="/compo-old"
       />
 
       {/* Sélecteur de grille (discipline / niveau) — menu déroulant compact. */}
