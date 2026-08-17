@@ -25,21 +25,21 @@ async function fetchDynamicRoutes() {
 
   const supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY)
 
-  const [{ data: figures, error: figErr }, { data: categories, error: catErr }] =
-    await Promise.all([
-      supabase.from('figures').select('slug').eq('published', true),
-      supabase.from('categories').select('slug'),
-    ])
+  const { data: figures, error: figErr } = await supabase
+    .from('figures')
+    .select('slug')
+    .eq('published', true)
   if (figErr) throw figErr
-  if (catErr) throw catErr
 
-  const categoryRoutes = (categories || [])
-    .map(c => ({ url: `/figures?cat=${c.slug}`, priority: 0.5, changefreq: 'weekly' }))
+  // NB : on n'ajoute PAS les vues filtrées /figures?cat=… au sitemap. Le filtre
+  // est appliqué côté client : au crawl, /figures?cat=spin sert le même HTML que
+  // /figures, et sa canonical pointe vers /figures. Les lister ici demanderait à
+  // Google d'indexer des doublons (cause « page en double sans URL canonique »).
   const figureRoutes = (figures || [])
     .filter(f => f.slug)
     .map(f => ({ url: `/figures/${f.slug}`, priority: 0.8, changefreq: 'weekly' }))
 
-  return [...categoryRoutes, ...figureRoutes]
+  return figureRoutes
 }
 
 function renderSitemap(routes) {

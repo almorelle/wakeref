@@ -36,6 +36,15 @@ export default function SEO({ titleFr, titleEn, descriptionFr, descriptionEn, pa
     // mute le <head> partagé entre les routes.
     setMeta('name', 'robots', noindex ? 'noindex,nofollow' : 'index,follow')
 
+    // URL canonique auto-référente. Indispensable en SPA : sans elle, Google
+    // regroupe les routes (qui servent toutes le même index.html) et choisit
+    // lui-même une canonique → « page en double sans URL canonique choisie ».
+    // `url` n'inclut jamais les query params (ex. ?cat=…), donc les variantes
+    // filtrées de /figures se consolident sur /figures. Sur une page noindex on
+    // retire la canonical pour ne pas envoyer de signaux contradictoires.
+    if (noindex) removeLink('canonical')
+    else setLink('canonical', url)
+
     // OG
     setMeta('property', 'og:title',       fullTitle)
     setMeta('property', 'og:description', description)
@@ -57,4 +66,19 @@ function setMeta(attr, name, content) {
     document.head.appendChild(el)
   }
   el.setAttribute('content', content)
+}
+
+function setLink(rel, href) {
+  let el = document.querySelector(`link[rel="${rel}"]`)
+  if (!el) {
+    el = document.createElement('link')
+    el.setAttribute('rel', rel)
+    document.head.appendChild(el)
+  }
+  el.setAttribute('href', href)
+}
+
+function removeLink(rel) {
+  const el = document.querySelector(`link[rel="${rel}"]`)
+  if (el) el.remove()
 }

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useT } from '../i18n/useT'
 import styles from './NotFound.module.css'
 import Icon from '../components/Icon'
+import SEO from '../components/SEO'
 
 export default function NotFound() {
   const navigate = useNavigate()
@@ -9,6 +10,11 @@ export default function NotFound() {
 
   return (
     <div className={styles.page}>
+      {/* SPA statique : le rewrite Vercel sert index.html en 200 pour toute URL,
+          y compris inexistante → soft 404 aux yeux de Google. On ne peut pas
+          renvoyer un vrai 404 sans SSR, mais le noindex évite l'indexation et le
+          classement « explorée, non indexée ». */}
+      <SEO titleFr="Page introuvable" titleEn="Page not found" noindex path="/404" />
       <div className={styles.content}>
         <span className={`picto-mark ${styles.mark}`} aria-hidden="true" />
         <p className={styles.code}>404</p>
