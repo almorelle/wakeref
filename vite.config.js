@@ -24,7 +24,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      injectRegister: 'script-defer',
+      // On enregistre le SW nous-mêmes via virtual:pwa-register dans main.jsx
+      // (le script auto-injecté ne fait qu'enregistrer, sans recharger à l'update).
+      injectRegister: null,
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
