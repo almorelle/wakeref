@@ -173,8 +173,13 @@ export default function Navbar() {
       >
         <div className={styles.menuTop}>
           <span className={`wordmark ${styles.menuWordmark}`}>WakeRef</span>
-          <button ref={closeRef} className={styles.menuClose} onClick={closeMenu}>
-            {tr.close}
+          <button
+            ref={closeRef}
+            className={styles.menuClose}
+            onClick={closeMenu}
+            aria-label={tr.close}
+          >
+            <Icon name="x" size={22} />
           </button>
         </div>
 
