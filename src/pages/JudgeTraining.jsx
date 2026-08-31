@@ -15,12 +15,6 @@ const EMPTY_RUN = { entries: [], jibPasses: [], otherEntries: [] }
 const DISCIPLINES = ['wakeboard', 'wakeskate', 'seated']
 const DIFFICULTIES = ['easy', 'medium', 'hard']
 
-const DISCIPLINE_COLOR = {
-  wakeboard: 'var(--c-wake)',
-  wakeskate: 'var(--c-ws)',
-  seated:    'var(--c-seated)',
-}
-
 // Source vidéo : fichier Storage (upload) ou URL externe.
 const videoSrc = (r) =>
   r?.source_type === 'upload' && r?.video_path
@@ -112,7 +106,6 @@ export default function JudgeTraining() {
     setDiff(null)
   }
 
-  const discColor = selectedRun ? DISCIPLINE_COLOR[selectedRun.discipline] : 'var(--c-accent)'
   const src = videoSrc(selectedRun)
 
   // ── Rendu d'un élément (figure / jib) dans le diff ──
@@ -210,7 +203,6 @@ export default function JudgeTraining() {
               {DISCIPLINES.map(d => (
                 <button key={d}
                   className={`${styles.chip} ${discipline === d ? styles.chipOn : ''}`}
-                  style={{ '--disc': DISCIPLINE_COLOR[d] }}
                   onClick={() => toggleDiscipline(d)}>{jt.disc[d]}</button>
               ))}
             </div>
@@ -221,7 +213,7 @@ export default function JudgeTraining() {
             {!loadingRuns && runGroups.length === 0 && <p className={styles.empty}>{jt.noRuns}</p>}
             {!loadingRuns && runGroups.map(g => (
               <div key={g.discipline} className={styles.runGroup}>
-                <span className={styles.groupHead} style={{ '--disc': DISCIPLINE_COLOR[g.discipline] }}>
+                <span className={styles.groupHead}>
                   {jt.disc[g.discipline] || g.discipline}
                 </span>
                 {g.items.map(r => (
@@ -241,7 +233,7 @@ export default function JudgeTraining() {
 
       {/* ── Phase jugement ── */}
       {phase === 'judge' && selectedRun && (
-        <div className={styles.layout} style={{ '--disc': discColor }}>
+        <div className={styles.layout}>
           <div className={styles.left}>
             <button className="btn btn-ghost btn-sm" onClick={restart}>{jt.back}</button>
             {videoPane}
@@ -267,7 +259,7 @@ export default function JudgeTraining() {
 
       {/* ── Phase correction ── */}
       {phase === 'correct' && diff && (
-        <div className={styles.layout} style={{ '--disc': discColor }}>
+        <div className={styles.layout}>
           <div className={styles.left}>
             {videoPane}
           </div>

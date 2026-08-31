@@ -1,376 +1,306 @@
 .page { display: flex; flex-direction: column; }
 
-.hero {
+/* ══════════════ Couverture ══════════════ */
+.cover {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  border-bottom: 1px solid var(--c-border);
-  /* remonte le hero derrière la navbar translucide pour une atmosphère
-     qui démarre tout en haut ; le padding compense la hauteur de nav. */
+  border-bottom: 1px dotted var(--c-rule);
+  /* remonte la couverture derrière la navbar transparente : le numéro démarre
+     tout en haut de la page ; le padding compense la hauteur de nav. */
   margin-top: calc(-1 * var(--nav-h));
-  padding: calc(2.25rem + var(--nav-h)) 1.25rem 2rem;
-  /* deux halos (cyan « wake » + violet) pour donner de la profondeur */
-  background:
-    radial-gradient(120% 90% at 18% -10%, #06b6d426, transparent 55%),
-    radial-gradient(90% 80% at 95% 0%, #7c3aed1f, transparent 50%),
-    var(--c-surface);
+  padding: calc(2.5rem + var(--nav-h)) 1.25rem 2.25rem;
 }
-/* halos plus saturés sur fond clair pour rester visibles */
-:global([data-theme='light']) .hero {
-  background:
-    radial-gradient(120% 90% at 18% -10%, #06b6d433, transparent 55%),
-    radial-gradient(90% 80% at 95% 0%, #7c3aed1a, transparent 50%),
-    var(--c-surface);
-}
-/* filigrane casque, surdimensionné, débordant à droite — couche la plus
-   profonde du hero (derrière sillage + contenu). */
-.heroWatermark {
+/* Filigrane casque, surdimensionné, débordant à droite — la « photo » de
+   couverture, réduite à une forme d'encre. */
+.coverWatermark {
   position: absolute;
   z-index: -1;
-  top: 50%;
-  right: -4%;
-  height: 230%;
+  top: 52%;
+  right: -8%;
+  height: 145%;
   transform: translateY(-50%) rotate(-8deg);
   color: var(--c-text);
-  opacity: .05;
+  opacity: .07;
   pointer-events: none;
 }
-:global([data-theme='light']) .heroWatermark { opacity: .045; }
-
-/* lignes de sillage qui dérivent lentement, en bas du hero */
-.wake {
-  position: absolute;
-  inset: auto -10% -1px -10%;
-  height: 150px;
-  z-index: -1;
-  opacity: .5;
-  mask-image: linear-gradient(transparent, #000 70%);
-  -webkit-mask-image: linear-gradient(transparent, #000 70%);
-}
-:global([data-theme='light']) .wake { opacity: .4; }
-.wake svg { width: 200%; height: 100%; animation: wakeDrift 14s linear infinite; }
-@keyframes wakeDrift { to { transform: translateX(-50%); } }
-/* grain subtil pour casser le banding des dégradés */
-.hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  opacity: .04;
-  pointer-events: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-/* colonne centrée alignée sur .page-container (max 900px) */
-.heroInner {
+:global([data-theme='dark']) .coverWatermark { opacity: .04; }
+.coverInner {
   position: relative;
-  z-index: 1;
-  max-width: 900px;
+  max-width: var(--page-max);
   margin: 0 auto;
-  animation: heroRise .6s ease both;
+  animation: coverRise .6s ease both;
 }
-.heroText { margin-bottom: 1.25rem; }
-.searchWrap { position: relative; }
-@keyframes heroRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes coverRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-display);
-  font-size: 11px;
+/* Ligne d'ours, en haut de couverture : « WAKEREF — Wakeboard & Wakeskate » */
+.kicker {
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: .22em;
+  letter-spacing: .18em;
   text-transform: uppercase;
-  color: var(--c-wake);
-  margin-bottom: 12px;
+  color: var(--c-muted);
+  margin-bottom: 18px;
 }
-.eyebrow::before {
-  content: "";
-  width: 22px;
-  height: 1px;
-  background: var(--c-wake);
-  opacity: .6;
-}
-.title {
-  font-family: var(--font-display);
-  font-size: clamp(34px, 7vw, 60px);
-  font-weight: 800;
-  letter-spacing: -.03em;
-  line-height: .98;
-  max-width: 14ch;
-  text-wrap: balance;
-  margin-bottom: 10px;
-  background: linear-gradient(135deg, #f0f0f8 25%, var(--c-wake) 95%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-/* sur fond clair, le blanc disparaît : on passe à sombre → teal */
-:global([data-theme='light']) .title {
-  background: linear-gradient(135deg, #0d0d1a 20%, #0891b2 95%);
-  -webkit-background-clip: text;
-  background-clip: text;
-}
-.sub { font-size: 14px; color: var(--c-muted); }
+.kicker :global(.wordmark) { font-size: 15px; letter-spacing: .06em; color: var(--c-text); }
 
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(52px, 11.5vw, 118px);
+  letter-spacing: .005em;
+  line-height: .84;
+  text-transform: uppercase;
+  max-width: 15ch;
+  text-wrap: balance;
+  color: var(--c-text);
+  margin-bottom: 14px;
+}
+.standfirst {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--c-muted);
+  max-width: 52ch;
+}
+
+/* Recherche : un simple souligné d'encre, pas de champ encadré. */
 .searchWrap {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: var(--c-surface2);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
-  padding: 14px 18px;
+  gap: 12px;
+  margin-top: 2rem;
+  max-width: 560px;
+  padding: 10px 2px;
+  border-bottom: 2px solid var(--c-text);
   transition: border-color var(--t-fast);
 }
-.searchWrap:focus-within { border-color: var(--c-accent); }
-.searchWrap i { color: var(--c-muted); font-size: 20px; flex-shrink: 0; }
+.searchWrap:focus-within { border-bottom-color: var(--c-accent); }
+.searchWrap i { color: var(--c-text); flex-shrink: 0; transition: color var(--t-fast); }
+.searchWrap:focus-within i { color: var(--c-accent); }
 .searchInput {
   flex: 1;
-  font-size: 16px;
+  min-width: 0;
+  font-size: 17px;
   color: var(--c-text);
   background: none;
   border: none;
   outline: none;
 }
 .searchInput:focus-visible { outline: none; }
-.searchInput::placeholder { color: var(--c-muted); }
-.clearBtn { color: var(--c-faint); padding: 2px; display: flex; align-items: center; }
-.clearBtn:hover { color: var(--c-muted); }
+.searchInput::placeholder { color: var(--c-faint); }
+.clearBtn { color: var(--c-muted); padding: 2px; display: flex; align-items: center; }
+.clearBtn:hover { color: var(--c-accent-ink); }
 
-.results {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 1.5rem;
+/* Note manuscrite sous la barre, légèrement de travers */
+.coverNote {
+  font-size: 13px;
+  margin-top: 12px;
+  transform: rotate(-1.2deg);
+  transform-origin: left center;
+  max-width: 560px;
 }
+
+/* ══════════════ Résultats de recherche ══════════════ */
+.results { padding-top: 1.75rem; }
 .empty { font-size: 14px; color: var(--c-muted); padding: 1rem 0; }
 
-/* Tuiles features : le launchpad (remplace l'ancienne grille catégories) */
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-top: 1.75rem;
-}
-/* Tablette : 4 tuiles se tasseraient, on repasse en 2×2.
-   Le breakpoint mobile (760px, plus bas) reprend la main en 1 colonne. */
-@media (max-width: 980px) {
-  .tiles { grid-template-columns: repeat(2, 1fr); }
-}
-.tile {
-  position: relative;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
-  padding: 22px 20px 20px;
+/* ══════════════ Sommaire ══════════════ */
+.toc { padding-top: 2.25rem; }
+.tocTitle { margin-bottom: 4px; }
+.tocItem {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  cursor: pointer;
+  gap: 5px;
   text-align: left;
-  transition: border-color var(--t-fast), background var(--t-fast), transform var(--t-fast);
-  animation: tileRise .5s ease both;
-  animation-delay: calc(var(--i, 0) * 70ms + .15s);
+  padding: 15px 0 14px;
+  border-bottom: 1px dotted var(--c-rule);
+  transition: border-color var(--t-fast);
+  animation: coverRise .5s ease both;
+  animation-delay: calc(var(--i, 0) * 70ms + .1s);
 }
-.tile:hover {
-  border-color: var(--tile, var(--c-accent));
-  background: var(--c-surface2);
-  transform: translateY(-3px);
-}
-@keyframes tileRise {
-  from { opacity: 0; transform: translateY(14px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-.tileIcon {
-  width: 46px;
-  height: 46px;
-  border-radius: var(--r-md);
+.tocItem:hover { border-bottom-color: var(--c-accent); }
+.tocHead {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--tile, var(--c-accent));
-  background: color-mix(in srgb, var(--tile, var(--c-accent)) 14%, transparent);
-  transition: background var(--t-fast);
+  align-items: baseline;
+  gap: 14px;
 }
-.tileIcon i { font-size: 24px; }
-.tile:hover .tileIcon {
-  background: color-mix(in srgb, var(--tile, var(--c-accent)) 22%, transparent);
+.tocNum {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--c-accent-ink);
+  flex-shrink: 0;
+  width: 1.5em;
 }
-.tileName {
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 800;
-  letter-spacing: -.01em;
+.tocName {
+  font-family: var(--font-title);
+  font-size: clamp(30px, 5.5vw, 44px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
+  transition: color var(--t-fast);
 }
-.tileSub {
-  font-size: 13.5px;
-  color: var(--c-muted);
-  line-height: 1.5;
+.tocItem:hover .tocName { color: var(--c-accent-ink); }
+/* Points de suite : relient le titre de rubrique à sa flèche. */
+.tocLeader {
+  flex: 1;
+  min-width: 20px;
+  border-bottom: 1px dotted var(--c-rule);
+  transform: translateY(-6px);
 }
-.tileGo {
-  position: absolute;
-  top: 20px;
-  right: 18px;
+.tocGo {
+  flex-shrink: 0;
   color: var(--c-faint);
-  display: inline-flex;
+  align-self: center;
   transition: color var(--t-fast), transform var(--t-fast);
 }
-.tile:hover .tileGo {
-  color: var(--tile, var(--c-accent));
-  transform: translateX(2px);
+.tocItem:hover .tocGo { color: var(--c-accent); transform: translateX(3px); }
+.tocSub {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--c-muted);
+  padding-left: calc(1.5em + 14px);
+  max-width: 58ch;
 }
 
-.list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* ══════════════ Rubriques (listes de figures) ══════════════ */
+.section { padding-top: 2.75rem; }
+.list { display: grid; grid-template-columns: 1fr; }
+@media (min-width: 860px) {
+  /* Deux colonnes de sommaire sur grand écran : les filets s'alignent. */
+  .list { grid-template-columns: 1fr 1fr; column-gap: 44px; }
 }
-/* espace au-dessus des titres de section (contenu de référence) */
-.sectionTitle { margin-top: 2rem; }
 
-/* Panneau d'appel à contribution */
+/* ══════════════ Appel à contribution ══════════════ */
 .cta {
-  margin-top: 1.5rem;
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-xl);
-  background:
-    linear-gradient(135deg, #7c3aed22, transparent 55%),
-    var(--c-surface);
-  padding: 1.5rem;
+  margin-top: 3rem;
+  padding: 1.75rem 0;
+  border-top: 2px solid var(--c-text);
+  border-bottom: 1px dotted var(--c-rule);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
-.ctaStats {
-  display: flex;
-  gap: 1.25rem;
+.ctaStats { display: flex; gap: 2.5rem; }
+@media (min-width: 860px) {
+  /* Sur grand écran, les chiffres tiennent la colonne de gauche et l'appel
+     occupe la mesure de droite : la double page se remplit. */
+  .cta { display: grid; grid-template-columns: minmax(200px, 1fr) 2fr; gap: 2.5rem; }
+  .ctaStats { flex-direction: column; gap: 1.5rem; }
 }
-.ctaStat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.ctaStat + .ctaStat {
-  padding-left: 1.25rem;
-  border-left: 1px solid var(--c-border);
-}
+.ctaStat { display: flex; flex-direction: column; gap: 2px; }
 .ctaNum {
-  font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 800;
-  line-height: 1;
-  color: #8b5cf6;
+  font-family: var(--font-title);
+  font-size: 54px;
+  line-height: .85;
+  color: var(--c-accent-ink);
 }
 .ctaLabel {
-  font-size: 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
   color: var(--c-muted);
-  max-width: 120px;
-  line-height: 1.3;
+  max-width: 15ch;
+  line-height: 1.4;
+  margin-top: 6px;
 }
 .ctaBody {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
+  gap: 10px;
 }
 .ctaTitle {
-  font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 800;
+  font-family: var(--font-title);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
+  max-width: 22ch;
 }
 .ctaText {
-  font-size: 14px;
+  font-size: 14.5px;
   color: var(--c-muted);
   line-height: 1.6;
-  max-width: 520px;
+  max-width: 56ch;
 }
-.ctaBtn { margin-top: 4px; }
+.ctaBtn { margin-top: 6px; }
 
-/* Bannière World Cable Tricks */
+/* ══════════════ Bandeau World Cable Tricks ══════════════ */
 .wctBanner {
-  margin-top: 1.5rem;
-  border: 1px solid #f59e0b33;
-  border-radius: var(--r-xl);
-  background:
-    linear-gradient(135deg, #f59e0b14, transparent 55%),
-    var(--c-surface);
-  padding: 1.25rem 1.5rem;
+  margin-top: 2rem;
+  padding: 1.25rem 0;
+  border-bottom: 1px dotted var(--c-rule);
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  text-decoration: none;
-  transition: border-color var(--t-fast), background var(--t-fast);
+  transition: padding-left var(--t-fast);
 }
-.wctBanner:hover {
-  border-color: #f59e0b66;
-  background:
-    linear-gradient(135deg, #f59e0b1e, transparent 55%),
-    var(--c-surface);
-}
+.wctBanner:hover { padding-left: 8px; }
 .wctLogo {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   flex-shrink: 0;
 }
-.wctBody {
-  flex: 1;
-  min-width: 0;
-}
+.wctBody { flex: 1; min-width: 0; }
 .wctTitle {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 800;
+  font-family: var(--font-title);
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
   margin-bottom: 4px;
 }
 .wctText {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--c-muted);
   line-height: 1.5;
 }
-/* CTA secondaire : bordé plutôt que plein, pour ne pas concurrencer le
-   bouton primaire « Soumettre ma vidéo ». Garde l'identité ambre WCT. */
 .wctBtn {
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: transparent;
-  color: #f59e0b;
-  border: 1px solid #f59e0b66;
-  font-family: var(--font-display);
-  font-size: 13px;
+  gap: 7px;
+  color: var(--c-text);
+  border-bottom: 2px solid var(--c-accent);
+  font-family: var(--font-body);
+  font-size: 11px;
   font-weight: 700;
-  border-radius: var(--r-lg);
-  padding: 10px 16px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 6px 0;
   white-space: nowrap;
-  transition: background var(--t-fast), border-color var(--t-fast);
+  transition: color var(--t-fast);
 }
-.wctBanner:hover .wctBtn { background: #f59e0b1a; border-color: #f59e0b; }
-/* sur fond clair, l'ambre vif passe sous le seuil AA : on fonce le texte */
-:global([data-theme='light']) .wctBtn { color: #b45309; }
+.wctBanner:hover .wctBtn { color: var(--c-accent-ink); }
 
 @media (max-width: 600px) {
-  .wctBanner { flex-wrap: wrap; }
-  .wctBtn { width: 100%; justify-content: center; }
+  .wctBanner { flex-wrap: wrap; gap: 1rem; }
+  .wctBtn { width: 100%; justify-content: space-between; }
 }
 
 @media (max-width: 760px) {
-  /* hero compacté : on resserre l'espace vertical pour faire remonter la
+  /* couverture compactée : on resserre le vertical pour faire remonter la
      barre de recherche (action n°1) dans le premier écran. */
-  .hero { padding: calc(1.5rem + var(--nav-h)) 1.25rem 1.5rem; }
-  .heroText { margin-bottom: 1rem; }
-  .eyebrow { margin-bottom: 10px; }
-  .tiles { grid-template-columns: 1fr; }
-  /* Quand on tape, le contenu passe des tuiles/CTA (page haute) aux seuls
-     résultats (souvent un spinner ou peu de cartes) : la page se raccourcit et
-     le scroll qui épinglait la barre sous la navbar (handleSearchFocus) saute
-     vers le haut, ramenant le hero. On réserve une hauteur d'écran à la zone
-     de résultats pour garder la barre épinglée, clavier ouvert. */
+  .cover { padding: calc(1.5rem + var(--nav-h)) 1.25rem 1.75rem; }
+  .kicker { margin-bottom: 14px; }
+  .searchWrap { margin-top: 1.5rem; }
+  .standfirst { font-size: 14px; }
+  .tocSub { padding-left: 0; font-size: 13.5px; }
+  .ctaStats { gap: 1.75rem; }
+  .ctaNum { font-size: 44px; }
+  /* Quand on tape, le contenu passe du sommaire aux seuls résultats (souvent
+     un spinner ou peu de lignes) : la page se raccourcit et le scroll qui
+     épinglait la barre sous la navbar (handleSearchFocus) saute vers le haut,
+     ramenant la couverture. On réserve une hauteur d'écran à la zone de
+     résultats pour garder la barre épinglée, clavier ouvert. */
   .results { min-height: 100vh; }
 }

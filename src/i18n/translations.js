@@ -19,6 +19,8 @@ export const t = {
     tileJudgeTitle:   'Juge',
     tileJudgeSub:     'Entraine-toi comme en compétition — affûte ton œil de juge.',
     categories:    'Catégories',
+    summary:       'Sommaire',
+    coverNote:     'cherche un trick, ou déroule le sommaire',
     mostViewedFigures: 'Figures les plus consultées',
     recentVideos:  'Dernières vidéos ajoutées',
     noResults:     (q) => `Aucune figure trouvée pour « ${q} »`,
@@ -80,7 +82,12 @@ export const t = {
     takedownSuccessMsg: 'Votre demande a bien été envoyée. Nous traiterons votre demande dans les plus brefs délais.',
     cancel: 'Annuler',
     close:  'Fermer',
+    menu:   'Menu',
+    themeDark:  'Nuit',
+    themeLight: 'Jour',
+    youAreHere: 'tu es ici',
     clearSearch: 'Effacer la recherche',
+    seeAllResults: (n) => `Voir les ${n} résultats`,
     deleteVideo: 'Supprimer la vidéo',
     share:  'Partage ce trick !',
     copied: 'Lien copié !',
@@ -268,6 +275,7 @@ export const t = {
 
     // Difficulty
     difficulty: 'Difficulté',
+    diffStamp:  'Niveau',
     contact: 'Contact',
 
     // Not Found
@@ -329,6 +337,8 @@ export const t = {
     tileJudgeTitle:    'Judge',
     tileJudgeSub:      'Train yourself as in a competition — sharpen your judging eye.',
     categories:        'Categories',
+    summary:           'Contents',
+    coverNote:         'search a trick, or scroll the contents',
     mostViewedFigures: 'Most viewed tricks',
     recentVideos:      'Last added videos',
     ctaFiguresLabel:   'tricks documented',
@@ -390,7 +400,12 @@ export const t = {
     takedownSuccessMsg: 'Your request has been submitted. We will process it as soon as possible.',
     cancel: 'Cancel',
     close:  'Close',
+    menu:   'Menu',
+    themeDark:  'Dark',
+    themeLight: 'Light',
+    youAreHere: 'you are here',
     clearSearch: 'Clear search',
+    seeAllResults: (n) => `See all ${n} results`,
     deleteVideo: 'Delete video',
     share:  'Share this trick!',
     copied: 'Link copied!',
@@ -578,6 +593,7 @@ export const t = {
 
     // Difficulty
     difficulty: 'Difficulty',
+    diffStamp:  'Level',
     contact: 'Contact',
 
     // Not Found

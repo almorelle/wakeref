@@ -1,5 +1,7 @@
-// Rampe de couleur : cyan (facile) → ambre → rouge (difficile)
-const dotColor = i => (i < 2 ? 'var(--c-wake)' : i < 4 ? 'var(--c-ws)' : 'var(--c-danger)')
+// Direction « papier » : deux encres seulement. Les niveaux 1–3 restent en
+// encre, le magenta n'apparaît qu'à partir de 4 — il signale la difficulté
+// haute sans réintroduire de rampe de couleurs.
+const dotColor = i => (i < 3 ? 'var(--c-text)' : 'var(--c-accent)')
 
 export default function DifficultyDots({ value, max = 5 }) {
   return (

@@ -4,33 +4,42 @@
   align-items: center;
   justify-content: center;
   padding: 2rem;
-  background: var(--c-bg);
+  background: none;
 }
+/* Feuillet d'encre posé sur le papier — pas d'ombre ni d'arrondi. */
 .card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-xl);
+  background: none;
+  border: 1px solid var(--c-text);
+  border-radius: 0;
   padding: 2rem;
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
 }
 .logo {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 800;
+  font-family: var(--font-title);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  line-height: 1;
   color: var(--c-text);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 2rem;
+  padding-bottom: 14px;
+  border-bottom: 1px dotted var(--c-rule);
 }
-.logoMark { height: 26px; color: var(--c-wake); }
-.form { display: flex; flex-direction: column; gap: 14px; }
+.logoMark { height: 26px; color: var(--c-accent); }
+.form { display: flex; flex-direction: column; gap: 22px; }
+/* Erreur : filet en marge plutôt qu'un pavé teinté */
 .error {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--c-danger);
-  background: #ef444415;
-  border: 1px solid #ef444430;
-  border-radius: var(--r-sm);
-  padding: 8px 12px;
+  background: none;
+  border: 0;
+  border-left: 3px solid var(--c-danger);
+  border-radius: 0;
+  padding: 6px 0 6px 12px;
+  line-height: 1.5;
 }

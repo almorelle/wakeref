@@ -1,0 +1,6 @@
+- Palette : papier #DCD2DE, encre #2A1E30, gris-texte #7C6B82, accent magenta #C43D8C
+- Polices : Bebas Neue (titres), Permanent Marker (annotations manuscrites/tampon), Archivo (texte courant)
+- Layout : pas de cards/ombres, séparation par l'espace ou des filets pointillés
+- Élément signature : badge "tampon" rond pour le niveau (FACILE/MOYEN/DUR), légèrement penché, mix-blend-mode multiply
+- Photos : traitement duotone (2 couleurs de la palette), pas de photo couleur naturelle
+- Structure : couverture (trick à la une) → sommaire scrollable → grille 2 col (mobile) / 4 col (desktop) → fiche détail en overlay

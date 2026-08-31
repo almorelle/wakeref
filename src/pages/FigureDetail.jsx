@@ -2,7 +2,6 @@ import { Fragment, useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { externalUrl } from '../lib/url'
-import DifficultyDots from '../components/DifficultyDots'
 import { SportBadge, CategoryBadge, ContextBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
 import { useLocalizedField } from '../contexts/language-context'
@@ -419,16 +418,22 @@ export default function FigureDetail() {
         </nav>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>{figure.name}</h1>
+          {/* Tampon de niveau : l'élément signature de la direction, apposé
+              de travers sur la couverture de la fiche. */}
+          <span className="stamp" role="img" aria-label={`${tr.diffStamp} ${figure.difficulty}/5`}>
+            <span aria-hidden="true">{tr.diffStamp}<br />{figure.difficulty}/5</span>
+          </span>
+        </div>
+        <div className={styles.metaRow}>
+          <div className={styles.meta}>
+            <CategoryBadge slug={figure.category_slug} name={figure.category_name} />
+            <SportBadge sport={figure.sport} />
+            {figure.contexts?.map(ctx => <ContextBadge key={ctx} context={ctx} />)}
+          </div>
           <button className={styles.shareBtn} onClick={shareTrick} title={tr.share}>
-            <Icon name={copied ? 'check' : 'share-3'} />
+            <Icon name={copied ? 'check' : 'share-3'} size={15} />
             <span>{copied ? tr.copied : tr.share}</span>
           </button>
-        </div>
-        <div className={styles.meta}>
-          <CategoryBadge slug={figure.category_slug} name={figure.category_name} />
-          <SportBadge sport={figure.sport} />
-          <DifficultyDots value={figure.difficulty} />
-          {figure.contexts?.map(ctx => <ContextBadge key={ctx} context={ctx} />)}
         </div>
       </div>
 

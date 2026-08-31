@@ -65,7 +65,7 @@ export default function SubmitVideo() {
 
         {status === 'success' ? (
           <div className={styles.success}>
-            <Icon name="check" style={{ fontSize: 36, color: 'var(--c-success)' }} />
+            <Icon name="check" size={34} className={styles.successIcon} />
             <p>{tr.submitSuccess}</p>
             <Link to="/figures" className="btn btn-ghost">{tr.figures}</Link>
           </div>
@@ -135,12 +135,11 @@ export default function SubmitVideo() {
             <div className="field">
               <label>{tr.submitCaption}</label>
               <textarea
-                className="input"
+                className={`input ${styles.textarea}`}
                 rows={3}
                 placeholder={tr.submitCaptionPh}
                 value={form.caption}
                 onChange={e => set('caption', e.target.value)}
-                style={{ resize: 'vertical' }}
               />
             </div>
 
@@ -150,9 +149,8 @@ export default function SubmitVideo() {
 
             <button
               type="submit"
-              className="btn btn-primary"
+              className={`btn btn-primary ${styles.submitBtn}`}
               disabled={status === 'sending'}
-              style={{ alignSelf: 'flex-end' }}
             >
               {status === 'sending'
                 ? <><Icon name="loader-2" className="spin" /> {tr.submitSending}</>

@@ -1,32 +1,56 @@
-.page { max-width: 760px; display: flex; flex-direction: column; gap: 1.5rem; }
-.title { font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: .5rem; }
-.empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 3rem; color: var(--c-muted); font-size: 14px; }
-.section { display: flex; flex-direction: column; gap: 8px; }
+.page { max-width: 800px; display: flex; flex-direction: column; gap: 1.75rem; }
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.sub { font-size: 13.5px; color: var(--c-muted); margin-top: 6px; }
+.empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 3rem 1rem; color: var(--c-muted); font-size: 14px; text-align: center;
+}
+
+.section { display: flex; flex-direction: column; }
 .card {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
-  padding: 14px 16px;
+  background: none;
+  border: 0;
+  border-bottom: 1px dotted var(--c-rule);
+  border-left: 3px solid var(--c-rule);
+  border-radius: 0;
+  padding: 12px 0 12px 12px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   flex-wrap: wrap;
 }
-.meta { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.name { font-family: var(--font-display); font-size: 15px; font-weight: 700; }
-.unnamed { color: var(--c-muted); font-style: italic; font-weight: 500; }
-.sub { font-size: 12px; color: var(--c-muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.meta { flex: 1; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.name {
+  font-family: var(--font-title);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.unnamed { color: var(--c-muted); font-style: italic; }
+.sub { font-size: 12px; color: var(--c-muted); display: flex; gap: 12px; flex-wrap: wrap; margin-top: 0; }
 .score {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--c-accent);
+  font-family: var(--font-title);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--c-accent-ink);
   white-space: nowrap;
 }
-.actions { display: flex; gap: 6px; align-items: center; }
+.actions { display: flex; gap: 8px; align-items: center; }
 
-/* Mobile : empile la carte (méta pleine largeur, puis score, puis actions).
-   Sinon la méta est écrasée entre le nom et le score/boutons et la ligne
+/* Mobile : empile la ligne (méta pleine largeur, puis note, puis actions).
+   Sinon la méta est écrasée entre le nom et la note/boutons et la ligne
    « N figures · date · id » se brise verticalement. */
 @media (max-width: 600px) {
   .card { flex-direction: column; align-items: stretch; gap: 10px; }

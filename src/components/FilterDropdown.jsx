@@ -3,11 +3,12 @@ import Icon from './Icon'
 import styles from './FilterDropdown.module.css'
 
 // Filtre mono-select présenté en menu déroulant. Le bouton affiche le nom de
-// l'axe au repos, la valeur choisie quand un filtre est actif. Accessible :
-// aria-expanded, role="listbox"/"option", fermeture Échap + clic-extérieur,
-// navigation flèches haut/bas. `columns={2}` étale les options sur deux
-// colonnes (utile quand l'axe a beaucoup de valeurs).
-export default function FilterDropdown({ axisLabel, value, allValue = '', options, onChange, align = 'left', accent, columns = 1 }) {
+// l'axe au repos, la valeur choisie quand un filtre est actif ; l'état actif se
+// lit au filet d'accent sous le libellé (la direction n'a que deux encres, pas
+// de pastille de couleur par catégorie). Accessible : aria-expanded,
+// role="listbox"/"option", fermeture Échap + clic-extérieur, navigation flèches
+// haut/bas. `columns={2}` étale les options sur deux colonnes.
+export default function FilterDropdown({ axisLabel, value, allValue = '', options, onChange, align = 'left', columns = 1 }) {
   const [open, setOpen] = useState(false)
   const [fade, setFade] = useState({ top: false, bottom: false })
   const rootRef = useRef(null)
@@ -59,12 +60,10 @@ export default function FilterDropdown({ axisLabel, value, allValue = '', option
         ref={btnRef}
         type="button"
         className={`${styles.trigger} ${active ? styles.active : ''}`}
-        style={active && accent ? { '--accent': accent } : undefined}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen(o => !o)}
       >
-        {active && <span className={styles.dot} />}
         <span className={styles.triggerLabel}>{triggerLabel}</span>
         <Icon name="chevron-right" className={styles.chevron} size={16} />
       </button>
@@ -99,7 +98,6 @@ export default function FilterDropdown({ axisLabel, value, allValue = '', option
                   className={`${styles.option} ${sel ? styles.optionSel : ''} ${o.value === allValue ? styles.optionAll : ''}`}
                   onClick={() => select(o.value)}
                 >
-                  {o.color && <span className={styles.swatch} style={{ background: o.color }} />}
                   <span className={styles.optionLabel}>{o.label}</span>
                   {sel && <Icon name="check" className={styles.checkIcon} size={16} />}
                 </button>

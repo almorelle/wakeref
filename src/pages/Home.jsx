@@ -20,8 +20,8 @@ export default function Home() {
   const navigate = useNavigate()
   const tr = useT()
 
-  // Sur mobile, la barre de recherche est placée bas dans le hero ; quand le
-  // clavier s'ouvre il masque les résultats affichés en dessous. Au focus, on
+  // Sur mobile, la barre de recherche est placée bas dans la couverture ; quand
+  // le clavier s'ouvre il masque les résultats affichés en dessous. Au focus, on
   // remonte la barre juste sous la navbar pour libérer l'espace au-dessus du
   // clavier. Le délai laisse le clavier amorcer son ouverture (sinon iOS
   // recale la position après notre scroll).
@@ -69,6 +69,13 @@ export default function Home() {
     return () => clearTimeout(timer)
   }, [query])
 
+  const sections = [
+    { to: '/figures', title: tr.tileCatalogTitle, sub: tr.tileCatalogSub },
+    { to: '/quiz',    title: tr.tileQuizTitle,    sub: tr.tileQuizSub    },
+    { to: '/compo',   title: tr.tileCompoTitle,   sub: tr.tileCompoSub   },
+    { to: '/judge',   title: tr.tileJudgeTitle,   sub: tr.tileJudgeSub   },
+  ]
+
   return (
     <div className={styles.page}>
       <SEO
@@ -78,23 +85,22 @@ export default function Home() {
         descriptionEn="Complete wakeboard and wakeskate tricks reference."
         path="/"
       />
-      <div className={styles.hero}>
-        <span className={`picto-mark ${styles.heroWatermark}`} aria-hidden="true" />
-        <div className={styles.wake} aria-hidden="true">
-          <svg viewBox="0 0 1200 160" preserveAspectRatio="none" fill="none">
-            <path d="M0 100 Q150 60 300 100 T600 100 T900 100 T1200 100 T1500 100 T1800 100 T2100 100 T2400 100" stroke="var(--c-wake)" strokeWidth="1.5" opacity=".55" />
-            <path d="M0 120 Q150 90 300 120 T600 120 T900 120 T1200 120 T1500 120 T1800 120 T2100 120 T2400 120" stroke="var(--c-wake)" strokeWidth="1" opacity=".3" />
-            <path d="M0 80 Q150 50 300 80 T600 80 T900 80 T1200 80 T1500 80 T1800 80 T2100 80 T2400 80" stroke="#7c3aed" strokeWidth="1" opacity=".25" />
-          </svg>
-        </div>
-        <div className={styles.heroInner}>
-          <div className={styles.heroText}>
-            <span className={styles.eyebrow}>{tr.heroEyebrow}</span>
-            <h1 className={styles.title}>{tr.heroTitle}</h1>
-            <p className={styles.sub}>{tr.appSubtitle}</p>
-          </div>
+
+      {/* Couverture : le titre du « numéro », la barre de recherche en action
+          principale, et le picto casque en filigrane débordant. */}
+      <header className={styles.cover}>
+        <span className={`picto-mark ${styles.coverWatermark}`} aria-hidden="true" />
+        <div className={styles.coverInner}>
+          <p className={styles.kicker}>
+            <span className="wordmark">WakeRef</span>
+            <span aria-hidden="true"> — </span>
+            {tr.heroEyebrow}
+          </p>
+          <h1 className={styles.title}>{tr.heroTitle}</h1>
+          <p className={styles.standfirst}>{tr.appSubtitle}</p>
+
           <div className={styles.searchWrap} ref={searchRef}>
-            <Icon name="search" />
+            <Icon name="search" size={19} />
             <input
               className={styles.searchInput}
               type="text"
@@ -107,12 +113,13 @@ export default function Home() {
             />
             {query && (
               <button onClick={() => setQuery('')} className={styles.clearBtn} aria-label={tr.clearSearch}>
-                <Icon name="x" />
+                <Icon name="x" size={17} />
               </button>
             )}
           </div>
+          <p className={`hand ${styles.coverNote}`}>— {tr.coverNote}</p>
         </div>
-      </div>
+      </header>
 
       <div className="page-container">
         {query.trim() && (
@@ -121,54 +128,59 @@ export default function Home() {
             {!searching && searchResults?.length === 0 && (
               <p className={styles.empty}>{tr.noResults(query)}</p>
             )}
-            {!searching && searchResults?.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
+            {!searching && searchResults?.length > 0 && (
+              <div className={styles.list}>
+                {searchResults.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
+              </div>
+            )}
           </div>
         )}
 
         {!query.trim() && (
           <>
-            <div className={styles.tiles}>
-              {[
-                { to: '/figures', icon: 'list',       color: 'var(--c-accent)', title: tr.tileCatalogTitle, sub: tr.tileCatalogSub },
-                { to: '/quiz',    icon: 'help',       color: 'var(--c-wake)',   title: tr.tileQuizTitle,    sub: tr.tileQuizSub },
-                { to: '/compo',   icon: 'calculator', color: 'var(--c-ws)',     title: tr.tileCompoTitle,   sub: tr.tileCompoSub },
-                { to: '/judge',   icon: 'star',       color: 'var(--c-seated)', title: tr.tileJudgeTitle,   sub: tr.tileJudgeSub },
-              ].map((f, i) => (
+            {/* Sommaire : les quatre modules en table des matières, chaque
+                entrée numérotée et reliée à sa flèche par des points de suite. */}
+            <nav className={styles.toc} aria-label={tr.summary}>
+              <h2 className={`section-title ${styles.tocTitle}`}>{tr.summary}</h2>
+              {sections.map((s, i) => (
                 <button
-                  key={f.to}
-                  className={styles.tile}
-                  onClick={() => navigate(f.to)}
-                  style={{ '--tile': f.color, '--i': i }}
+                  key={s.to}
+                  className={styles.tocItem}
+                  onClick={() => navigate(s.to)}
+                  style={{ '--i': i }}
                 >
-                  <span className={styles.tileGo}><Icon name="arrow-right" /></span>
-                  <span className={styles.tileIcon}><Icon name={f.icon} /></span>
-                  <span className={styles.tileName}>{f.title}</span>
-                  <span className={styles.tileSub}>{f.sub}</span>
+                  <span className={styles.tocHead}>
+                    <span className={styles.tocNum}>{String(i + 1).padStart(2, '0')}</span>
+                    <span className={styles.tocName}>{s.title}</span>
+                    <span className={styles.tocLeader} aria-hidden="true" />
+                    <Icon name="arrow-right" size={17} className={styles.tocGo} />
+                  </span>
+                  <span className={styles.tocSub}>{s.sub}</span>
                 </button>
               ))}
-            </div>
+            </nav>
 
             {/* Contenu de référence en premier : c'est ce que l'utilisateur
                 vient consulter. Les CTA de contribution viennent après. */}
             {mostViewed.length > 0 && (
-              <>
-                <h2 className={`section-title ${styles.sectionTitle}`}>{tr.mostViewedFigures}</h2>
+              <section className={styles.section}>
+                <h2 className="section-title">{tr.mostViewedFigures}</h2>
                 <div className={styles.list}>
                   {mostViewed.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
                 </div>
-              </>
+              </section>
             )}
 
             {videos.length > 0 && (
-              <>
-                <h2 className={`section-title ${styles.sectionTitle}`}>{tr.recentVideos}</h2>
+              <section className={styles.section}>
+                <h2 className="section-title">{tr.recentVideos}</h2>
                 <div className={styles.list}>
                   {videos.map((f, i) => <FigureCard key={f.id} figure={f} index={i} />)}
                 </div>
-              </>
+              </section>
             )}
 
-            <div className={styles.cta}>
+            <section className={styles.cta}>
               {stats && (
                 <div className={styles.ctaStats}>
                   <div className={styles.ctaStat}>
@@ -185,10 +197,10 @@ export default function Home() {
                 <h2 className={styles.ctaTitle}>{tr.ctaTitle}</h2>
                 <p className={styles.ctaText}>{tr.ctaText}</p>
                 <button className={`btn btn-submit ${styles.ctaBtn}`} onClick={() => navigate('/submit')}>
-                  <Icon name="upload" /> {tr.ctaButton}
+                  <Icon name="upload" size={16} /> {tr.ctaButton}
                 </button>
               </div>
-            </div>
+            </section>
 
             <a
               href={externalUrl('https://www.worldcabletricks.com/', { ref: true })}
@@ -202,7 +214,7 @@ export default function Home() {
                 <p className={styles.wctText}>{tr.wctText}</p>
               </div>
               <span className={styles.wctBtn}>
-                {tr.wctButton} <Icon name="arrow-right" />
+                {tr.wctButton} <Icon name="arrow-right" size={15} />
               </span>
             </a>
           </>

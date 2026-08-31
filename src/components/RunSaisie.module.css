@@ -1,39 +1,58 @@
-/* Styles de la saisie de run, extraits verbatim de Compo.module.css.
-   Présentation-neutre : aucune largeur/grille propre — le parent compose la mise
-   en page. */
+/* Styles de la saisie de run, partagés par /compo, /judge et l'admin.
+   Présentation-neutre : aucune largeur/grille propre — le parent compose la
+   mise en page. */
 
 .searchWrap { position: relative; }
 
+/* Suggestions : un feuillet posé sur la page, papier plein + filet d'encre. */
 .suggestions {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0; right: 0;
-  background: var(--c-surface2);
-  border: 1px solid var(--c-border2);
-  border-radius: var(--r-md);
+  background-color: var(--c-bg);
+  background-image: var(--grain);
+  background-size: 3px 3px;
+  border: 1px solid var(--c-text);
+  border-radius: 0;
   z-index: 50;
   overflow: hidden;
-  box-shadow: 0 8px 24px #00000030;
 }
 
 .suggestion {
   width: 100%;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 10px 14px;
+  gap: 12px;
+  padding: 9px 12px;
   cursor: pointer;
-  transition: background var(--t-fast);
+  border-bottom: 1px dotted var(--c-rule);
+  transition: color var(--t-fast), padding-left var(--t-fast);
   text-align: left;
 }
-.suggestion:hover { background: var(--c-surface3); }
+.suggestion:last-child { border-bottom: none; }
+.suggestion:hover { padding-left: 18px; }
 
-.suggName { font-size: 14px; color: var(--c-text); font-weight: 500; }
-.suggCat  { font-size: 11px; color: var(--c-muted); }
-
-.suggestionHighlight {
-  background: var(--c-surface3);
+.suggName {
+  font-family: var(--font-title);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
 }
+.suggCat {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  flex-shrink: 0;
+}
+
+.suggestionHighlight { padding-left: 18px; }
+.suggestionHighlight .suggName { color: var(--c-accent-ink); }
 
 .spinner {
   width: 16px; height: 16px;
@@ -48,65 +67,78 @@
 }
 @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
-/* ── Pending questions ── */
+/* ── Questions en attente ── */
 .pending {
-  background: var(--c-surface);
-  border: 1px solid var(--c-accent);
-  border-radius: var(--r-lg);
-  padding: 1rem;
+  background: none;
+  border: 1px solid var(--c-text);
+  border-radius: 0;
+  padding: 1rem 1.1rem 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .pendingTitle {
-  font-family: var(--font-display);
-  font-size: 15px;
-  font-weight: 700;
+  font-family: var(--font-title);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
 }
 
 .questionRow {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .questionLabel {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--c-muted);
   text-transform: uppercase;
-  letter-spacing: .06em;
-  font-family: var(--font-display);
+  letter-spacing: .14em;
+  font-family: var(--font-body);
 }
 
 .questionOptions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
+/* Option : encart d'encre, plein quand elle est retenue. */
 .optBtn {
-  padding: 6px 14px;
-  border-radius: var(--r-md);
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid var(--c-border2);
+  padding: 7px 14px;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  border: 1px solid var(--c-rule);
+  background: none;
   color: var(--c-muted);
-  transition: all var(--t-fast);
+  transition: border-color var(--t-fast), color var(--t-fast), background var(--t-fast);
 }
-.optBtn:hover { border-color: var(--c-accent); color: var(--c-text); }
-.optSelected  { background: var(--c-accent); border-color: var(--c-accent); color: #fff; }
+.optBtn:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
+.optSelected {
+  background: var(--c-accent);
+  border-color: var(--c-accent);
+  color: #fff;
+}
+.optSelected:hover { color: #fff; }
 
 .pendingActions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
   margin-top: 4px;
 }
 
-/* ── Entry list ── */
+/* ── Liste des entrées du run ── */
 .empty {
   font-size: 14px;
   color: var(--c-muted);
@@ -114,61 +146,75 @@
   padding: 2rem 0;
 }
 
-.entryList { display: flex; flex-direction: column; gap: 6px; }
+.entryList { display: flex; flex-direction: column; }
 
+/* Une entrée = une ligne d'index, pas une carte. Le type d'obstacle est signé
+   par la NUANCE du filet de gouttière, prise sur l'échelle de l'accent — une
+   seule teinte, cinq densités. Le mot du type reste par ailleurs en pleine
+   encre dans la ligne d'étiquettes (.tagType). */
 .entryRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  /* left accent stripe encodes the entry type (color from src/data/contexts.js);
-     neutral by default = "other" */
-  border-left: 3px solid var(--c-border);
-  border-radius: var(--r-md);
-  padding: 10px 12px;
-  gap: 8px;
+  background: none;
+  border: 0;
+  border-bottom: 1px dotted var(--c-rule);
+  border-left: 4px solid var(--c-rule);
+  border-radius: 0;
+  padding: 10px 0 10px 12px;
+  gap: 10px;
 }
 
 .entryInfo { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 
 .entryName {
-  font-size: 14px;
-  font-weight: 600;
+  font-family: var(--font-title);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.entryTags { display: flex; gap: 4px; flex-wrap: wrap; }
+.entryTags { display: flex; gap: 0 7px; flex-wrap: wrap; }
 
 .tag {
   font-size: 10px;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 100px;
-  background: var(--c-surface3);
+  padding: 0;
+  border-radius: 0;
+  background: none;
   color: var(--c-muted);
   text-transform: uppercase;
-  letter-spacing: .04em;
-  font-family: var(--font-display);
+  letter-spacing: .1em;
+  font-family: var(--font-body);
+}
+/* deux étiquettes voisines sont séparées d'un point médian */
+.tag + .tag::before {
+  content: "·";
+  margin-right: 7px;
+  color: var(--c-faint);
+  font-weight: 400;
 }
 
-/* Reorder arrows kept in their own group, clearly separated from the
-   destructive remove button to avoid accidental taps on touch screens. */
+/* Les flèches de réordonnancement restent groupées, nettement séparées du
+   bouton de suppression pour éviter les appuis accidentels au doigt. */
 .rowActions { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
 
 .moveGroup { display: flex; align-items: center; gap: 2px; }
 
 .moveBtn {
   width: 30px; height: 36px;
-  border-radius: var(--r-sm);
+  border-radius: 0;
   color: var(--c-muted);
   display: flex; align-items: center; justify-content: center;
-  transition: all var(--t-fast);
+  transition: color var(--t-fast);
 }
-.moveBtn:hover:not(:disabled) { color: var(--c-accent); background: var(--c-surface3); }
+.moveBtn:hover:not(:disabled) { color: var(--c-accent); }
 .moveBtn:disabled { opacity: .25; cursor: default; }
 /* chevron-right pivoté → flèches haut / bas */
 .moveUp { transform: rotate(-90deg); }
@@ -177,23 +223,21 @@
 .removeBtn {
   flex-shrink: 0;
   width: 36px; height: 36px;
-  border-radius: var(--r-sm);
+  border-radius: 0;
   color: var(--c-muted);
   display: flex; align-items: center; justify-content: center;
-  transition: all var(--t-fast);
+  transition: color var(--t-fast);
 }
-.removeBtn:hover { color: var(--c-danger); background: #ef444415; }
+.removeBtn:hover { color: var(--c-danger); }
 
 /* Boutons d'ajout */
 .addBtns {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
-.addBtn {
-  border-style: dashed;
-}
+.addBtn { border-style: dashed; }
 
 .searchSection {
   display: flex;
@@ -201,10 +245,21 @@
   gap: 8px;
 }
 
-.entryRowKicker { border-left-color: #f59e0b; }
-.entryRowJib    { border-left-color: #10b981; }
-.entryRowAir    { border-left-color: #ec4899; }
-.entryRowOther  { border-left-color: var(--c-border); }
+/* ── Signature du type d'entrée : une nuance de l'accent par famille ──
+   Le tracé est identique partout (4 px plein), seule la densité change, du
+   plus soutenu (kicker) au plus dilué (hors barème). */
+.entryRowKicker { border-left-color: var(--c-accent-s1); }
+.entryRowJib    { border-left-color: var(--c-accent-s2); }
+.entryRowAir    { border-left-color: var(--c-accent-s3); }
+.entryRowFlat   { border-left-color: var(--c-accent-s4); }
+.entryRowOther  { border-left-color: var(--c-accent-s5); }
+
+/* Étiquette de type : la seule de la ligne en pleine encre, c'est elle qu'on
+   cherche du regard quand on relit un run. */
+.tagType {
+  color: var(--c-text);
+  font-weight: 700;
+}
 
 .tagJib {
   white-space: normal;

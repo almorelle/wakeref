@@ -12,7 +12,7 @@ function detectTheme() {
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme)
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#f5f5f8' : '#0a0a0f')
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#dcd2de' : '#1a1420')
 }
 
 export function ThemeProvider({ children }) {

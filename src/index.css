@@ -1,87 +1,129 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Direction visuelle « papier » (cf. proto-assets/DESIGN.md).
+   Fanzine imprimé plutôt qu'interface : encre sur papier, filets pointillés,
+   pas d'ombres ni de coins arrondis, un seul accent (magenta « tampon »).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  /* Couleurs */
-  --c-bg:        #0a0a0f;
-  --c-surface:   #111118;
-  --c-surface2:  #1a1a24;
-  --c-surface3:  #22222f;
-  --c-border:    #ffffff12;
-  --c-border2:   #ffffff1e;
+  /* ── Papier (thème clair, l'édition de référence) ── */
+  --c-bg:        #dcd2de;  /* papier */
+  --c-surface:   #d4c8d7;  /* encart légèrement enfoncé dans le papier */
+  --c-surface2:  #ccbfd0;
+  --c-surface3:  #c3b5c8;
 
-  --c-text:      #f0f0f8;
-  --c-muted:     #8888a0;
-  --c-faint:     #44445a;
+  --c-border:    #2a1e3018;
+  --c-border2:   #2a1e3030;
+  --c-rule:      #2a1e3055;  /* filets pointillés — séparateur signature */
 
-  --c-accent:    #3b82f6;
-  --c-accent2:   #60a5fa;
-  --c-wake:      #06b6d4;
-  --c-ws:        #f59e0b;
-  --c-seated:    #a855f7;
-  --c-danger:    #ef4444;
-  --c-success:   #22c55e;
-  --c-int:       #fb7185; /* axe côté câble : intérieur (rose) */
-  --c-ext:       #818cf8; /* axe côté câble : extérieur (indigo) */
+  --c-text:      #2a1e30;  /* encre */
+  /* Le gris-texte de DESIGN.md (#7C6B82) plafonne à 3.3:1 sur le papier.
+     Le texte secondaire prend une encre diluée qui tient le 4.5:1 (AA) ;
+     #7C6B82 reste la valeur des éléments purement décoratifs (--c-faint). */
+  --c-muted:     #635268;
+  --c-faint:     #7c6b82;
 
-  /* Catégories */
-  --cat-grabs:        #3b82f6;
-  --cat-jib:          #22c55e;
-  --cat-wakeskate:    #ef4444;
-  --cat-spin:         #6366f1;
-  --cat-railey:       #0ea5e9;
-  --cat-s-bend:       #06b6d4;
-  --cat-hinterberger: #8b5cf6;
-  --cat-backroll:     #f59e0b;
-  --cat-front:        #22c55e;
-  --cat-tantrum:      #ef4444;
-  --cat-shoveit:      #f97316;
-  --cat-fliptricks:   #ec4899;
-  --cat-specials:     #a855f7;
-  --cat-whip:         #f43f5e;
-  --cat-variations:   #94a3b8;
+  /* Accent unique. `--c-accent` porte les traits et aplats (tampon, filets),
+     `--c-accent-ink` la même teinte assombrie au seuil AA pour le texte. */
+  --c-accent:     #c43d8c;
+  --c-accent-ink: #a32d72;
+  --c-accent2:    #d9569e;
 
-  /* Typography */
-  --font-display: 'Syne', sans-serif;
-  --font-body:    'DM Sans', sans-serif;
+  /* Échelle de nuances de l'accent, du plus dense au plus dilué. Sert à
+     distinguer des familles au sein d'une même liste (types d'obstacle dans
+     la compo) sans introduire de seconde teinte. */
+  --c-accent-s1: #5f1c46;
+  --c-accent-s2: #93276a;
+  --c-accent-s3: #c43d8c;
+  --c-accent-s4: #d886b6;
+  --c-accent-s5: #e6bcd4;
 
-  /* Radius */
-  --r-sm:  6px;
-  --r-md:  10px;
-  --r-lg:  16px;
-  --r-xl:  24px;
+  /* Catégories, sports et axes ne sont plus distingués par la teinte
+     (décision « encre + magenta seulement ») : ils le sont par le libellé,
+     la position, et deux niveaux d'encre. Les alias restent pour que les
+     composants qui les consomment continuent de fonctionner. */
+  --c-wake:      var(--c-text);
+  --c-ws:        var(--c-text);
+  --c-seated:    var(--c-text);
+  --c-int:       var(--c-accent);  /* axes binaires : magenta … */
+  --c-ext:       var(--c-text);    /* … contre encre */
 
-  /* Transitions */
+  /* Retours d'état : conservés en couleur (un succès/erreur qui ne se
+     distingue que par le texte est une régression d'usage), mais rabattus
+     sur des encres sourdes accordées au papier. */
+  --c-danger:    #a32d3d;
+  --c-success:   #3f6b4a;
+
+  /* Typographie
+     - title : Bebas Neue, les titres éditoriaux (capitales condensées)
+     - body  : Archivo, le texte courant ET le chrome d'interface
+     - hand  : Permanent Marker, réservé aux annotations et aux tampons */
+  --font-title: 'Bebas Neue', 'Archivo', sans-serif;
+  --font-body:  'Archivo', system-ui, sans-serif;
+  --font-hand:  'Permanent Marker', 'Bebas Neue', cursive;
+  /* Alias rétro-compatible : l'ancien --font-display portait surtout du
+     chrome (boutons, labels, badges) → il pointe sur le texte courant.
+     Les vrais titres passent explicitement par --font-title. */
+  --font-display: var(--font-body);
+
+  /* Pas de coins arrondis : la maquette n'a que des angles vifs.
+     --r-round reste pour ce qui est réellement circulaire (tampon, pastille). */
+  --r-sm: 0; --r-md: 0; --r-lg: 0; --r-xl: 0;
+  --r-round: 999px;
+
   --t-fast: 120ms ease;
   --t-mid:  200ms ease;
 
-  /* Navigation : hauteur (par breakpoint) + fond translucide pour superposer
-     la navbar au-dessus du hero immersif. */
-  --nav-h:  52px;
-  --nav-bg: rgba(10, 10, 15, .55);
+  --page-max: 1040px;
+  --nav-h:  56px;
+
+  /* Grain du papier, appliqué au body */
+  --grain: radial-gradient(rgba(42, 30, 48, .05) 1px, transparent 1px);
 }
 
-[data-theme="light"] {
-  --c-bg:        #f5f5f8;
-  --c-surface:   #ffffff;
-  --c-surface2:  #ededf4;
-  --c-surface3:  #e3e3ee;
-  --c-border:    #00000010;
-  --c-border2:   #0000001e;
+/* ── Encre (thème sombre) : l'édition nuit, mêmes règles inversées ── */
+[data-theme="dark"] {
+  --c-bg:        #1a1420;
+  --c-surface:   #221b28;
+  --c-surface2:  #2b2233;
+  --c-surface3:  #362b3f;
 
-  --c-text:      #0d0d1a;
-  --c-muted:     #60607a;
-  --c-faint:     #b0b0c8;
-  --nav-bg:      rgba(245, 245, 248, .65);
+  --c-border:    #e8dee915;
+  --c-border2:   #e8dee928;
+  --c-rule:      #e8dee945;
+
+  --c-text:      #e8dee9;
+  --c-muted:     #a898af;
+  --c-faint:     #776a7e;
+
+  --c-accent:     #e0559f;
+  --c-accent-ink: #e0559f;
+  --c-accent2:    #ee7fba;
+
+  /* Même échelle, inversée : sur fond d'encre c'est le clair qui est dense. */
+  --c-accent-s1: #f6cfe4;
+  --c-accent-s2: #ee97c4;
+  --c-accent-s3: #e0559f;
+  --c-accent-s4: #a23b74;
+  --c-accent-s5: #6b2a4f;
+
+  --c-danger:    #e8697a;
+  --c-success:   #7db98c;
+
+  --grain:  radial-gradient(rgba(232, 222, 233, .035) 1px, transparent 1px);
 }
 
 html { font-size: 16px; -webkit-font-smoothing: antialiased; }
 
 body {
-  background: var(--c-bg);
+  background-color: var(--c-bg);
+  background-image: var(--grain);
+  background-size: 3px 3px;
   color: var(--c-text);
   font-family: var(--font-body);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.55;
   min-height: 100dvh;
 }
 
@@ -98,8 +140,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    afficher d'anneau sur les clics souris. */
 :focus-visible {
   outline: 2px solid var(--c-accent);
-  outline-offset: 2px;
-  border-radius: var(--r-sm);
+  outline-offset: 3px;
+  border-radius: 0;
 }
 input, textarea, select {
   font-family: inherit;
@@ -110,12 +152,12 @@ input, textarea, select {
   outline: none;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--c-border2); border-radius: 2px; }
+/* Aucune barre de défilement visible — ni sur la page, ni dans les conteneurs
+   qui défilent (menu, bandeaux horizontaux). Le défilement reste actif. */
+* { scrollbar-width: none; -ms-overflow-style: none; }
+*::-webkit-scrollbar { width: 0; height: 0; display: none; }
 
-/* Utilitaires */
+/* ── Utilitaires ── */
 .sr-only {
   position: absolute; width: 1px; height: 1px;
   padding: 0; margin: -1px; overflow: hidden;
@@ -124,124 +166,164 @@ input, textarea, select {
 
 .page-container {
   flex: 1;
-  max-width: 900px;
+  max-width: var(--page-max);
   width: 100%;
   margin: 0 auto;
-  padding: 0 1.25rem 5rem;
+  padding: 0 1.25rem 4rem;
 }
 
-/* Boutons */
+/* Filet pointillé : le seul séparateur de la direction (avec le blanc). */
+.rule { border: 0; border-top: 1px dotted var(--c-rule); }
+
+/* Marque déposée typographique */
+.wordmark {
+  font-family: var(--font-title);
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+/* Annotation manuscrite (note d'auteur en marge, légende, accroche) */
+.hand {
+  font-family: var(--font-hand);
+  color: var(--c-accent-ink);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+/* ── Boutons ── */
 .btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 9px 18px;
-  border-radius: var(--r-md);
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: .02em;
-  transition: all var(--t-fast);
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 20px;
+  border-radius: 0;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
   white-space: nowrap;
 }
 .btn-primary {
-  background: var(--c-accent);
-  color: #fff;
+  background: var(--c-text);
+  color: var(--c-bg);
 }
-.btn-primary:hover { background: var(--c-accent2); }
-.btn-primary:disabled { background: var(--c-border2); color: var(--c-faint); cursor: not-allowed; }
+.btn-primary:hover { background: var(--c-accent-ink); color: #fff; }
+.btn-primary:disabled { background: var(--c-surface3); color: var(--c-faint); cursor: not-allowed; }
 .btn-ghost {
-  border: 1px solid var(--c-border2);
-  color: var(--c-muted);
+  border: 1px solid var(--c-rule);
+  color: var(--c-text);
 }
-.btn-ghost:hover { border-color: var(--c-accent); color: var(--c-text); }
+.btn-ghost:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
 .btn-danger { background: var(--c-danger); color: #fff; }
 .btn-danger:hover { opacity: .85; }
-.btn-submit { background: #7c3aed; color: #fff; }
-.btn-submit:hover { background: #6d28d9; }
-.btn-sm { padding: 6px 12px; font-size: 12px; }
+/* Contribution : la seule action qui porte l'accent en aplat */
+.btn-submit { background: var(--c-accent); color: #fff; }
+.btn-submit:hover { background: var(--c-accent2); }
+.btn-sm { padding: 7px 13px; font-size: 10.5px; letter-spacing: .1em; }
 .btn-icon {
   padding: 8px;
-  border-radius: var(--r-sm);
+  border-radius: 0;
   color: var(--c-muted);
-  border: 1px solid var(--c-border);
+  border: 1px solid transparent;
 }
-.btn-icon:hover { color: var(--c-text); border-color: var(--c-border2); }
+.btn-icon:hover { color: var(--c-accent-ink); border-color: var(--c-rule); }
 
-/* Inputs */
+/* ── Champs : soulignés, pas de boîtes ── */
 .field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .field label {
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--c-muted);
-  letter-spacing: .04em;
+  letter-spacing: .12em;
   text-transform: uppercase;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
 }
 .input {
-  background: var(--c-surface2);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
-  padding: 10px 14px;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--c-rule);
+  border-radius: 0;
+  padding: 9px 2px;
   color: var(--c-text);
-  font-size: 14px;
+  font-size: 15px;
   transition: border-color var(--t-fast);
   width: 100%;
 }
-.input:focus { border-color: var(--c-accent); }
+.input:focus { border-bottom-color: var(--c-accent); }
 .input:focus-visible { outline: none; }
 .input::placeholder { color: var(--c-faint); }
-select.input { appearance: none; }
+select.input {
+  appearance: none;
+  padding-right: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%232a1e30' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+}
+[data-theme="dark"] select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23e8dee9' stroke-width='1.6'/%3E%3C/svg%3E");
+}
 
-/* Cards */
+/* ── Encarts : à plat, sans ombre ni arrondi ── */
 .card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   transition: border-color var(--t-fast);
 }
 .card:hover { border-color: var(--c-border2); }
 
-/* Badges */
+/* ── Badges : étiquettes typographiques, plus de pastilles colorées.
+   Les catégories restent en encre diluée, le sport en pleine encre ;
+   deux badges voisins sont séparés par un point médian. ── */
 .badge {
   display: inline-flex; align-items: center;
-  padding: 3px 10px;
-  border-radius: 100px;
-  font-size: 11px;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: .03em;
-  font-family: var(--font-display);
+  letter-spacing: .11em;
+  text-transform: uppercase;
+  color: var(--c-muted);
 }
-.badge-wake         { background: #06b6d420; color: var(--c-wake); }
-.badge-ws           { background: #f59e0b20; color: var(--c-ws); }
-.badge-seated       { background: #a855f720; color: var(--c-seated); }
-.badge-grabs        { background: #3b82f620; color: var(--cat-grabs); }
-.badge-jib          { background: #22c55e20; color: var(--cat-jib); }
-.badge-wakeskate    { background: #ef444420; color: var(--cat-wakeskate); }
-.badge-spin         { background: #6366f120; color: var(--cat-spin); }
-.badge-railey       { background: #0ea5e920; color: var(--cat-railey); }
-.badge-s-bend       { background: #06b6d420; color: var(--cat-s-bend); }
-.badge-hinterberger { background: #8b5cf620; color: var(--cat-hinterberger); }
-.badge-backroll     { background: #f59e0b20; color: var(--cat-backroll); }
-.badge-front        { background: #22c55e20; color: var(--cat-front); }
-.badge-tantrum      { background: #ef444420; color: var(--cat-tantrum); }
-.badge-shoveit      { background: #f9730620; color: var(--cat-shoveit); }
-.badge-fliptricks   { background: #ec489920; color: var(--cat-fliptricks); }
-.badge-specials     { background: #a855f720; color: var(--cat-specials); }
-.badge-whip         { background: #f43f5e20; color: var(--cat-whip); }
-.badge-variations   { background: #94a3b820; color: var(--cat-variations); }
+.badge + .badge::before {
+  content: "·";
+  margin-right: 7px;
+  color: var(--c-faint);
+  font-weight: 400;
+}
+.badge-wake, .badge-ws, .badge-seated { color: var(--c-text); font-weight: 700; }
 
-/* Difficulté */
-.diff {
-  display: inline-flex; gap: 3px; align-items: center;
-}
+/* ── Difficulté : carrés d'encre ; magenta à partir du niveau 4 ── */
+.diff { display: inline-flex; gap: 3px; align-items: center; }
 .diff-dot {
-  width: 5px; height: 5px; border-radius: 50%;
+  width: 5px; height: 5px; border-radius: 0;
   background: var(--c-border2);
 }
-.diff-dot.on { background: var(--d, var(--c-accent)); }
+.diff-dot.on { background: var(--d, var(--c-text)); }
+
+/* ── Tampon rond : l'élément signature de la direction ── */
+.stamp {
+  display: inline-flex; align-items: center; justify-content: center;
+  text-align: center;
+  width: 46px; height: 46px;
+  border-radius: var(--r-round);
+  border: 2px solid var(--c-accent);
+  color: var(--c-accent);
+  font-family: var(--font-hand);
+  font-size: 9px;
+  line-height: 1.05;
+  padding: 2px;
+  transform: rotate(-10deg);
+  opacity: .92;
+  mix-blend-mode: multiply;
+}
+[data-theme="dark"] .stamp { mix-blend-mode: screen; }
 
 /* Picto casque (motif de marque) — mark vectoriel via mask, dimensionnable
    et colorable : règle la taille via `height` et la couleur via `color`. */
@@ -253,15 +335,23 @@ select.input { appearance: none; }
   mask: url(/picto.svg) no-repeat center / contain;
 }
 
-/* Section title */
+/* ── Intertitre de rubrique, souligné d'un filet pointillé ── */
 .section-title {
-  font-family: var(--font-display);
-  font-size: 11px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: .1em;
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--c-muted);
-  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted var(--c-rule);
+  margin-bottom: 14px;
+}
+
+/* Rotation continue — sur une icône de chargement inline */
+.spin {
+  animation: spin .6s linear infinite;
+  display: inline-block;
 }
 
 /* Loading spinner */
@@ -284,10 +374,10 @@ select.input { appearance: none; }
   z-index: 9999;
 }
 .toast {
-  background: var(--c-surface2);
-  border: 1px solid var(--c-border2);
-  border-radius: var(--r-md);
-  padding: 10px 16px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-text);
+  border-radius: 0;
+  padding: 11px 16px;
   font-size: 13px;
   display: flex; align-items: center; gap: 8px;
   animation: slideIn .2s ease;
@@ -298,15 +388,17 @@ select.input { appearance: none; }
 .toast-msg { flex: 1; }
 .toast-action {
   flex-shrink: 0;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--c-accent);
-  padding: 2px 8px;
-  border-radius: var(--r-sm);
-  font-family: var(--font-display);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-accent-ink);
+  padding: 2px 6px;
+  border-radius: 0;
+  font-family: var(--font-body);
   transition: background var(--t-fast);
 }
-.toast-action:hover { background: var(--c-surface3); }
+.toast-action:hover { background: var(--c-surface2); }
 @keyframes slideIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -314,10 +406,10 @@ select.input { appearance: none; }
 
 /* Responsive */
 @media (max-width: 700px) {
-  :root { --nav-h: 48px; }
+  :root { --nav-h: 52px; }
 }
 @media (max-width: 600px) {
-  .page-container { padding: 0 1rem 5rem; }
+  .page-container { padding: 0 1rem 3rem; }
 }
 
 /* Respect du réglage système « réduire les animations » */
@@ -330,56 +422,31 @@ select.input { appearance: none; }
   }
 }
 
-/* dm-sans-300 - latin */
+/* ── Polices auto-hébergées (sous-ensemble latin) ── */
+
+/* archivo — variable 100..900, un seul fichier pour toutes les graisses */
 @font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-  font-family: 'DM Sans';
+  font-display: swap;
+  font-family: 'Archivo';
   font-style: normal;
-  font-weight: 300;
-  src: url('/fonts/dm-sans-v17-latin-300.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  font-weight: 100 900;
+  src: url('/fonts/archivo-v25-latin-variable.woff2') format('woff2');
 }
 
-/* dm-sans-regular - latin */
+/* bebas-neue-regular - latin */
 @font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-  font-family: 'DM Sans';
+  font-display: swap;
+  font-family: 'Bebas Neue';
   font-style: normal;
   font-weight: 400;
-  src: url('/fonts/dm-sans-v17-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/bebas-neue-v16-latin-regular.woff2') format('woff2');
 }
 
-/* dm-sans-500 - latin */
+/* permanent-marker-regular - latin */
 @font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-  font-family: 'DM Sans';
-  font-style: normal;
-  font-weight: 500;
-  src: url('/fonts/dm-sans-v17-latin-500.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
-}
-
-/* syne-regular - latin */
-@font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-  font-family: 'Syne';
+  font-display: swap;
+  font-family: 'Permanent Marker';
   font-style: normal;
   font-weight: 400;
-  src: url('/fonts/syne-v24-latin-regular.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
-}
-
-/* syne-700 - latin */
-@font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-  font-family: 'Syne';
-  font-style: normal;
-  font-weight: 700;
-  src: url('/fonts/syne-v24-latin-700.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
-}
-
-/* syne-800 - latin */
-@font-face {
-  font-display: swap; /* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */
-  font-family: 'Syne';
-  font-style: normal;
-  font-weight: 800;
-  src: url('/fonts/syne-v24-latin-800.woff2') format('woff2'); /* Chrome 36+, Opera 23+, Firefox 39+, Safari 12+, iOS 10+ */
+  src: url('/fonts/permanent-marker-v16-latin-regular.woff2') format('woff2');
 }

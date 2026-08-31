@@ -1,32 +1,37 @@
+/* FR / EN à plat, séparés d'une barre oblique : pas de groupe encadré. */
 .switcher {
   display: flex;
   align-items: center;
   gap: 0;
-  background: var(--c-surface2);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-sm);
-  overflow: hidden;
+  background: none;
+  border: 0;
+  border-radius: 0;
 }
 .btn {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: .06em;
-  padding: 5px 9px;
+  letter-spacing: .12em;
+  padding: 4px 6px;
   color: var(--c-faint);
-  transition: all var(--t-fast);
+  transition: color var(--t-fast);
   cursor: pointer;
   background: none;
   border: none;
 }
 .btn:hover { color: var(--c-muted); }
 .btn.active {
-  background: var(--c-surface3);
+  background: none;
   color: var(--c-text);
+  text-decoration: underline;
+  text-decoration-color: var(--c-accent);
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
 }
 .sep {
   width: 1px;
-  height: 14px;
-  background: var(--c-border);
+  height: 11px;
+  background: var(--c-rule);
   flex-shrink: 0;
+  transform: rotate(15deg);
 }

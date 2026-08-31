@@ -3,114 +3,138 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 5rem;
+  padding: 1.5rem 1.25rem 4rem;
 }
 
-/* ── Sélection ── */
+/* ══════════════ Phase sélection ══════════════ */
 .select {
-  max-width: 760px;
+  max-width: 820px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.75rem;
 }
 
 .title {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 800;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(38px, 7vw, 64px);
+  line-height: .88;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
 }
 
 .intro {
   font-size: 15px;
+  line-height: 1.6;
   color: var(--c-muted);
-  margin-top: -0.75rem;
+  margin-top: -1.25rem;
+  max-width: 62ch;
 }
 
-.axis { display: flex; flex-direction: column; gap: 8px; }
+.axis { display: flex; align-items: baseline; gap: 22px; flex-wrap: wrap; }
 
 .axisLabel {
-  font-family: var(--font-display);
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: .06em;
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--c-muted);
+  width: 90px;
+  flex-shrink: 0;
 }
 
-.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chips { display: flex; gap: 22px; flex-wrap: wrap; }
 
+/* Filtre : libellé souligné d'un filet, magenta quand il est actif — même
+   idiome que les filtres du catalogue. */
 .chip {
-  padding: 8px 16px;
-  border-radius: var(--r-md);
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 600;
-  border: 1px solid var(--c-border2);
+  padding: 5px 0;
+  border: 0;
+  border-bottom: 2px solid var(--c-rule);
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
   color: var(--c-muted);
-  transition: all var(--t-fast);
+  transition: color var(--t-fast), border-color var(--t-fast);
 }
-.chip:hover { border-color: var(--disc, var(--c-accent)); color: var(--c-text); }
+.chip:hover { color: var(--c-text); }
 .chipOn {
-  background: color-mix(in srgb, var(--disc, var(--c-accent)) 16%, transparent);
-  border-color: var(--disc, var(--c-accent));
-  color: var(--disc, var(--c-accent));
+  background: none;
+  border-bottom-color: var(--c-accent);
+  color: var(--c-text);
 }
 
-.runs { display: flex; flex-direction: column; gap: 1.25rem; }
+.runs { display: flex; flex-direction: column; gap: 2rem; }
 
-.runGroup { display: flex; flex-direction: column; gap: 8px; }
+.runGroup { display: flex; flex-direction: column; }
 
-/* Entête de catégorie léger : pastille couleur discipline + libellé discret. */
+/* Intertitre de discipline, souligné comme les titres de rubrique du site. */
 .groupHead {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-display);
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: .06em;
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--c-muted);
-}
-.groupHead::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 100px;
-  background: var(--disc, var(--c-accent));
+  padding-bottom: 8px;
+  margin-bottom: 6px;
+  border-bottom: 1px dotted var(--c-rule);
 }
 
+/* Un run = une ligne d'index, comme une figure au catalogue. */
 .runCard {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 12px;
   text-align: left;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
-  padding: 12px 14px;
-  transition: all var(--t-fast);
+  background: none;
+  border: 0;
+  border-bottom: 1px dotted var(--c-rule);
+  border-radius: 0;
+  padding: 12px 2px;
+  cursor: pointer;
+  transition: padding-left var(--t-fast), border-color var(--t-fast);
 }
-.runCard { cursor: pointer; }
 .runCard:hover {
-  border-color: var(--c-accent);
-  background: color-mix(in srgb, var(--c-accent) 8%, var(--c-surface));
-  transform: translateY(-1px);
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--c-accent) 18%, transparent);
+  padding-left: 8px;
+  border-bottom-style: solid;
+  border-bottom-color: var(--c-accent);
 }
-.runCard:hover .runName { color: var(--c-accent); }
-.runCard:active { transform: translateY(0); }
-.runName { font-weight: 600; color: var(--c-text); transition: color var(--t-fast); }
-.runRight { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.runMeta { font-size: 12px; color: var(--c-muted); }
+.runName {
+  font-family: var(--font-title);
+  font-size: 23px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  transition: color var(--t-fast);
+}
+.runCard:hover .runName { color: var(--c-accent-ink); }
+.runRight { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.runMeta {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
 
-/* Chevron : affordance permanente « carte cliquable » (le hover seul ne suffit
-   pas sur tactile). Avance légèrement au survol/appui sur appareils non tactiles. */
+/* Chevron : affordance permanente « ligne cliquable » (le survol seul ne suffit
+   pas sur tactile). Avance légèrement au survol. */
 .runChevron { color: var(--c-faint); transition: transform var(--t-fast), color var(--t-fast); }
-.runCard:hover .runChevron { color: var(--c-accent); transform: translateX(2px); }
+.runCard:hover .runChevron { color: var(--c-accent); transform: translateX(3px); }
 
 .empty {
   font-size: 14px;
@@ -118,41 +142,48 @@
   padding: 1rem 0;
 }
 
-/* ── Layout deux-panes (jugement + correction) ── */
+/* ══════════════ Deux colonnes (jugement + correction) ══════════════ */
 .layout {
   display: grid;
   grid-template-columns: minmax(360px, 1fr) 1.2fr;
-  gap: 1.5rem;
+  gap: 2.5rem;
   align-items: start;
 }
 
-.left { display: flex; flex-direction: column; gap: 0.75rem; position: sticky; top: 1rem; }
-.right { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.left { display: flex; flex-direction: column; gap: 1rem; position: sticky; top: calc(var(--nav-h) + 1rem); }
+.right { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
 
+/* La vidéo se pose à nu : c'est l'image, pas une carte. */
 .video {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
+  background: none;
+  border: 0;
+  border-radius: 0;
   overflow: hidden;
 }
-.videoEl { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; }
+.videoEl { display: block; width: 100%; aspect-ratio: 16 / 9; background: #1a1420; }
 .videoMissing {
   aspect-ratio: 16 / 9;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px dotted var(--c-rule);
   color: var(--c-faint);
   font-size: 13px;
 }
 
 .paneTitle {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 800;
+  font-family: var(--font-title);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
+  padding-bottom: 10px;
+  border-bottom: 1px dotted var(--c-rule);
 }
 
-.evalBar { display: flex; flex-direction: column; gap: 6px; margin-top: 0.5rem; }
+.evalBar { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-top: 0.5rem; }
 .evalHint { font-size: 12px; color: var(--c-faint); }
 
 .correctionHead {
@@ -161,118 +192,150 @@
   justify-content: space-between;
   gap: 1rem;
 }
+.correctionHead .paneTitle { border-bottom: 0; padding-bottom: 0; }
 
-/* ── Tally ── */
+/* ══════════════ Bilan chiffré ══════════════ */
+/* Les états gardent leur couleur : c'est le résultat de la correction, pas de
+   la décoration — un juge doit voir d'un coup ce qui est faux. */
 .tally {
   display: flex;
-  gap: 8px;
+  gap: 20px;
   flex-wrap: wrap;
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding-bottom: 12px;
+  border-bottom: 1px dotted var(--c-rule);
 }
 .tally span {
-  padding: 4px 10px;
-  border-radius: var(--r-md);
-  background: var(--c-surface2);
-  border: 1px solid var(--c-border);
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  border: 0;
 }
 .tCorrect   { color: var(--c-success); }
 .tIncorrect { color: var(--c-danger); }
 .tMissing   { color: var(--c-danger); }
 .tExtra     { color: var(--c-muted); }
 
-/* ── Légende ── */
+/* ══════════════ Légende ══════════════ */
 .legend {
   display: flex;
-  gap: 14px;
+  gap: 16px;
   flex-wrap: wrap;
-  font-size: 12px;
+  font-size: 11px;
   color: var(--c-muted);
 }
 .legend i {
   display: inline-block;
   width: 9px; height: 9px;
-  border-radius: 2px;
-  margin-right: 5px;
+  border-radius: 0;
+  margin-right: 6px;
   vertical-align: middle;
 }
 
-/* ── Diff ── */
+/* ══════════════ Comparatif saisie / solution ══════════════ */
 .diff {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
-  overflow: hidden;
+  background: none;
+  border: 0;
+  border-top: 2px solid var(--c-text);
+  border-radius: 0;
 }
 .diffHead, .diffRow {
   display: grid;
   grid-template-columns: 32px 1fr 1fr;
-  gap: 8px;
-  padding: 10px 12px;
-  align-items: center;
+  gap: 12px;
+  padding: 11px 10px;
+  align-items: start;
 }
 .diffHead {
-  font-family: var(--font-display);
-  font-size: 11px;
+  font-family: var(--font-body);
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: .04em;
+  letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--c-muted);
-  border-bottom: 1px solid var(--c-border);
+  border-bottom: 1px dotted var(--c-rule);
+  align-items: center;
 }
 .diffRow {
-  border-bottom: 1px solid var(--c-border);
+  border-bottom: 1px dotted var(--c-rule);
   border-left: 3px solid transparent;
 }
 .diffRow:last-child { border-bottom: none; }
 
 .pos {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 11px;
+  letter-spacing: .08em;
   color: var(--c-faint);
   text-align: center;
 }
 
-.cell { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.cellName { font-weight: 500; color: var(--c-text); }
-.badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.cell { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.cellName {
+  font-family: var(--font-title);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.badges { display: flex; gap: 0 7px; flex-wrap: wrap; }
 .badge {
   font-size: 10px;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 100px;
-  background: var(--c-surface3);
+  padding: 0;
+  border-radius: 0;
+  background: none;
   color: var(--c-muted);
   text-transform: uppercase;
-  letter-spacing: .04em;
-  font-family: var(--font-display);
+  letter-spacing: .1em;
+  font-family: var(--font-body);
+}
+.badge + .badge::before {
+  content: "·";
+  margin-right: 7px;
+  color: var(--c-faint);
+  font-weight: 400;
 }
 .gap { color: var(--c-faint); font-style: italic; font-size: 13px; }
 
-/* Attribut présent ici mais absent en face → c'est précisément ce qui diffère. */
+/* Attribut présent ici mais absent en face → c'est précisément ce qui diffère.
+   Sans aplat de couleur : le libellé passe en rouge et se souligne, pour rester
+   lisible même quand la ligne porte déjà un lavis. */
 .badgeDiff {
-  background: color-mix(in srgb, var(--c-danger) 22%, transparent);
+  background: none;
   color: var(--c-danger);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-danger) 45%, transparent);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 .nameDiff {
   color: var(--c-danger);
   text-decoration: underline;
   text-decoration-style: dotted;
-  text-underline-offset: 2px;
+  text-underline-offset: 3px;
 }
 
-/* États de diff : bord gauche + léger lavis (couleur jamais seul signal — le
-   tally et la position portent aussi l'info). */
-.r_correct   { border-left-color: var(--c-success); background: color-mix(in srgb, var(--c-success) 7%, transparent); }
+/* États de diff : bord gauche + léger lavis (la couleur n'est jamais le seul
+   signal — le bilan et la position portent aussi l'information). */
+.r_correct   { border-left-color: var(--c-success); background: color-mix(in srgb, var(--c-success) 8%, transparent); }
 .r_incorrect { border-left-color: var(--c-danger);  background: color-mix(in srgb, var(--c-danger) 9%, transparent); }
 .r_missing   { border-left-color: var(--c-danger);  background: color-mix(in srgb, var(--c-danger) 9%, transparent); }
-.r_extra     { border-left-color: var(--c-faint); opacity: .62; }
+.r_extra     { border-left-color: var(--c-faint); opacity: .6; }
 
 /* ── Mobile : empilé ── */
 @media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; }
+  .layout { grid-template-columns: 1fr; gap: 1.5rem; }
   .left { position: static; }
+  .axis { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .axisLabel { width: auto; }
+  .chips { gap: 18px; }
+  .diffHead, .diffRow { grid-template-columns: 24px 1fr 1fr; gap: 8px; padding: 10px 6px; }
 }
