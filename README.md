@@ -2,7 +2,7 @@
 
 Référentiel wakeboard & wakeskate — [wakeref.app](https://wakeref.app)
 
-![Preview of the website](/public/og-image.jpg)
+![Preview of the website](/public/og-image-2026.jpg)
 
 ## Stack
 
