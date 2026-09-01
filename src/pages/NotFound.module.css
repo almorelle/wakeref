@@ -3,7 +3,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem 1.25rem;
+  padding: 3rem 1.25rem 5rem;
 }
 
 .content {
@@ -11,44 +11,56 @@
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 12px;
-  max-width: 400px;
+  gap: 10px;
+  max-width: 440px;
 }
 
+/* Picto en filigrane derrière le numéro : la page manquante est un « trou »
+   dans le numéro, pas une erreur système. */
 .mark {
-  height: 88px;
-  color: var(--c-wake);
-  opacity: .9;
+  height: 210px;
+  color: var(--c-text);
+  opacity: .07;
+  margin-bottom: -168px;
 }
 
 .code {
-  font-family: var(--font-display);
-  font-size: 96px;
-  font-weight: 800;
-  line-height: 1;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(120px, 26vw, 200px);
+  line-height: .8;
+  letter-spacing: .02em;
   color: var(--c-accent);
-  opacity: 0.15;
-  letter-spacing: -4px;
+  opacity: .9;
 }
 
 .title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 800;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(28px, 6vw, 40px);
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
-  margin-top: -16px;
+  margin-top: 6px;
 }
 
 .sub {
-  font-size: 14px;
-  color: var(--c-muted);
-  line-height: 1.6;
+  font-family: var(--font-hand);
+  font-size: 16px;
+  color: var(--c-accent-ink);
+  line-height: 1.45;
+  transform: rotate(-1deg);
+  margin-top: 2px;
 }
 
 .actions {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 12px;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dotted var(--c-rule);
   flex-wrap: wrap;
   justify-content: center;
+  width: 100%;
 }

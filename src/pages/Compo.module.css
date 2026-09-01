@@ -1,7 +1,7 @@
 .page {
   flex: 1;
-  padding: 1.5rem 1.25rem 5rem;
-  max-width: 900px;
+  padding: 1.5rem 1.25rem 4rem;
+  max-width: var(--page-max);
   margin: 0 auto;
   width: 100%;
 }
@@ -9,108 +9,107 @@
 .layout {
   display: grid;
   grid-template-columns: 1fr 320px;
-  gap: 2rem;
+  gap: 3rem;
   align-items: start;
 }
 
-/* ── Colonne gauche ── */
+/* ── Colonne gauche : la saisie ── */
 /* min-width:0 : sans ça, la cellule de grille refuse de rétrécir sous la
    largeur min-content de son contenu (ex. .entryName en nowrap dans
    <RunSaisie>), ce qui ferait déborder la page horizontalement sur mobile. */
-.left { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.left { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; }
 
 .headerRow {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
-  gap: 0.75rem;
+  gap: 1rem;
+  padding-bottom: 12px;
+  border-bottom: 1px dotted var(--c-rule);
 }
 
 .headerActions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
 }
 
-.sectionTitle {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 800;
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(34px, 6vw, 52px);
+  line-height: .9;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
 }
 
 /* ── Rappel de sauvegarde ── */
-/* Ligne de message entre le titre et la suite (alternative/complément au glow). */
 .saveHintLine {
-  margin-top: -0.25rem;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--c-accent);
+  margin-top: -0.5rem;
+  font-family: var(--font-hand);
+  font-size: 14px;
+  color: var(--c-accent-ink);
+  transform: rotate(-.8deg);
+  transform-origin: left center;
 }
 
-/* Le bouton respire avec un halo (glow) + un anneau pulsé tant que le run
-   mérite d'être sauvegardé, pour attirer l'œil sans bloc à fermer. */
-.savePulse {
-  animation: savePulse 1.6s ease-in-out infinite;
-}
+/* Le bouton respire tant que le run mérite d'être sauvegardé, pour attirer
+   l'œil sans bloc à fermer. Halo d'accent, la seule ombre tolérée du site —
+   c'est une animation d'attention, pas une élévation de surface. */
+.savePulse { animation: savePulse 1.6s ease-in-out infinite; }
 @keyframes savePulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, .55), 0 0 6px 1px rgba(59, 130, 246, .45);
-  }
-  50% {
-    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0), 0 0 18px 4px rgba(59, 130, 246, .8);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(196, 61, 140, .55); }
+  50%      { box-shadow: 0 0 0 7px rgba(196, 61, 140, 0); }
 }
-
 @media (prefers-reduced-motion: reduce) {
   /* Pas d'animation, mais on garde un halo statique pour l'indice visuel */
   .savePulse {
     animation: none;
-    box-shadow: 0 0 12px 2px rgba(59, 130, 246, .6);
+    box-shadow: 0 0 0 3px rgba(196, 61, 140, .35);
   }
 }
 
-/* ── Save / share ── */
+/* ── Sauvegarde / partage : feuillets posés sur la page ── */
 .savePanel,
 .sharePanel {
-  background: var(--c-surface);
-  border: 1px solid var(--c-accent);
-  border-radius: var(--r-lg);
-  padding: 1rem;
+  background: none;
+  border: 1px solid var(--c-text);
+  border-radius: 0;
+  padding: 1rem 1.1rem 1.1rem;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .saveLabel,
 .shareTitle {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   color: var(--c-muted);
   text-transform: uppercase;
-  letter-spacing: .06em;
-  font-family: var(--font-display);
+  letter-spacing: .14em;
+  font-family: var(--font-body);
 }
 
 .saveActions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 10px;
 }
 
 .shareRow {
   display: flex;
-  gap: 8px;
-  align-items: center;
+  gap: 12px;
+  align-items: flex-end;
 }
 .shareRow .input { flex: 1; min-width: 0; }
 
-/* Spinner du bouton de sauvegarde (la saisie a son propre spinner de recherche).
-   Conservé verbatim de l'original pour ne rien changer au rendu. */
+/* Spinner du bouton de sauvegarde (la saisie a son propre spinner de recherche). */
 .spinner {
   width: 16px; height: 16px;
   border: 2px solid var(--c-border2);
-  border-top-color: var(--c-accent);
+  border-top-color: currentColor;
   border-radius: 50%;
   animation: spin .6s linear infinite;
   position: absolute;
@@ -120,40 +119,44 @@
 }
 @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
 
-/* Sélecteur de grille (discipline / niveau) */
+/* ── Sélecteur de grille (discipline / niveau) ── */
 .gridSelect {
   display: flex;
-  gap: 6px;
+  gap: 22px;
   flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-top: -0.25rem;
 }
 .gridTab {
-  padding: 6px 14px;
-  border-radius: var(--r-md);
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid var(--c-border2);
+  padding: 5px 0;
+  border: 0;
+  border-bottom: 2px solid var(--c-rule);
+  border-radius: 0;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
   color: var(--c-muted);
-  transition: all var(--t-fast);
+  transition: color var(--t-fast), border-color var(--t-fast);
 }
-.gridTab:hover:not(:disabled) { border-color: var(--disc, var(--c-accent)); color: var(--c-text); }
-/* Actif = teinté contour dans la couleur de la discipline (lisible pour cyan /
-   ambre / violet, contrairement à un aplat + texte blanc). */
+.gridTab:hover:not(:disabled) { color: var(--c-text); }
 .gridTabActive {
-  background: color-mix(in srgb, var(--disc, var(--c-accent)) 16%, transparent);
-  border-color: var(--disc, var(--c-accent));
-  color: var(--disc, var(--c-accent));
+  background: none;
+  border-bottom-color: var(--c-accent);
+  color: var(--c-text);
 }
-.gridTab:disabled { opacity: .4; cursor: not-allowed; }
+.gridTab:disabled { opacity: .35; cursor: not-allowed; }
 
-/* ── Colonne droite : score ── */
+/* ── Colonne droite : le score ── */
+/* Encadré d'encre franc : c'est le résultat, il doit se détacher de la saisie. */
 .right {
   position: sticky;
-  top: 1rem;
+  top: calc(var(--nav-h) + 1rem);
   min-width: 0;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-xl);
+  background: none;
+  border: 1px solid var(--c-text);
+  border-radius: 0;
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
@@ -166,18 +169,18 @@
   background: transparent;
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 5px;
   justify-content: center;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--c-border);
-  cursor: default; /* not collapsible on desktop */
+  padding-bottom: 1rem;
+  border-bottom: 1px dotted var(--c-rule);
+  cursor: default; /* non repliable sur desktop */
 }
 
 /* Chevron : visible uniquement en mobile (le détail est repliable) */
 .scoreToggle {
   display: none;
   position: absolute;
-  right: 4px;
+  right: 0;
   top: 50%;
   transform: translateY(-50%) rotate(90deg);
   color: var(--c-muted);
@@ -188,103 +191,108 @@
 .scoreDetails {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
-/* En-tête de discipline : chip coloré au-dessus du score. */
+/* En-tête de grille au-dessus du score. */
 .disciplineTag {
   align-self: center;
-  font-family: var(--font-display);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: .12em;
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--disc, var(--c-accent));
-  background: color-mix(in srgb, var(--disc, var(--c-accent)) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--disc, var(--c-accent)) 35%, transparent);
-  padding: 4px 12px;
-  border-radius: 100px;
+  color: var(--c-muted);
+  background: none;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
 }
 
 .scoreTotal {
-  font-family: var(--font-display);
-  font-size: 56px;
-  font-weight: 800;
-  color: var(--disc, var(--c-accent));
-  line-height: 1;
+  font-family: var(--font-title);
+  font-size: 76px;
+  font-weight: 400;
+  color: var(--c-accent-ink);
+  line-height: .85;
 }
 
 .scoreMax {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
+  font-family: var(--font-title);
+  font-size: 26px;
+  font-weight: 400;
   color: var(--c-muted);
 }
 
-.scoreSection { display: flex; flex-direction: column; gap: 4px; }
+.scoreSection { display: flex; flex-direction: column; }
 
 .scoreSectionTitle {
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: .1em;
+  letter-spacing: .16em;
   text-transform: uppercase;
   color: var(--c-muted);
+  padding-bottom: 6px;
   margin-bottom: 4px;
+  border-bottom: 1px dotted var(--c-rule);
 }
 
+/* Critère : carré vide → carré d'encre magenta quand il est acquis. */
 .scoreItem {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  border-radius: var(--r-sm);
-  transition: background var(--t-fast);
+  gap: 9px;
+  padding: 6px 0;
+  border-radius: 0;
+  transition: color var(--t-fast);
 }
 
-.scoreItemOn { background: color-mix(in srgb, var(--disc, var(--c-accent)) 10%, transparent); }
+.scoreItemOn { background: none; }
 
 .scoreItemDot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--c-border2);
+  width: 7px; height: 7px;
+  border-radius: 0;
+  border: 1px solid var(--c-faint);
+  background: none;
   flex-shrink: 0;
-  transition: background var(--t-fast);
+  transition: background var(--t-fast), border-color var(--t-fast);
 }
-.scoreItemOn .scoreItemDot { background: var(--disc, var(--c-accent)); }
+.scoreItemOn .scoreItemDot { background: var(--c-accent); border-color: var(--c-accent); }
 
 .scoreItemLabel {
   flex: 1;
-  font-size: 12px;
-  color: var(--c-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--c-faint);
   transition: color var(--t-fast);
 }
-.scoreItemOn .scoreItemLabel { color: var(--c-text); font-weight: 500; }
+.scoreItemOn .scoreItemLabel { color: var(--c-text); }
 
 .scoreItemPt {
-  font-family: var(--font-display);
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 11px;
   font-weight: 700;
   color: var(--c-faint);
   transition: color var(--t-fast);
 }
-.scoreItemOn .scoreItemPt { color: var(--disc, var(--c-accent)); }
+.scoreItemOn .scoreItemPt { color: var(--c-accent-ink); }
 
 /* ── Responsive ── */
 @media (max-width: 700px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
+  .layout { grid-template-columns: 1fr; gap: 1.5rem; }
   /* Laisse les boutons d'action passer à la ligne si le titre + libellés
      (plus longs en FR) dépassent la largeur de l'écran. */
-  .headerRow { flex-wrap: wrap; }
+  .headerRow { flex-wrap: wrap; align-items: center; }
   .right {
     position: static;
     order: -1;
+    padding: 1rem;
   }
-  .scoreTotal { font-size: 42px; }
+  .scoreTotal { font-size: 58px; }
   /* Détail du score repliable pour gagner en lisibilité */
   .scoreHeader { cursor: pointer; }
   .scoreToggle { display: block; }
   .scoreDetailsCollapsed { display: none; }
+  .gridSelect { gap: 16px; }
 }

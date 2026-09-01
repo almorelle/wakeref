@@ -475,3 +475,5 @@ public/sitemap.xml
 # BMAD tooling
 .claude/skills/bmad-*
 _bmad/
+# Export local des vidéos Storage (scripts/download-videos.mjs)
+videos-export/

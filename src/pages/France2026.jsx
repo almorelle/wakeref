@@ -6,13 +6,6 @@ import styles from './France2026.module.css'
 
 const STORAGE_KEY = 'wakeref_france2026'
 
-// Couleur d'accent par discipline (cf. Compo) — pilote la teinte via --disc.
-const DISCIPLINE_COLOR = {
-  wakeboard: 'var(--c-wake)',   // cyan
-  wakeskate: 'var(--c-ws)',     // ambre
-  seated:    'var(--c-seated)', // violet
-}
-
 // ── Grilles dédiées France 2026 ──────────────────────────────
 // Page autonome : les grilles sont définies ici (pas de dépendance à compoGrids).
 // Chaque item a une clé stable `s{section}i{item}` pour la persistance localStorage.
@@ -89,7 +82,6 @@ export default function France2026() {
   const [checked, setChecked] = useState(stored?.checked || {})
 
   const grid = GRIDS[gridKey] || GRIDS.wakeboard
-  const disciplineColor = DISCIPLINE_COLOR[grid.discipline] || 'var(--c-accent)'
   const gridChecked = checked[gridKey] || {}
 
   // Persiste à chaque changement pour qu'un refresh ne perde pas la saisie.
@@ -124,7 +116,7 @@ export default function France2026() {
   }
 
   return (
-    <div className={styles.page} style={{ '--disc': disciplineColor }}>
+    <div className={styles.page}>
       <SEO
         titleFr="France 2026 — Saisie de note"
         titleEn="France 2026 — Score sheet"

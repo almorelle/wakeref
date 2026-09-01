@@ -14,14 +14,27 @@ export default function Figures() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [figures, setFigures] = useState([])
   const [loadedKey, setLoadedKey] = useState(null)
-  const [query, setQuery] = useState('')
+  // La recherche est amorçable par l'URL (?q=…) : c'est ce que soumet le champ
+  // du menu plein écran, et ça rend une recherche partageable.
+  const [query, setQuery] = useState(() => searchParams.get('q') || '')
   const [searchResults, setSearchResults] = useState(null)
   const [searching, setSearching] = useState(false)
+  const urlQuery      = searchParams.get('q')     || ''
   const activeFilter  = searchParams.get('cat')   || 'tous'
   const activeContext = searchParams.get('ctx')   || ''
   const activeSport   = searchParams.get('sport') || ''
   const filterKey = `${activeFilter}|${activeContext}|${activeSport}`
   const tr = useT()
+
+  // Soumettre une recherche depuis le menu alors qu'on est déjà sur le
+  // catalogue ne remonte pas le composant : on suit le paramètre d'URL.
+  // Ajustement pendant le rendu plutôt que dans un effet — pas de rendu en
+  // cascade, et l'affichage n'est jamais désynchronisé le temps d'une frame.
+  const [seenUrlQuery, setSeenUrlQuery] = useState(urlQuery)
+  if (seenUrlQuery !== urlQuery) {
+    setSeenUrlQuery(urlQuery)
+    setQuery(urlQuery)
+  }
 
   useEffect(() => {
     // Liste : vue légère dédiée aux cartes — aucune des sous-requêtes lourdes
@@ -50,6 +63,7 @@ export default function Figures() {
 
   const buildParams = () => {
     const base = {}
+    if (urlQuery) base.q = urlQuery
     if (activeFilter !== 'tous') base.cat = activeFilter
     if (activeContext) base.ctx = activeContext
     if (activeSport)  base.sport = activeSport
@@ -73,6 +87,13 @@ export default function Figures() {
   useEffect(() => {
     const q = query.trim()
     const timer = setTimeout(async () => {
+      // La saisie se reporte dans l'URL (sans empiler d'historique) : une
+      // recherche reste partageable et le champ ne diverge jamais de `?q=`.
+      if (q !== urlQuery) {
+        const p = buildParams()
+        if (q) p.q = q
+        setSearchParams(p, { replace: true })
+      }
       if (!q) { setSearchResults(null); return }
       setSearching(true)
       const data = await searchFigures(q)
@@ -80,6 +101,7 @@ export default function Figures() {
       setSearching(false)
     }, q ? 250 : 0)
     return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query])
 
   const setSport = (sport) => {
@@ -98,9 +120,14 @@ export default function Figures() {
         descriptionEn="Complete list of wakeboard, wakeskate and seated wakeboard tricks, by category."
         path="/figures"
       />
+      <header className={styles.masthead}>
+        <h1 className={styles.title}>{tr.figures}</h1>
+        <p className={styles.subtitle}>{tr.tileCatalogSub}</p>
+      </header>
+
       <div className={styles.controls}>
         <div className={styles.searchWrap}>
-          <Icon name="search" />
+          <Icon name="search" size={19} />
           <input
             className={styles.searchInput}
             type="text"
@@ -112,7 +139,7 @@ export default function Figures() {
           />
           {query && (
             <button onClick={() => setQuery('')} className={styles.clearBtn} aria-label={tr.clearSearch}>
-              <Icon name="x" />
+              <Icon name="x" size={17} />
             </button>
           )}
         </div>
@@ -125,10 +152,9 @@ export default function Figures() {
             allValue="tous"
             columns={2}
             onChange={setFilter}
-            accent={CATEGORIES.find(c => c.slug === activeFilter)?.color}
             options={[
               { value: 'tous', label: tr.all },
-              ...CATEGORIES.map(c => ({ value: c.slug, label: tr.catNames[c.slug] || c.name, color: c.color })),
+              ...CATEGORIES.map(c => ({ value: c.slug, label: tr.catNames[c.slug] || c.name })),
             ]}
           />
           <FilterDropdown
@@ -163,7 +189,7 @@ export default function Figures() {
           <>
             {searching && <span className="spinner" />}
             {!searching && searchResults?.length === 0 && (
-              <p style={{ color: 'var(--c-muted)', fontSize: 14, paddingTop: '1rem' }}>{tr.noResults(query)}</p>
+              <p className={styles.empty}>{tr.noResults(query)}</p>
             )}
             {!searching && searchResults?.length > 0 && (
               <p className={styles.count} aria-live="polite">{tr.figureCount(searchResults.length)}</p>
@@ -176,9 +202,7 @@ export default function Figures() {
           <>
             {loading && <span className="spinner" />}
             {!loading && figures.length === 0 && (
-              <p style={{ color: 'var(--c-muted)', fontSize: 14, paddingTop: '1rem' }}>
-                {tr.noFiguresInCat}
-              </p>
+              <p className={styles.empty}>{tr.noFiguresInCat}</p>
             )}
             {!loading && figures.length > 0 && (
               <p className={styles.count} aria-live="polite">{tr.figureCount(figures.length)}</p>

@@ -105,7 +105,6 @@ export default function AdminFigures() {
             allValue="tous"
             columns={2}
             onChange={setCat}
-            accent={categories.find(c => c.slug === cat)?.color}
             options={catOptions}
           />
           <FilterDropdown axisLabel="Sport"    value={sport} onChange={setSport} options={SPORTS} />

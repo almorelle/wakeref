@@ -505,8 +505,12 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
             {allItems.map(({ type, data }, index) => {
               if (type === 'figure') {
                 const e = data
+                // Le type d'obstacle est signé par le style du filet de
+                // gouttière (plein / double / pointillé / fin) — pas par une
+                // couleur. Précédence : air > kicker > flat.
                 const accent = e.contexts.includes('air_trick') ? styles.entryRowAir
                   : e.contexts.includes('kicker') ? styles.entryRowKicker
+                  : e.contexts.includes('flat') ? styles.entryRowFlat
                   : ''
                 return (
                   <div key={e._key} className={`${styles.entryRow} ${accent}`}>
@@ -514,7 +518,9 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
                       <span className={styles.entryName}>{e.name}</span>
                       <div className={styles.entryTags}>
                         {e.side && <span className={styles.tag}>{sideLabel(e.side)}</span>}
-                        {e.contexts.map(c => <span key={c} className={styles.tag}>{ctxLabel(c)}</span>)}
+                        {e.contexts.map(c => (
+                          <span key={c} className={`${styles.tag} ${styles.tagType}`}>{ctxLabel(c)}</span>
+                        ))}
                         {e.approach.map(a => <span key={a} className={styles.tag}>{appLabel(a)}</span>)}
                       </div>
                     </div>
@@ -544,7 +550,7 @@ export default function RunSaisie({ gridKey, value, onChange, toast }) {
                   <div className={styles.entryInfo}>
                     <span className={styles.entryName}>{o.name}</span>
                     <div className={styles.entryTags}>
-                      <span className={styles.tag}>{tr.compoOther}</span>
+                      <span className={`${styles.tag} ${styles.tagType}`}>{tr.compoOther}</span>
                     </div>
                   </div>
                   {rowControls(index, 'other', o)}

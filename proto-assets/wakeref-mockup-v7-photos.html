@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WakeRef</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Permanent+Marker&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #DCD2DE;
+    --ink: #2A1E30;
+    --ink-soft: #7C6B82;
+    --stamp: #C43D8C;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: var(--paper);
+    color: var(--ink);
+    font-family:'Archivo', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background-image: radial-gradient(rgba(26,23,18,0.05) 1px, transparent 1px);
+    background-size: 3px 3px;
+  }
+  .app{ max-width: 1040px; margin:0 auto; }
+  a{ color:inherit; }
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 18px;
+  }
+  .burger{ background:none; border:none; display:flex; flex-direction:column; gap:4px; cursor:pointer; }
+  .burger span{ width:20px; height:2px; background:var(--ink); display:block; }
+  .wordmark{
+    font-family:'Bebas Neue', sans-serif; font-size: 24px; letter-spacing:0.03em;
+  }
+  .search-btn{ background:none; border:none; color:var(--ink); cursor:pointer; }
+  .search-btn svg{ width:17px; height:17px; }
+
+  /* ---------- Cover hero ---------- */
+  .cover{ position:relative; padding: 4px 18px 0; }
+  .cover-media{
+    aspect-ratio: 3/4; position:relative; overflow:hidden;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  }
+  .cover-media svg{ width:100%; height:100%; display:block; }
+  .cover-issue{
+    position:absolute; top:20px; left:36px;
+    font-family:'Bebas Neue'; font-size:13px; letter-spacing:0.12em;
+    color:#F2EEDF; text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .cover-title{
+    position:absolute; bottom:22px; left:36px; right:20px;
+    font-family:'Bebas Neue'; font-size: 15vw; line-height:0.85;
+    color:#F2EEDF; text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  .cover-note{
+    font-family:'Permanent Marker'; font-size: 13px; color: var(--stamp);
+    position:absolute; bottom: -14px; right: 30px; transform: rotate(-4deg);
+    background: var(--paper); padding: 2px 8px;
+  }
+
+  /* ---------- Table of contents strip ---------- */
+  .toc{
+    padding: 30px 18px 10px;
+    display:flex; gap: 22px; overflow-x:auto; scrollbar-width:none;
+    border-bottom: 1px dotted var(--ink-soft);
+    margin: 0 18px 4px;
+  }
+  .toc::-webkit-scrollbar{ display:none; }
+  .toc-item{
+    flex:0 0 auto; background:none; border:none; cursor:pointer;
+    font-family:'Archivo'; font-weight:600; font-size:12px; letter-spacing:0.04em;
+    text-transform:uppercase; color: var(--ink-soft); padding-bottom:10px;
+    border-bottom: 2px solid transparent;
+  }
+  .toc-item.active{ color:var(--ink); border-bottom-color: var(--stamp); }
+
+  /* ---------- Grid ---------- */
+  .grid{
+    display:grid; grid-template-columns: repeat(2,1fr); gap: 20px 14px;
+    padding: 18px 18px 40px;
+  }
+  .item{ cursor:pointer; }
+  .item-media{ aspect-ratio: 3/4; position:relative; overflow:hidden; }
+  .item-media svg{ width:100%; height:100%; display:block; }
+  .stamp{
+    position:absolute; top:8px; right:8px;
+    width:44px; height:44px; border-radius:50%;
+    border: 2px solid var(--stamp); color: var(--stamp);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-family:'Permanent Marker'; font-size: 9px; line-height:1.1;
+    transform: rotate(-10deg); opacity:0.9; mix-blend-mode:multiply;
+    background: rgba(237,231,216,0.4);
+  }
+  .item-title{
+    font-family:'Permanent Marker'; font-size: 17px; color: var(--ink);
+    margin-top: 8px; line-height:1;
+  }
+  .item-sub{ font-size: 10.5px; color: var(--ink-soft); margin-top:3px; letter-spacing:0.02em; }
+
+  /* ---------- Fullscreen menu ---------- */
+  .fs-menu{
+    position:fixed; inset:0; z-index:80; background: var(--paper);
+    transform: translateX(-100%); transition: transform .3s ease;
+    padding: 20px;
+  }
+  .fs-menu.open{ transform: translateX(0); }
+  .fs-top{ display:flex; justify-content:space-between; margin-bottom: 40px; }
+  .fs-close{ background:none; border:none; font-family:'Archivo'; font-weight:600; font-size:12px; letter-spacing:0.08em; cursor:pointer; }
+  .fs-item{
+    display:block; width:100%; text-align:left; background:none; border:none;
+    font-family:'Bebas Neue'; font-size: 13vw; line-height:1.15; color: var(--ink);
+    padding: 4px 0; cursor:pointer;
+  }
+  .fs-item span{ font-family:'Permanent Marker'; font-size:0.35em; color: var(--stamp); margin-left:10px; }
+
+  /* ---------- Detail ---------- */
+  .detail{
+    position:fixed; inset:0; z-index:60; background: var(--paper);
+    transform: translateY(100%); transition: transform .3s cubic-bezier(.2,.8,.2,1);
+    overflow-y:auto;
+  }
+  .detail.open{ transform: translateY(0); }
+  .d-top{ display:flex; justify-content:space-between; padding: 16px 18px; }
+  .d-back{ background:none; border:none; font-family:'Archivo'; font-weight:600; font-size:12px; letter-spacing:0.06em; cursor:pointer; }
+  .d-cover{ padding: 4px 18px 0; position:relative; }
+  .d-media{ aspect-ratio: 16/10; position:relative; overflow:hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.22); }
+  .d-media svg{ width:100%; height:100%; display:block; }
+  .d-play{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:52px; height:52px; border-radius:50%; border:2px solid #F2EEDF; display:flex; align-items:center; justify-content:center; }
+  .d-play svg{ width:15px; height:15px; fill:#F2EEDF; margin-left:2px; }
+  .d-title{ font-family:'Bebas Neue'; font-size: 52px; padding: 22px 18px 0; line-height:0.9; }
+  .d-note{ font-family:'Permanent Marker'; color: var(--stamp); font-size:14px; padding: 6px 18px 0; transform: rotate(-1deg); }
+  .credits{ padding: 20px 18px 4px; border-top:1px dotted var(--ink-soft); margin: 18px 18px 0; }
+  .c-row{ display:flex; justify-content:space-between; padding: 7px 0; font-size:12.5px; }
+  .c-row .k{ color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; font-size:11px; }
+  .c-row .v{ font-weight:600; }
+  .related-label{ font-family:'Archivo'; font-weight:700; font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink-soft); padding: 30px 18px 8px; }
+  .related-row{ display:flex; gap:12px; overflow-x:auto; padding:0 18px 30px; scrollbar-width:none; }
+  .related-row::-webkit-scrollbar{ display:none; }
+  .r-item{ flex:0 0 110px; }
+  .r-item .item-media{ aspect-ratio:3/4; }
+  .r-item .item-title{ font-size:14px; }
+
+  /* ---------- Desktop ---------- */
+  @media (min-width: 860px){
+    .cover{ display:flex; gap:36px; padding: 6px 32px 0; align-items:flex-end; }
+    .cover-media{ flex:1.1; aspect-ratio:4/5; }
+    .cover-title{ position:static; color:var(--ink); text-shadow:none; font-size: 68px; margin-top:14px; }
+    .cover-issue{ position:static; color:var(--ink-soft); text-shadow:none; }
+    .cover-body{ flex:1; padding-bottom: 26px; }
+    .toc{ margin: 0 32px 4px; padding-left:0; padding-right:0; }
+    .grid{ grid-template-columns: repeat(4,1fr); padding: 24px 32px 50px; }
+    .fs-item{ font-size: 6vw; }
+    .d-title, .d-note, .credits, .related-label{ padding-left:32px; }
+    .d-media{ margin: 0; }
+    .d-cover{ padding-left:32px; padding-right:32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="topbar">
+    <button class="burger" id="menuBtn"><span></span><span></span></button>
+    <div class="wordmark">WAKEREF</div>
+    <button class="search-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg></button>
+  </div>
+
+  <div class="cover" id="cover"></div>
+
+  <div class="toc" id="toc">
+    <button class="toc-item active" data-f="all">Toutes</button>
+    <button class="toc-item" data-f="wakeboard">Wakeboard</button>
+    <button class="toc-item" data-f="wakeskate">Wakeskate</button>
+    <button class="toc-item" data-f="beg">Débutant</button>
+    <button class="toc-item" data-f="int">Intermédiaire</button>
+    <button class="toc-item" data-f="adv">Avancé</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="fs-menu" id="fsMenu">
+  <div class="fs-top"><div class="wordmark">WAKEREF</div><button class="fs-close" id="fsClose">FERMER</button></div>
+  <button class="fs-item" data-f="all">Index</button>
+  <button class="fs-item" data-f="wakeboard">Wakeboard</button>
+  <button class="fs-item" data-f="wakeskate">Wakeskate <span>nouveau</span></button>
+  <button class="fs-item" data-f="fav">Favoris</button>
+</div>
+
+<div class="detail" id="detail">
+  <div class="d-top"><button class="d-back" id="dBack">← RETOUR</button></div>
+  <div id="detailContent"></div>
+</div>
+
+<script>
+const TRICKS = [
+  {name:"Tantrum", disc:"wakeboard", diff:"int", diffLabel:"MOYEN", rot:"0°", approach:"Heelside", dur:"0:38", tone:["#8A7458","#1A1712"], note:"le classique"},
+  {name:"Raley", disc:"wakeboard", diff:"adv", diffLabel:"DUR", rot:"0°", approach:"Heelside", dur:"0:51", tone:["#5E6B54","#1A1712"], note:"gros lâcher"},
+  {name:"Backroll", disc:"wakeboard", diff:"beg", diffLabel:"FACILE", rot:"180°", approach:"Heelside", dur:"0:24", tone:["#9C8560","#1A1712"], note:"1er trick inversé"},
+  {name:"KGB", disc:"wakeboard", diff:"adv", diffLabel:"DUR", rot:"360°", approach:"Toeside", dur:"0:44", tone:["#6E5A44","#1A1712"], note:"technique"},
+  {name:"S-Bend", disc:"wakeskate", diff:"int", diffLabel:"MOYEN", rot:"180°", approach:"Toeside", dur:"0:33", tone:["#7A6E52","#1A1712"], note:"signature skate"},
+  {name:"Scarecrow", disc:"wakeboard", diff:"int", diffLabel:"MOYEN", rot:"360°", approach:"Heelside", dur:"0:29", tone:["#85714E","#1A1712"], note:""},
+  {name:"Whirlybird", disc:"wakeboard", diff:"adv", diffLabel:"DUR", rot:"540°", approach:"Heelside", dur:"0:47", tone:["#69604A","#1A1712"], note:"propre à haute vitesse"},
+  {name:"Weebles", disc:"wakeskate", diff:"beg", diffLabel:"FACILE", rot:"0°", approach:"Toeside", dur:"0:19", tone:["#988654","#1A1712"], note:""},
+  {name:"Mobe 5", disc:"wakeboard", diff:"adv", diffLabel:"DUR", rot:"540°", approach:"Toeside", dur:"0:56", tone:["#5A4E3A","#1A1712"], note:"réception courte"},
+  {name:"Front 3", disc:"wakeboard", diff:"int", diffLabel:"MOYEN", rot:"360°", approach:"Toeside", dur:"0:31", tone:["#7F7050","#1A1712"], note:""},
+];
+let FEATURED = 6;
+
+function media(tone, seed=0){
+  const flip = seed % 2 === 0 ? 1 : -1;
+  const tilt = -8 + (seed*7 % 16);
+  const hx = 150 + (seed*23 % 40) - 20;
+  return `<svg viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice">
+    <defs><linearGradient id="g${tone[0].slice(1)}${seed}" x1="0" y1="0" x2="0.15" y2="1">
+      <stop offset="0" stop-color="${tone[0]}"/><stop offset="1" stop-color="${tone[1]}"/>
+    </linearGradient></defs>
+    <rect width="300" height="400" fill="url(#g${tone[0].slice(1)}${seed})"/>
+    <rect y="230" width="300" height="170" fill="${tone[1]}" opacity="0.35"/>
+    <g transform="translate(${hx} 210) scale(${0.95*flip} 0.95) rotate(${tilt})" opacity="0.88">
+      <ellipse cx="0" cy="86" rx="46" ry="7" fill="${tone[1]}" opacity="0.5"/>
+      <rect x="-44" y="78" width="88" height="10" rx="4" fill="${tone[1]}"/>
+      <circle cx="6" cy="-58" r="13" fill="${tone[1]}"/>
+      <path d="M2 -46 L -8 6 L -34 74 L -18 80 L 4 26 L 22 78 L 40 72 L 18 4 L 28 -40 Z" fill="${tone[1]}"/>
+      <path d="M2 -20 L -46 -34 L -42 -22 L 0 -8 Z" fill="${tone[1]}"/>
+      <path d="M20 -30 L 52 -50 L 56 -38 L 26 -18 Z" fill="${tone[1]}"/>
+    </g>
+  </svg>`;
+}
+
+function renderCover(){
+  const t = TRICKS[FEATURED];
+  document.getElementById('cover').innerHTML = `
+    <div class="cover-media" id="coverClick">
+      ${media(t.tone, FEATURED)}
+      <div class="cover-issue">WAKEREF — N°04</div>
+      <div class="cover-title">${t.name}</div>
+    </div>
+    <div class="cover-note">${t.rot} · ${t.diffLabel.toLowerCase()}, à tenter ce week-end</div>
+    <div class="cover-body"></div>
+  `;
+  document.getElementById('coverClick').addEventListener('click', ()=> openDetail(FEATURED));
+}
+
+function itemHTML(t, idx, small){
+  return `
+  <div class="item ${small?'r-item':''}" data-idx="${idx}">
+    <div class="item-media">
+      ${media(t.tone, idx)}
+      ${small?'':`<div class="stamp">${t.diffLabel}</div>`}
+    </div>
+    <div class="item-title">${t.name}</div>
+    <div class="item-sub">${t.approach} · ${t.rot} · ${t.dur}</div>
+  </div>`;
+}
+
+const grid = document.getElementById('grid');
+function renderGrid(filter='all'){
+  const items = TRICKS.map((t,i)=>({t,i})).filter(({t,i})=> i!==FEATURED && (filter==='all'||t.disc===filter||t.diff===filter));
+  grid.innerHTML = items.map(({t,i})=>itemHTML(t,i,false)).join('');
+  grid.querySelectorAll('.item').forEach(el=> el.addEventListener('click', ()=> openDetail(Number(el.dataset.idx))));
+}
+
+document.getElementById('toc').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.toc-item'); if(!btn) return;
+  document.querySelectorAll('.toc-item').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGrid(btn.dataset.f);
+});
+
+const fsMenu = document.getElementById('fsMenu');
+document.getElementById('menuBtn').addEventListener('click', ()=> fsMenu.classList.add('open'));
+document.getElementById('fsClose').addEventListener('click', ()=> fsMenu.classList.remove('open'));
+fsMenu.addEventListener('click', (e)=>{
+  const btn = e.target.closest('.fs-item'); if(!btn) return;
+  fsMenu.classList.remove('open');
+  renderGrid(btn.dataset.f==='fav' ? 'all' : btn.dataset.f);
+});
+
+const detail = document.getElementById('detail');
+function openDetail(idx){
+  const t = TRICKS[idx];
+  const related = TRICKS.filter((x,i)=> i!==idx && i!==FEATURED && x.disc===t.disc).slice(0,4);
+  document.getElementById('detailContent').innerHTML = `
+    <div class="d-cover">
+      <div class="d-media">${media(t.tone, idx)}<div class="d-play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg></div></div>
+    </div>
+    <div class="d-title">${t.name}</div>
+    ${t.note ? `<div class="d-note">— ${t.note}</div>` : ''}
+    <div class="credits">
+      <div class="c-row"><div class="k">Discipline</div><div class="v">${t.disc==='wakeboard'?'Wakeboard':'Wakeskate'}</div></div>
+      <div class="c-row"><div class="k">Approche</div><div class="v">${t.approach}</div></div>
+      <div class="c-row"><div class="k">Rotation</div><div class="v">${t.rot}</div></div>
+      <div class="c-row"><div class="k">Niveau</div><div class="v">${t.diffLabel}</div></div>
+      <div class="c-row"><div class="k">Durée clip</div><div class="v">${t.dur}</div></div>
+    </div>
+    <div class="related-label">Dans le même numéro</div>
+    <div class="related-row">${related.map(r=>itemHTML(r, TRICKS.indexOf(r), true)).join('')}</div>
+  `;
+  detail.querySelectorAll('.r-item').forEach(el=> el.addEventListener('click', ()=> openDetail(Number(el.dataset.idx))));
+  detail.classList.add('open');
+  detail.scrollTop = 0;
+}
+document.getElementById('dBack').addEventListener('click', ()=> detail.classList.remove('open'));
+
+renderCover();
+renderGrid();
+</script>
+</body>
+</html>

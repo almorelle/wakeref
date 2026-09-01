@@ -1,123 +1,281 @@
-/* ── Top bar (desktop) ── */
+/* ══════════════ Bandeau de tête ══════════════
+   Trois zones seulement : burger, titre, loupe. Aucun item de navigation ne
+   consomme d'espace — tout est dans le menu plein écran. */
 .topbar {
   height: var(--nav-h);
   background: transparent;
   display: flex;
   align-items: center;
-  padding: 0 2rem;
-  gap: 2rem;
+  justify-content: space-between;
+  gap: 1rem;
+  /* Le fond de barre couvre toute la largeur, mais burger / titre / loupe
+     s'alignent sur la colonne centrale de la page. */
+  padding: 0 max(1.25rem, calc((100% - var(--page-max)) / 2));
   position: sticky;
   top: 0;
   z-index: 100;
-  transition: background var(--t-mid), backdrop-filter var(--t-mid);
+  border-bottom: 1px dotted transparent;
+  transition: background-color var(--t-mid), border-color var(--t-mid);
 }
-/* fond frosté seulement après défilement */
+/* Le papier se pose sur le contenu seulement après défilement — au repos la
+   barre flotte au-dessus de la couverture. */
+/* Papier plein plutôt que verre dépoli : le texte qui défile dessous ne doit
+   pas transparaître. Le grain est repris pour que la bande ne tranche pas. */
 .topbar.scrolled {
-  background: var(--nav-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background-color: var(--c-bg);
+  background-image: var(--grain);
+  background-size: 3px 3px;
+  border-bottom-color: var(--c-rule);
 }
+@media (min-width: 700px) {
+  .topbar { padding: 0 max(2rem, calc((100% - var(--page-max)) / 2)); }
+}
+
+/* Deux traits d'encre, comme dans la maquette */
+.burger {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 34px;
+  height: 34px;
+  margin-left: -6px;
+  flex: 0 0 auto;
+}
+.burger span {
+  display: block;
+  width: 21px;
+  height: 2px;
+  background: var(--c-text);
+  transition: transform var(--t-fast), background var(--t-fast);
+}
+.burger:hover span { background: var(--c-accent); }
+.burger:hover span:first-child { transform: translateX(3px); }
+
+/* Titre centré : c'est le seul élément fixe de la page */
 .logo {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: -.01em;
+  font-family: var(--font-title);
+  font-size: 25px;
+  font-weight: 400;
+  letter-spacing: .05em;
+  text-transform: uppercase;
   color: var(--c-text);
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-right: auto;
+  gap: 9px;
+  line-height: 1;
+  /* Centré sur la page, pas entre les deux flancs : le burger d'un côté et le
+     bloc de réglages de l'autre n'ont pas la même largeur. */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Accompagne la bascule `overCover` : le titre passe du crème à l'encre au
+     lieu de sauter, en même temps que le papier se pose sous la barre. */
+  transition: color var(--t-mid);
+}
+
+/* Au-dessus de la couverture, la barre flotte sur la vidéo : son encre y est
+   invisible, titre comme burger — et le burger est le seul accès à la
+   navigation, donc ce n'est pas qu'une affaire d'esthétique.
+   Plutôt que de recolorer chaque élément un par un, on redéfinit les tokens
+   sur la barre elle-même : les variables CSS étant héritées, tout son contenu
+   suit, y compris le sélecteur de langue qui vit dans un autre module et que
+   ce fichier ne peut pas atteindre autrement.
+   Ne s'applique que sur l'accueil non défilé : ailleurs la barre repose déjà
+   sur du papier. */
+.topbar.overCover {
+  --c-text: #f2eedf;
+  --c-muted: rgba(242, 238, 223, .72);
+  --c-faint: rgba(242, 238, 223, .45);
+  --c-rule: rgba(242, 238, 223, .35);
+  /* Le magenta du thème papier est trop foncé sur une vidéo sombre : on prend
+     celui de l'édition nuit, prévu pour ça. */
+  --c-accent: #e0559f;
+  --c-accent-ink: #ee7fba;
 }
 /* Picto vectoriel via mask : net à toute taille, thémable, teinté marque. */
 .logoMark {
   display: inline-block;
-  height: 22px;
+  height: 23px;
   aspect-ratio: 1250.314 / 1319.483;
-  background: var(--c-wake);
+  background: var(--c-accent);
   -webkit-mask: url(/picto.svg) no-repeat center / contain;
   mask: url(/picto.svg) no-repeat center / contain;
   flex-shrink: 0;
 }
-.topnav { display: flex; gap: 4px; }
-.toplink {
-  font-family: var(--font-display);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--c-muted);
-  padding: 6px 12px;
-  border-radius: var(--r-sm);
-  transition: all var(--t-fast);
-}
-.toplink:hover { color: var(--c-text); background: var(--c-surface2); }
-.toplink.active { color: var(--c-wake); background: #06b6d415; }
 
-/* ── Bottom bar (mobile) ── */
-.topbarMobile {
-  display: none;
-  height: var(--nav-h);
-  background: transparent;
-  padding: 0 1.25rem;
-  align-items: center;
-  justify-content: space-between;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  transition: background var(--t-mid), backdrop-filter var(--t-mid);
-}
-.topbarMobile.scrolled {
-  background: var(--nav-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-@media (max-width: 700px) {
-  .topbar { display: none; }
-  .topbarMobile { display: flex; }
-  .bottombar { display: flex; }
-}
-.bottombar {
-  display: none;
-  position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 60px;
-  background: var(--c-surface);
-  border-top: 1px solid var(--c-border);
-  z-index: 100;
-  backdrop-filter: blur(12px);
-}
-.bottomlink {
-  flex: 1;
+.tools {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-right: -6px;
+  flex: 0 0 auto;
+}
+.toolBtn {
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  color: var(--c-faint);
-  font-size: 10px;
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
+  width: 32px;
+  height: 32px;
+  color: var(--c-text);
   transition: color var(--t-fast);
 }
-.bottomlink i { font-size: 20px; }
-.bottomlink:hover { color: var(--c-muted); }
-.bottomlink.active { color: var(--c-wake); }
+.toolBtn:hover { color: var(--c-accent); }
 
-@media (max-width: 700px) {
-  .topbar { display: none; }
-  .bottombar { display: flex; }
+/* Écrans étroits : le titre doit garder sa place entre les deux flancs. */
+@media (max-width: 400px) {
+  .logo { font-size: 20px; gap: 0; }
+  .logoMark { display: none; }
+  .tools { gap: 0; }
 }
 
-.bottomLang {
+/* ══════════════ Menu plein écran ══════════════
+   Entre par la gauche, recouvre le papier. Recherche en tête, rubriques en
+   grand, réglages en pied. */
+.menu {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background-color: var(--c-bg);
+  background-image: var(--grain);
+  background-size: 3px 3px;
+  padding: 1.25rem max(1.25rem, calc((100% - var(--page-max)) / 2)) 2rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  /* Fermé, le panneau sort de l'écran par la gauche. Il n'est PAS masqué par
+     `visibility: hidden` : un élément invisible n'est pas focusable, et le
+     champ de recherche doit pouvoir prendre le focus dès le clic sur la loupe
+     (condition pour que iOS ouvre le clavier). C'est `inert` — posé par le
+     composant — qui le retire du focus, du clavier et de l'arbre
+     d'accessibilité tant qu'il est fermé. */
+  transform: translateX(-100%);
+  pointer-events: none;
+  transition: transform .32s cubic-bezier(.2,.8,.2,1);
+}
+.menuOpen { transform: translateX(0); pointer-events: auto; }
+@media (min-width: 700px) {
+  .menu { padding: 1.25rem max(2rem, calc((100% - var(--page-max)) / 2)) 2.5rem; }
+}
+
+.menuTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: calc(var(--nav-h) - 1.25rem);
+  margin-bottom: 1.75rem;
+}
+.menuWordmark { font-size: 25px; color: var(--c-text); }
+/* Croix, en pendant du burger : même gabarit de cible, mêmes marges négatives
+   pour que le trait optique reste aligné sur la colonne. */
+.menuClose {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 0 8px;
-  border-left: 1px solid var(--c-border);
+  width: 34px;
+  height: 34px;
+  margin-right: -6px;
+  color: var(--c-text);
+  transition: color var(--t-fast), transform var(--t-fast);
+}
+.menuClose:hover { color: var(--c-accent); transform: rotate(90deg); }
+
+.menuSearch {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 2px;
+  border-bottom: 2px solid var(--c-text);
+  margin-bottom: 2.25rem;
+  transition: border-color var(--t-fast);
+}
+.menuSearch:focus-within { border-bottom-color: var(--c-accent); }
+.menuSearch i { color: var(--c-text); flex-shrink: 0; transition: color var(--t-fast); }
+.menuSearch:focus-within i { color: var(--c-accent); }
+.menuSearchInput {
+  flex: 1;
+  min-width: 0;
+  font-size: 17px;
+  color: var(--c-text);
+  background: none;
+  border: none;
+  outline: none;
+  appearance: none;
+}
+.menuSearchInput:focus-visible { outline: none; }
+.menuSearchInput::-webkit-search-cancel-button { appearance: none; }
+.menuSearchInput::placeholder { color: var(--c-faint); }
+
+.menuNav { display: flex; flex-direction: column; }
+.menuItem {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(38px, 12vw, 74px);
+  line-height: 1.14;
+  letter-spacing: .015em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  transition: color var(--t-fast), transform var(--t-fast);
+}
+.menuItem:hover { color: var(--c-accent-ink); translate: 6px 0; }
+/* Les rubriques entrent en cascade derrière le panneau. */
+.menuOpen .menuItem {
+  animation: menuItemIn .34s ease both;
+  animation-delay: calc(var(--i, 0) * 45ms + .1s);
+}
+@keyframes menuItemIn {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.menuItemActive { color: var(--c-accent-ink); }
+/* Repère manuscrit sur la page courante */
+.menuHere {
+  font-family: var(--font-hand);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--c-accent);
+  white-space: nowrap;
+  transform: rotate(-3deg);
 }
 
-.themeBtn {
-  font-size: 16px;
-  transition: color var(--t-fast), border-color var(--t-fast);
+/* ── Résultats de recherche, à la place des rubriques ── */
+.menuResults { padding-bottom: 2rem; }
+.menuEmpty {
+  font-size: 14px;
+  color: var(--c-muted);
+  padding: .5rem 0;
+}
+.menuMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1.25rem;
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  border-bottom: 2px solid var(--c-accent);
+  padding: 6px 0;
+  transition: color var(--t-fast);
+}
+.menuMore:hover { color: var(--c-accent-ink); }
+
+/* Bouton d'effacement du champ */
+.menuClear {
+  display: flex;
+  align-items: center;
+  color: var(--c-muted);
+  padding: 2px;
+  transition: color var(--t-fast);
+}
+.menuClear:hover { color: var(--c-accent-ink); }
+
+@media (min-width: 700px) {
+  .menuHere { font-size: 15px; }
 }

@@ -35,14 +35,6 @@ const shortId = () => {
   return Array.from(bytes, b => (b % 36).toString(36)).join('')
 }
 
-// Couleur d'accent par discipline : signe visuellement le run (pill active,
-// score, critères, en-tête du panneau). Exposée en variable CSS --disc.
-const DISCIPLINE_COLOR = {
-  wakeboard: 'var(--c-wake)',   // cyan
-  wakeskate: 'var(--c-ws)',     // ambre
-  seated:    'var(--c-seated)', // violet
-}
-
 const EMPTY_RUN = { entries: [], jibPasses: [], otherEntries: [] }
 
 // ── Main ─────────────────────────────────────────────────────
@@ -71,7 +63,6 @@ export default function Compo() {
   // Grille active : pilote la couleur de discipline et le verrouillage du
   // sélecteur (le changement de discipline est bloqué dès qu'un item existe).
   const activeGrid = GRIDS[gridKey] || GRIDS.wakeboard
-  const disciplineColor = DISCIPLINE_COLOR[activeGrid.discipline] || 'var(--c-accent)'
 
   const itemCount = run.entries.length + run.jibPasses.length + run.otherEntries.length
 
@@ -190,11 +181,11 @@ export default function Compo() {
         path="/compo"
       />
       <ToastContainer toasts={toasts} />
-      <div className={styles.layout} style={{ '--disc': disciplineColor }}>
+      <div className={styles.layout}>
 
         <div className={styles.left}>
           <div className={styles.headerRow}>
-            <h2 className={styles.sectionTitle}>{tr.compoTitle}</h2>
+            <h1 className={styles.title}>{tr.compoTitle}</h1>
             {itemCount > 0 && (
               <div className={styles.headerActions}>
                 <button

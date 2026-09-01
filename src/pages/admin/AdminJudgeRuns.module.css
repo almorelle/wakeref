@@ -1,87 +1,93 @@
-.page {
-  max-width: 760px;
-  margin: 0 auto;
-}
+.page { max-width: 800px; margin: 0 auto; }
 
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 12px;
+  border-bottom: 1px dotted var(--c-rule);
 }
-
 .title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 800;
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
 }
-
-.sub {
-  font-size: 13px;
-  color: var(--c-muted);
-  margin-top: 2px;
-}
-
+.sub { font-size: 13.5px; color: var(--c-muted); margin-top: 6px; }
 .empty {
-  font-size: 14px;
-  color: var(--c-muted);
-  text-align: center;
-  padding: 2rem 0;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 3rem 1rem; color: var(--c-muted); font-size: 14px; text-align: center;
 }
 
-.table {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+.empty { padding: 2rem 0; }
+
+.table { display: flex; flex-direction: column; }
 
 .row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
-  padding: 10px 12px;
+  gap: 12px;
+  background: none;
+  border: 0;
+  border-bottom: 1px dotted var(--c-rule);
+  border-left: 3px solid var(--c-rule);
+  border-radius: 0;
+  padding: 12px 0 12px 12px;
 }
 
 .rowName {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 7px;
   min-width: 0;
-  font-size: 14px;
-  font-weight: 600;
+  font-family: var(--font-title);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
 }
 
-.badges { display: flex; gap: 4px; flex-wrap: wrap; }
+.badges { display: flex; gap: 0 7px; flex-wrap: wrap; }
 
 .badge {
   font-size: 10px;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 100px;
-  background: var(--c-surface3);
+  padding: 0;
+  border-radius: 0;
+  background: none;
   color: var(--c-muted);
   text-transform: uppercase;
-  letter-spacing: .04em;
-  font-family: var(--font-display);
+  letter-spacing: .1em;
+  font-family: var(--font-body);
+}
+.badge + .badge::before {
+  content: "\00b7";
+  margin-right: 7px;
+  color: var(--c-faint);
+  font-weight: 400;
 }
 
+/* Brouillon : la seule étiquette qui garde une couleur — c'est un état. */
 .unpub {
   font-size: 10px;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 100px;
-  background: color-mix(in srgb, var(--c-danger) 16%, transparent);
-  color: var(--c-danger);
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--c-muted);
   text-transform: uppercase;
-  letter-spacing: .04em;
-  font-family: var(--font-display);
+  letter-spacing: .1em;
+  font-family: var(--font-body);
+  color: var(--c-danger);
+  font-weight: 700;
 }
 
-.rowActions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.rowActions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }

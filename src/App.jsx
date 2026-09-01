@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Outlet } from 'react-router-dom'
 import Navbar from './components/Navbar'
+import Footer from './components/Footer'
+import ScrollToTop from './components/ScrollToTop'
 import Home from './pages/Home'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
@@ -11,6 +13,9 @@ const FigureDetail = lazy(() => import('./pages/FigureDetail'))
 const Contact = lazy(() => import('./pages/Contact'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 const SubmitVideo = lazy(() => import('./pages/SubmitVideo'))
+const LegalNotice = lazy(() => import('./pages/Legal').then(m => ({ default: m.LegalNotice })))
+const Terms = lazy(() => import('./pages/Legal').then(m => ({ default: m.Terms })))
+const Privacy = lazy(() => import('./pages/Legal').then(m => ({ default: m.Privacy })))
 const Quiz = lazy(() => import('./pages/Quiz'))
 const Compo = lazy(() => import('./pages/Compo'))
 const CompositionSimple = lazy(() => import('./pages/CompositionSimple'))
@@ -41,6 +46,7 @@ const CompetitionView = lazy(() => import('./pages/competition/CompetitionView')
 export default function App() {
   return (
     <>
+      <ScrollToTop />
       <Suspense fallback={<RouteFallback />}>
         <Routes>
           {/* Pages publiques */}
@@ -56,6 +62,9 @@ export default function App() {
             <Route path="/judge/voix" element={<JudgeVoice />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/submit" element={<SubmitVideo />} />
+            <Route path="/legal" element={<LegalNotice />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/privacy" element={<Privacy />} />
           </Route>
 
           {/* Admin */}
@@ -104,6 +113,7 @@ function PublicLayout() {
     <>
       <Navbar />
       <Outlet />
+      <Footer />
     </>
   )
 }

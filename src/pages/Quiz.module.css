@@ -3,40 +3,69 @@
   flex-direction: column;
   gap: 1rem;
   padding-top: 1.5rem;
-  max-width: 600px;
+  max-width: 620px;
   margin: 0 auto;
 }
 
-.progress { display: flex; gap: 4px; }
+/* Repère de page : le bandeau ne porte plus de navigation. */
+.kicker {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+/* Jauge d'avancement : des segments d'encre, magenta une fois franchis. */
+.progress { display: flex; gap: 5px; }
 .progBar {
-  flex: 1; height: 3px; border-radius: 2px;
+  flex: 1; height: 2px; border-radius: 0;
   background: var(--c-border2);
   transition: background var(--t-mid);
 }
 .progBar.done    { background: var(--c-accent); }
-.progBar.current { background: #3b82f660; }
+.progBar.current { background: var(--c-text); }
 
 .counterRow {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 6px;
+  border-bottom: 1px dotted var(--c-rule);
+}
+/* La catégorie est le seul indice donné avant de voir l'extrait : elle porte
+   le titre de la question, en display et en accent. Surcharge locale du badge
+   global — le récapitulatif de score garde le traitement discret. */
+.counterRow :global(.badge) {
+  font-family: var(--font-title);
+  font-size: clamp(28px, 7vw, 36px);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .02em;
+  color: var(--c-accent-ink);
 }
 .counter {
-  font-family: var(--font-display);
-  font-size: 12px;
+  font-family: var(--font-body);
+  font-size: 10.5px;
   font-weight: 700;
-  color: var(--c-muted);
-  letter-spacing: .08em;
+  line-height: 1;
+  letter-spacing: .16em;
   text-transform: uppercase;
+  color: var(--c-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .videoWrap {
   position: relative;
   background: var(--c-surface2);
   border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   overflow: hidden;
 }
+/* Pas de traitement bichrome ici : le quiz demande de reconnaître le trick,
+   l'image doit rester lisible telle qu'elle a été filmée. */
 .video {
   display: block;
   max-height: 600px;
@@ -53,12 +82,19 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  padding: 3rem 0;
 }
-.videoPlaceholder i { font-size: 36px; color: var(--c-wake); }
-.videoPlaceholder span { font-size: 12px; color: var(--c-muted); }
+.videoPlaceholder i { font-size: 36px; color: var(--c-muted); }
+.videoPlaceholder span {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
 
-/* Hugs the actual rendered video so the watermark sits on the footage,
-   not the letterbox bands left/right of portrait clips. */
+/* Colle à la vidéo réellement rendue pour que la signature se pose sur l'image,
+   pas sur les bandes latérales des clips portrait. */
 .videoInner {
   position: relative;
   width: fit-content;
@@ -69,24 +105,21 @@
 .watermark {
   position: absolute;
   bottom: 10px;
-  right: 12px;
+  right: 10px;
   z-index: 4;
+  font-family: var(--font-body);
   font-weight: 700;
-  font-size: 14px;
-  color: #fff;
+  font-size: 10.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #f2eedf;
   text-decoration: none;
-  letter-spacing: .02em;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(0, 0, 0, .45);
-  backdrop-filter: blur(2px);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .6);
+  padding: 5px 9px;
+  border-radius: 0;
+  background: rgba(26, 20, 32, .6);
   transition: background var(--t-mid);
 }
-.watermark:hover {
-  background: rgba(0, 0, 0, .7);
-  text-decoration: underline;
-}
+.watermark:hover { background: rgba(26, 20, 32, .85); }
 
 .videoOverlay {
   position: absolute;
@@ -97,142 +130,182 @@
   font-size: 48px;
   animation: popIn .2s ease;
 }
-.videoOverlay.correct { background: #22c55e30; color: var(--c-success); }
-.videoOverlay.wrong   { background: #ef444430; color: var(--c-danger); }
+.videoOverlay.correct { background: rgba(63, 107, 74, .35);  color: #fff; }
+.videoOverlay.wrong   { background: rgba(163, 45, 61, .35);  color: #fff; }
 @keyframes popIn {
   from { transform: scale(.5); opacity: 0; }
   to   { transform: scale(1);  opacity: 1; }
 }
 
 .question {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
+  font-family: var(--font-title);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
 }
 
+/* ── Réponses : quatre encarts d'encre, sans fond ── */
 .options {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 .opt {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-md);
-  padding: 14px 12px;
-  font-family: var(--font-display);
-  font-size: 14px;
-  font-weight: 600;
+  background: none;
+  border: 1px solid var(--c-rule);
+  border-radius: 0;
+  padding: 14px 14px;
+  font-family: var(--font-title);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: .01em;
+  text-transform: uppercase;
   color: var(--c-text);
   text-align: left;
   cursor: pointer;
-  transition: all var(--t-fast);
-  line-height: 1.3;
+  transition: border-color var(--t-fast), color var(--t-fast);
+  display: flex;
+  align-items: baseline;
 }
-.opt:hover { border-color: var(--c-border2); background: var(--c-surface2); }
+.opt:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
+/* La justesse d'une réponse est un retour d'état : elle garde sa couleur. */
 .optCorrect {
-  background: #22c55e20 !important;
   border-color: var(--c-success) !important;
   color: var(--c-success) !important;
+  border-width: 2px !important;
 }
 .optWrong {
-  background: #ef444420 !important;
   border-color: var(--c-danger) !important;
   color: var(--c-danger) !important;
+  border-width: 2px !important;
 }
-.optDim { opacity: .4; cursor: default; }
+.optDim { opacity: .35; cursor: default; }
 /* indice de raccourci clavier, visible au desktop seulement */
-.optNum { font-size: 11px; font-weight: 700; opacity: .4; margin-right: 8px; }
+.optNum {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--c-faint);
+  margin-right: 10px;
+  flex-shrink: 0;
+}
 
 .feedback {
   font-size: 14px;
-  padding: 10px 14px;
-  border-radius: var(--r-md);
-  border: 1px solid;
+  padding: 12px 0 12px 14px;
+  border-radius: 0;
+  border: 0;
+  border-left: 3px solid;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  line-height: 1.5;
+  gap: 9px;
+  line-height: 1.55;
   animation: fadeIn .2s ease;
 }
 .feedback i { margin-top: 2px; flex-shrink: 0; }
-.feedbackOk { background: #22c55e15; border-color: #22c55e40; color: var(--c-success); }
-.feedbackKo { background: #ef444415; border-color: #ef444440; color: var(--c-text); }
+.feedbackOk { border-color: var(--c-success); color: var(--c-success); }
+.feedbackKo { border-color: var(--c-danger);  color: var(--c-text); }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .nextBtn { align-self: flex-end; }
 
 @media (max-width: 700px) {
-  .quiz { padding-bottom: 84px; }
+  /* plus de barre de navigation basse : seul le bouton fixe réserve sa place */
+  .quiz { padding-bottom: 76px; }
   .video { max-height: 320px; }
   .optNum { display: none; }
+  .opt { font-size: 19px; padding: 13px 12px; }
   .nextBtn {
     position: fixed;
-    bottom: calc(60px + 12px);
+    bottom: 12px;
     left: 1rem;
     right: 1rem;
     align-self: unset;
     z-index: 50;
+    justify-content: center;
   }
 }
 
-/* Score */
+/* ══════════════ Résultat ══════════════
+   Le score est apposé comme un tampon : cercle magenta, chiffre en display,
+   légèrement de travers. */
 .scorePage {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1.75rem;
   padding: 3rem 0 2rem;
   text-align: center;
-  max-width: 400px;
+  max-width: 420px;
   margin: 0 auto;
 }
 .scoreCircle {
-  width: 120px; height: 120px;
-  border-radius: 50%;
-  border: 3px solid var(--score-color, var(--c-accent));
+  width: 148px; height: 148px;
+  border-radius: var(--r-round);
+  border: 3px solid var(--c-accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: color-mix(in srgb, var(--score-color, var(--c-accent)) 12%, transparent);
+  background: none;
+  transform: rotate(-6deg);
 }
-/* number + « /N » alignés sur la même ligne de base → se lit comme un score */
+/* nombre + « /N » alignés sur la même ligne de base → se lit comme un score */
 .scoreValue {
   display: flex;
   align-items: baseline;
-  gap: 4px;
+  gap: 5px;
 }
 .scoreNum {
-  font-family: var(--font-display);
-  font-size: 46px;
-  font-weight: 800;
-  color: var(--score-color, var(--c-accent));
+  font-family: var(--font-title);
+  font-size: 62px;
+  font-weight: 400;
+  color: var(--c-accent-ink);
   line-height: 1;
 }
 .scoreTotal {
-  font-family: var(--font-display);
-  font-size: 20px;
+  font-family: var(--font-title);
+  font-size: 26px;
   color: var(--c-muted);
 }
-.scoreMsg { font-size: 15px; color: var(--c-muted); line-height: 1.6; }
+.scoreMsg {
+  font-family: var(--font-hand);
+  font-size: 17px;
+  color: var(--c-accent-ink);
+  line-height: 1.45;
+  transform: rotate(-1deg);
+}
 .scoreBreakdown {
   width: 100%;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
-  overflow: hidden;
+  background: none;
+  border: 0;
+  border-top: 1px dotted var(--c-rule);
 }
 .scoreRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--c-border);
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px dotted var(--c-rule);
   font-size: 14px;
+  text-align: left;
 }
-.scoreRow:last-child { border-bottom: none; }
-.scoreFig { font-family: var(--font-display); font-weight: 600; }
+.scoreFig {
+  font-family: var(--font-title);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+
+/* ══════════════ État vide ══════════════ */
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -240,26 +313,28 @@
   gap: 12px;
   padding: 4rem 2rem;
   text-align: center;
-  max-width: 360px;
+  max-width: 380px;
   margin: 0 auto;
 }
 .emptyIcon {
-  width: 72px;
-  height: 72px;
-  border-radius: var(--r-xl);
-  background: var(--c-surface2);
-  border: 1px solid var(--c-border);
+  width: 68px;
+  height: 68px;
+  border-radius: 0;
+  background: none;
+  border: 1px solid var(--c-rule);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 30px;
   color: var(--c-muted);
   margin-bottom: 8px;
 }
 .emptyTitle {
-  font-family: var(--font-display);
-  font-size: 18px;
-  font-weight: 700;
+  font-family: var(--font-title);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
   color: var(--c-text);
 }
 .emptyText {

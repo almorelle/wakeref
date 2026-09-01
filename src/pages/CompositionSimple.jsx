@@ -6,13 +6,6 @@ import styles from './CompositionSimple.module.css'
 
 const STORAGE_KEY = 'wakeref_composition_simple'
 
-// Couleur d'accent par discipline (cf. Compo) — pilote la teinte via --disc.
-const DISCIPLINE_COLOR = {
-  wakeboard: 'var(--c-wake)',   // cyan
-  wakeskate: 'var(--c-ws)',     // ambre
-  seated:    'var(--c-seated)', // violet
-}
-
 const loadStored = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -38,7 +31,6 @@ export default function CompositionSimple() {
   const [checked, setChecked] = useState(stored?.checked || {})
 
   const grid = GRIDS[gridKey] || GRIDS.wakeboard
-  const disciplineColor = DISCIPLINE_COLOR[grid.discipline] || 'var(--c-accent)'
   const gridChecked = checked[gridKey] || {}
 
   // Persiste à chaque changement pour qu'un refresh ne perde pas la saisie.
@@ -73,7 +65,7 @@ export default function CompositionSimple() {
   }
 
   return (
-    <div className={styles.page} style={{ '--disc': disciplineColor }}>
+    <div className={styles.page}>
       <SEO
         titleFr="Saisie de note"
         titleEn="Score sheet"

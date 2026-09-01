@@ -200,13 +200,10 @@ export default function Quiz() {
 
   if (done) {
     const msgs = tr.quizScoreMsgs
-    // Couleur du cercle selon la performance : rouge → ambre → vert.
-    const ratio = questions.length ? score / questions.length : 0
-    const scoreColor = ratio >= 0.7 ? 'var(--c-success)' : ratio >= 0.4 ? 'var(--c-ws)' : 'var(--c-danger)'
     return (
       <div className="page-container">
         <div className={styles.scorePage}>
-          <div className={styles.scoreCircle} style={{ '--score-color': scoreColor }}>
+          <div className={styles.scoreCircle}>
             <div className={styles.scoreValue}>
               <span className={styles.scoreNum}>{score}</span>
               <span className={styles.scoreTotal}>/ {questions.length}</span>
@@ -245,14 +242,15 @@ export default function Quiz() {
         path="/quiz"
       />
       <div className={styles.quiz}>
+        <p className={styles.kicker}>{tr.quiz}</p>
         <div className={styles.progress}>
           {Array.from({ length: questions.length }, (_, i) => (
             <div key={i} className={`${styles.progBar} ${i < idx ? styles.done : i === idx ? styles.current : ''}`} />
           ))}
         </div>
         <div className={styles.counterRow}>
-          <p className={styles.counter}>{idx + 1} / {questions.length}</p>
           <CategoryBadge slug={q.correct.category_slug} name={q.correct.category_name} />
+          <p className={styles.counter}>{idx + 1} / {questions.length}</p>
         </div>
 
         <div className={styles.videoWrap}>

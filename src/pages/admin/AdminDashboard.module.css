@@ -1,13 +1,28 @@
-.page { max-width: 700px; display: flex; flex-direction: column; gap: 2rem; }
-.title { font-family: var(--font-display); font-size: 22px; font-weight: 800; }
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.page { max-width: 760px; display: flex; flex-direction: column; gap: 2.5rem; }
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.sub { font-size: 13.5px; color: var(--c-muted); margin-top: 6px; }
+.empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 3rem 1rem; color: var(--c-muted); font-size: 14px; text-align: center;
+}
+
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 28px; }
+/* Tuile de comptage : pas de cadre, un filet d'encre en gouttière dont la
+   couleur porte l'état (à traiter / rien à faire). */
 .tile {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  /* filet gauche = rail d'accent : couleur portée par l'état (alert/ok) */
-  border-left-width: 3px;
-  border-radius: var(--r-lg);
-  padding: 1.5rem 1rem;
+  background: none;
+  border: 0;
+  border-left: 3px solid var(--c-rule);
+  border-radius: 0;
+  padding: 4px 0 4px 14px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -17,26 +32,39 @@
   text-align: left;
   color: var(--c-text);
 }
-.tile:hover { border-color: var(--c-accent); }
+.tile:hover { border-left-color: var(--c-accent); }
 .tileIcon { color: var(--c-muted); font-size: 18px; }
-.tileValue { font-family: var(--font-display); font-size: 28px; font-weight: 800; color: var(--c-text); }
-.tileLabel { font-size: 12px; color: var(--c-muted); }
+.tileValue {
+  font-family: var(--font-title);
+  font-size: 46px;
+  font-weight: 400;
+  line-height: .9;
+  color: var(--c-text);
+}
+.tileLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  line-height: 1.35;
+}
 
-/* À traiter — il y a du travail : rouge appuyé (icône + chiffre + rail) */
+/* À traiter — il y a du travail : rouge appuyé (icône + chiffre + filet) */
 .tileAlert { border-left-color: var(--c-danger); }
 .tileAlert .tileIcon,
 .tileAlert .tileValue { color: var(--c-danger); }
-.tileAlert:hover { border-color: var(--c-danger); }
+.tileAlert:hover { border-left-color: var(--c-danger); }
 
-/* À traiter — rien à faire : vert discret (rail + icône), le « 0 » reste atténué */
+/* À traiter — rien à faire : vert discret, le « 0 » reste atténué */
 .tileOk { border-left-color: var(--c-success); }
 .tileOk .tileIcon { color: var(--c-success); }
-.tileOk .tileValue { color: var(--c-muted); }
-.tileOk:hover { border-color: var(--c-success); }
+.tileOk .tileValue { color: var(--c-faint); }
+.tileOk:hover { border-left-color: var(--c-success); }
 
-.shortcuts { display: flex; flex-direction: column; }
-.shortcutBtns { display: flex; gap: 8px; flex-wrap: wrap; }
+.shortcuts { display: flex; flex-direction: column; gap: 12px; }
+.shortcutBtns { display: flex; gap: 10px; flex-wrap: wrap; }
 
 @media (max-width: 700px) {
-  .grid { grid-template-columns: 1fr 1fr; }
+  .grid { grid-template-columns: 1fr 1fr; gap: 0 20px; }
 }

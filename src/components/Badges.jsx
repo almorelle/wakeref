@@ -20,8 +20,6 @@ export function CategoryBadge({ slug, name }) {
 export function ContextBadge({ context }) {
   const tr = useT()
   return (
-    <span className="badge" style={{ background: 'var(--c-surface3)', color: 'var(--c-muted)', border: '1px solid var(--c-border2)' }}>
-      {tr.ctxNames?.[context] || context}
-    </span>
+    <span className="badge">{tr.ctxNames?.[context] || context}</span>
   )
 }
