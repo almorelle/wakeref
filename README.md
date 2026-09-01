@@ -1,6 +1,6 @@
 # WakeRef
 
-Référentiel wakeboard & wakeskate — [wakeref.app](https://wakeref.app)
+Référentiel wakeboard & wakeskate - [wakeref.app](https://wakeref.app)
 
 ![Preview of the website](/public/og-image.jpg)
 
