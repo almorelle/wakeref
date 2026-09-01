@@ -17,6 +17,7 @@ export const HERO_CLIP_IDS = [
   385, // TS FS 360 — Ile Vegni                  720×720    4.1s
   220, // Back Mobe — Parker Wasson              720×720    6.7s
   179, // Kickflip — Telma Cester                360×640    4.1s
+  369, // Pete Rose — Casey Taylor               720×960    8.0s
   162, // Nose Press / Tail Press — Yohan Camps  720×1280  10.0s
   357, // Tantrum to Blind — Claudia Pagnini     720×720    9.7s
   210, // S-Bend — Janek Jaromin                 720×1280   5.4s
