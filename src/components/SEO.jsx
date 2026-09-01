@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/language-context'
 
 const SITE_NAME = 'WakeRef'
 const SITE_URL  = 'https://wakeref.app'
-const OG_IMAGE  = `${SITE_URL}/og-image.jpg`
+const OG_IMAGE  = `${SITE_URL}/og-image-2026.jpg`
 
 const DEFAULT = {
   fr: {
