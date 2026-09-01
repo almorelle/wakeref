@@ -126,7 +126,14 @@ export default function Navbar() {
     <>
       {/* Bandeau de tête : burger — titre — réglages et loupe. Aucun item de
           navigation n'occupe la page, tout vit dans le menu plein écran. */}
-      <header className={`${styles.topbar} ${scrolled ? styles.scrolled : ''}`}>
+      {/* `overCover` : la barre survole la couverture vidéo, tout son contenu
+          passe en clair. Uniquement sur l'accueil, et seulement tant qu'on n'a
+          pas défilé — au-delà, le papier se pose dessous. */}
+      <header
+        className={`${styles.topbar} ${scrolled ? styles.scrolled : ''} ${
+          location.pathname === '/' && !scrolled ? styles.overCover : ''
+        }`}
+      >
         <button
           ref={burgerRef}
           className={styles.burger}
@@ -169,7 +176,10 @@ export default function Navbar() {
         role="dialog"
         aria-modal="true"
         aria-label={tr.menu}
-        inert={!open ? '' : undefined}
+        /* Booléen, pas chaîne vide : React 19 traite `inert=""` comme false,
+           le menu fermé restait donc navigable au clavier et exposé aux
+           lecteurs d'écran. */
+        inert={!open}
       >
         <div className={styles.menuTop}>
           <span className={`wordmark ${styles.menuWordmark}`}>WakeRef</span>
@@ -239,6 +249,12 @@ export default function Navbar() {
                 end={l.to === '/'}
                 className={({ isActive }) => `${styles.menuItem} ${isActive ? styles.menuItemActive : ''}`}
                 style={{ '--i': i }}
+                /* Fermeture explicite, et pas seulement via le changement de
+                   page : cliquer l'item de la page courante ne change aucune
+                   route, le menu serait resté ouvert sans réaction. Passer par
+                   `closeMenu` remet aussi le focus sur le burger — sans quoi il
+                   resterait sur un lien devenu `inert`. */
+                onClick={closeMenu}
               >
                 {l.label}
                 {location.pathname === l.to && (

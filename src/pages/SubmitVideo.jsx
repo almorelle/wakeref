@@ -143,6 +143,14 @@ export default function SubmitVideo() {
               />
             </div>
 
+            {/* Placée au ras du bouton, pas en tête de page : c'est au moment
+                d'envoyer que la garantie est donnée, et c'est là qu'elle a une
+                chance d'être lue. Le détail vit dans les CGU. */}
+            <p className={styles.consent}>
+              {tr.submitConsent}{' '}
+              <Link to="/terms">{tr.submitConsentLink}</Link>
+            </p>
+
             {status === 'error' && (
               <p className={styles.error}>{tr.submitError}</p>
             )}

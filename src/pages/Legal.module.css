@@ -1,0 +1,86 @@
+.page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding-top: 2rem;
+}
+.header {
+  margin-bottom: 2.25rem;
+  padding-bottom: 14px;
+  border-bottom: 1px dotted var(--c-rule);
+}
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(34px, 6.5vw, 54px);
+  line-height: .9;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.sec { padding: 1.5rem 0; border-bottom: 1px dotted var(--c-rule); }
+.sec:last-child { border-bottom: none; }
+.sec h2 {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  margin-bottom: 10px;
+}
+.sec p { font-size: 15px; line-height: 1.7; color: var(--c-text); max-width: 68ch; }
+
+.sec p + p { margin-top: .9rem; }
+.sec strong { font-weight: 700; color: var(--c-text); }
+.sec a {
+  color: var(--c-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-thickness: 1px;
+}
+.sec a:hover { text-decoration-thickness: 2px; }
+
+/* Listes : la puce est remplacée par un filet court, dans l'esprit des règles
+   pointillées du reste du site. Le tiret est décoratif, d'où l'aria-hidden
+   implicite d'un ::before. */
+.list { list-style: none; margin: .9rem 0 0; padding: 0; }
+.list li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--c-text);
+  max-width: 68ch;
+}
+.list li + li { margin-top: .7rem; }
+.list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: .82em;
+  width: 10px;
+  height: 1px;
+  background: var(--c-accent);
+}
+
+/* Date de révision : c'est elle qui rend une version opposable, elle doit être
+   visible sans écraser le titre. */
+.updated {
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+
+/* Bandeau affiché en anglais : ces pages ne sont pas traduites, et c'est
+   délibéré (cf. le commentaire en tête de Legal.jsx). */
+.notice {
+  border-left: 3px solid var(--c-accent);
+  padding: 8px 0 8px 12px;
+  margin-bottom: 1.5rem;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--c-muted);
+}

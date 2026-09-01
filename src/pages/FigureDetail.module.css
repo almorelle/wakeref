@@ -22,13 +22,10 @@
 }
 .backBtn:hover { color: var(--c-accent-ink); }
 
-.titleRow {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 14px;
-}
+/* Le titre était flanqué d'un tampon de niveau, d'où la disposition en flex.
+   Le tampon retiré, il reste un bloc simple — et le titre retrouve toute la
+   largeur pour son `text-wrap: balance`. */
+.titleRow { margin-bottom: 14px; }
 .title {
   font-family: var(--font-title);
   font-weight: 400;
@@ -39,15 +36,6 @@
   color: var(--c-text);
   text-wrap: balance;
 }
-/* Le tampon (classe globale .stamp) est calé en haut à droite du titre. */
-.titleRow :global(.stamp) {
-  flex-shrink: 0;
-  width: 62px;
-  height: 62px;
-  font-size: 10px;
-  margin-top: 4px;
-}
-
 .metaRow {
   display: flex;
   align-items: center;
@@ -711,6 +699,5 @@ a.treeNode:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
 
 @media (max-width: 600px) {
   .header { padding: 1rem 1rem 1.25rem; }
-  .titleRow :global(.stamp) { width: 54px; height: 54px; font-size: 9px; }
   .videosGrid { column-gap: 0; }
 }

@@ -69,6 +69,29 @@
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  /* Accompagne la bascule `overCover` : le titre passe du crème à l'encre au
+     lieu de sauter, en même temps que le papier se pose sous la barre. */
+  transition: color var(--t-mid);
+}
+
+/* Au-dessus de la couverture, la barre flotte sur la vidéo : son encre y est
+   invisible, titre comme burger — et le burger est le seul accès à la
+   navigation, donc ce n'est pas qu'une affaire d'esthétique.
+   Plutôt que de recolorer chaque élément un par un, on redéfinit les tokens
+   sur la barre elle-même : les variables CSS étant héritées, tout son contenu
+   suit, y compris le sélecteur de langue qui vit dans un autre module et que
+   ce fichier ne peut pas atteindre autrement.
+   Ne s'applique que sur l'accueil non défilé : ailleurs la barre repose déjà
+   sur du papier. */
+.topbar.overCover {
+  --c-text: #f2eedf;
+  --c-muted: rgba(242, 238, 223, .72);
+  --c-faint: rgba(242, 238, 223, .45);
+  --c-rule: rgba(242, 238, 223, .35);
+  /* Le magenta du thème papier est trop foncé sur une vidéo sombre : on prend
+     celui de l'édition nuit, prévu pour ça. */
+  --c-accent: #e0559f;
+  --c-accent-ink: #ee7fba;
 }
 /* Picto vectoriel via mask : net à toute taille, thémable, teinté marque. */
 .logoMark {

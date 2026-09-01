@@ -38,6 +38,20 @@
 .submitBtn { align-self: flex-end; }
 
 /* Erreur : filet en marge plutôt qu'un pavé teinté */
+.consent {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--c-muted);
+  border-left: 3px solid var(--c-rule);
+  padding: 6px 0 6px 12px;
+  max-width: 64ch;
+}
+.consent a {
+  color: var(--c-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .error {
   font-size: 13.5px;
   color: var(--c-danger);

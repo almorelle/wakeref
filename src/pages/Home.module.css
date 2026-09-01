@@ -1,177 +1,467 @@
 .page { display: flex; flex-direction: column; }
 
-/* ══════════════ Couverture ══════════════ */
-.cover {
+/* ══════════════ Couverture plein écran ══════════════ */
+.hero {
   position: relative;
+  height: 100svh;
+  min-height: 540px;
   overflow: hidden;
-  isolation: isolate;
-  border-bottom: 1px dotted var(--c-rule);
-  /* remonte la couverture derrière la navbar transparente : le numéro démarre
-     tout en haut de la page ; le padding compense la hauteur de nav. */
+  background: #1a1420;
+  /* la couverture démarre sous la navbar transparente */
   margin-top: calc(-1 * var(--nav-h));
-  padding: calc(2.5rem + var(--nav-h)) 1.25rem 2.25rem;
 }
-/* Filigrane casque, surdimensionné, débordant à droite — la « photo » de
-   couverture, réduite à une forme d'encre. */
-.coverWatermark {
+/* Enchaînement des clips. Le clip entrant se révèle PAR-DESSUS le sortant, qui
+   reste opaque jusqu'à être intégralement recouvert, puis s'efface d'un coup —
+   invisible, puisqu'il est alors caché. Un vrai fondu croisé, les deux à 50 %,
+   laisserait transparaître le fond sombre du hero et creuserait la luminosité
+   au milieu de la transition. Les durées sont reprises côté JS (FADE_IN_MS,
+   HOLD_MS) : elles vont par paire. */
+.heroVid {
   position: absolute;
-  z-index: -1;
-  top: 52%;
-  right: -8%;
-  height: 145%;
-  transform: translateY(-50%) rotate(-8deg);
-  color: var(--c-text);
-  opacity: .07;
-  pointer-events: none;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  z-index: 0;
+  transition: opacity 0s linear 1s;
 }
-:global([data-theme='dark']) .coverWatermark { opacity: .04; }
-.coverInner {
-  position: relative;
+.heroVidOn {
+  opacity: 1;
+  z-index: 1;
+  transition: opacity .9s ease;
+}
+
+/* ── Raccord vidéo → papier ──
+   Trois principes pour qu'aucune ligne ne se voie :
+   1. ORDRE. Le fondu papier est le calque du dessus (en CSS le premier
+      dégradé listé est le plus haut) et le voile sombre passe dessous en
+      s'éteignant avant le bas — sinon il assombrit le papier au ras du
+      raccord et crée une barre nette avec la page.
+   2. COURBE. Les paliers suivent une progression douce plutôt qu'une rampe
+      linéaire, dont la cassure de pente se repère à l'œil.
+   3. GRAIN. Le hero porte le même grain que la page : sans lui, son dernier
+      pixel est un aplat lisse contre une page texturée, et la frontière se
+      devine à ça seul. */
+.grade {
+  position: absolute;
+  inset: 0;
+  z-index: 2; /* au-dessus des clips, qui occupent 0 et 1 */
+  background:
+    var(--grain) 0 0 / 3px 3px,
+    linear-gradient(180deg,
+      rgba(220, 210, 222, 0) 55%,
+      rgba(220, 210, 222, .03) 63%,
+      rgba(220, 210, 222, .08) 70%,
+      rgba(220, 210, 222, .17) 76%,
+      rgba(220, 210, 222, .30) 82%,
+      rgba(220, 210, 222, .48) 87%,
+      rgba(220, 210, 222, .68) 92%,
+      rgba(220, 210, 222, .87) 96%,
+      rgba(220, 210, 222, 1) 100%),
+    linear-gradient(180deg,
+      rgba(26, 20, 32, .4) 0%,
+      transparent 18%,
+      transparent 40%,
+      rgba(26, 20, 32, .42) 62%,
+      rgba(26, 20, 32, .30) 74%,
+      transparent 84%),
+    /* Voile d'encre côté gauche : c'est lui qui protège la colonne de texte.
+       Porté de .4/58 % à .6/70 % — mesuré sur quatre clips, ça fait passer le
+       titre de 1.95:1 à 2.71:1 dans le pire cas. Au-delà de .65 le gain
+       plafonne et le bord gauche de la vidéo devient un aplat. */
+    linear-gradient(90deg, rgba(26, 20, 32, .6), transparent 70%);
+}
+/* Sur fond d'encre, le fondu doit viser la couleur du thème sombre. */
+:global([data-theme='dark']) .grade {
+  background:
+    var(--grain) 0 0 / 3px 3px,
+    linear-gradient(180deg,
+      rgba(26, 20, 32, 0) 55%,
+      rgba(26, 20, 32, .05) 63%,
+      rgba(26, 20, 32, .12) 70%,
+      rgba(26, 20, 32, .22) 76%,
+      rgba(26, 20, 32, .36) 82%,
+      rgba(26, 20, 32, .55) 87%,
+      rgba(26, 20, 32, .74) 92%,
+      rgba(26, 20, 32, .9) 96%,
+      rgba(26, 20, 32, 1) 100%),
+    linear-gradient(180deg,
+      rgba(26, 20, 32, .45) 0%,
+      transparent 18%,
+      transparent 40%,
+      rgba(26, 20, 32, .45) 62%,
+      rgba(26, 20, 32, .32) 74%,
+      transparent 84%),
+    linear-gradient(90deg, rgba(26, 20, 32, .65), transparent 70%);
+}
+
+.heroInner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Descendu au plus près de l'invite à défiler. La limite n'est pas
+     arbitraire : le fondu vers le papier vaut .17 à 76 % de hauteur et .30 à
+     82 %. Au-delà, le texte crème perd son fond sombre et devient illisible —
+     c'est le plancher, pas un réglage esthétique. */
+  bottom: 18vh;
+  z-index: 3;
+  width: 100%;
   max-width: var(--page-max);
   margin: 0 auto;
-  animation: coverRise .6s ease both;
+  padding: 0 1.25rem;
+  animation: heroRise .7s ease both;
 }
-@keyframes coverRise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes heroRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
-/* Ligne d'ours, en haut de couverture : « WAKEREF — Wakeboard & Wakeskate » */
 .kicker {
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .18em;
   text-transform: uppercase;
-  color: var(--c-muted);
-  margin-bottom: 18px;
+  /* Opacité pleine plutôt que le #f2eedfcc d'origine : sans ruban, ce surtitre
+     descend à 1.4:1 sur un clip clair, autant ne pas l'affaiblir davantage. */
+  color: #f2eedf;
+  margin-bottom: 14px;
 }
-.kicker :global(.wordmark) { font-size: 15px; letter-spacing: .06em; color: var(--c-text); }
 
 .title {
   font-family: var(--font-title);
   font-weight: 400;
-  font-size: clamp(52px, 11.5vw, 118px);
+  font-size: clamp(44px, 9vw, 92px);
   letter-spacing: .005em;
-  line-height: .84;
+  line-height: .86;
   text-transform: uppercase;
-  max-width: 15ch;
+  max-width: 14ch;
   text-wrap: balance;
-  color: var(--c-text);
-  margin-bottom: 14px;
-}
-.standfirst {
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--c-muted);
-  max-width: 52ch;
+  color: #f2eedf;
+  margin-bottom: 18px;
 }
 
-/* Recherche : un simple souligné d'encre, pas de champ encadré. */
 .searchWrap {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 2rem;
   max-width: 560px;
-  padding: 10px 2px;
-  border-bottom: 2px solid var(--c-text);
+  padding: 12px 2px;
+  border-bottom: 2px solid #f2eedf;
   transition: border-color var(--t-fast);
 }
 .searchWrap:focus-within { border-bottom-color: var(--c-accent); }
-.searchWrap i { color: var(--c-text); flex-shrink: 0; transition: color var(--t-fast); }
+.searchWrap i { color: #f2eedf; flex-shrink: 0; transition: color var(--t-fast); }
 .searchWrap:focus-within i { color: var(--c-accent); }
 .searchInput {
   flex: 1;
   min-width: 0;
   font-size: 17px;
-  color: var(--c-text);
+  color: #f2eedf;
   background: none;
   border: none;
   outline: none;
 }
 .searchInput:focus-visible { outline: none; }
-.searchInput::placeholder { color: var(--c-faint); }
-.clearBtn { color: var(--c-muted); padding: 2px; display: flex; align-items: center; }
-.clearBtn:hover { color: var(--c-accent-ink); }
+.searchInput::placeholder { color: #f2eedf99; }
+.clearBtn { color: #f2eedfcc; padding: 2px; display: flex; align-items: center; }
+.clearBtn:hover { color: #f2eedf; }
 
-/* Note manuscrite sous la barre, légèrement de travers */
-.coverNote {
-  font-size: 13px;
-  margin-top: 12px;
-  transform: rotate(-1.2deg);
-  transform-origin: left center;
-  max-width: 560px;
-}
-
-/* ══════════════ Résultats de recherche ══════════════ */
-.results { padding-top: 1.75rem; }
-.empty { font-size: 14px; color: var(--c-muted); padding: 1rem 0; }
-
-/* ══════════════ Sommaire ══════════════ */
-.toc { padding-top: 2.25rem; }
-.tocTitle { margin-bottom: 4px; }
-.tocItem {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  text-align: left;
-  padding: 15px 0 14px;
-  border-bottom: 1px dotted var(--c-rule);
-  transition: border-color var(--t-fast);
-  animation: coverRise .5s ease both;
-  animation-delay: calc(var(--i, 0) * 70ms + .1s);
-}
-.tocItem:hover { border-bottom-color: var(--c-accent); }
-.tocHead {
+/* Légende du clip : sous la recherche, dans la zone assombrie où elle reste
+   lisible. Elle rejoue son apparition à chaque changement de clip. */
+.credit {
   display: flex;
   align-items: baseline;
-  gap: 14px;
-}
-.tocNum {
-  font-family: var(--font-body);
-  font-size: 11px;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+  max-width: 560px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: .1em;
-  color: var(--c-accent-ink);
-  flex-shrink: 0;
-  width: 1.5em;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  animation: creditIn .6s ease both;
 }
-.tocName {
+@keyframes creditIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* Ruban collé — l'unique moyen d'être lisible quel que soit le plan de la
+   vidéo. Mesuré sur quatre clips, le texte crème sur l'image tombe à 1.3:1 au
+   pire ; sur ruban il ne dépend plus de rien. Deux étiquettes le portent : le
+   nom du trick et l'auteur·ice. Découpes et dévers volontairement
+   TOUS différents, sinon elles lisent comme un composant répété plutôt que
+   comme des morceaux collés à la main. Pas de séparateur entre les deux
+   crédits : deux rubans distincts se séparent d'eux-mêmes. */
+.tape {
+  background: #fff;
+  padding: 4px 9px 3px;
+}
+.creditTrick {
+  /* Encre en dur, PAS `--c-text` : ce token s'éclaircit en édition nuit et le
+     nom disparaissait alors sur le ruban blanc, qui lui ne change pas. Même
+     raison que le magenta figé de `.creditBy` juste en dessous. */
+  color: #2a1e30;                /* 15.8:1 sur blanc */
+  transform: rotate(1.3deg);
+  clip-path: polygon(0 0, 100% 6%, 100% 100%, 0 94%);
+}
+a.creditTrick { transition: color var(--t-fast), transform var(--t-fast); }
+a.creditTrick:hover { color: #8f2a64; transform: rotate(0deg); }
+/* L'auteur·ice prend l'accent : c'est le crédit qu'on veut mettre en avant.
+   Valeur en dur et non `--c-accent` : la couverture est toujours sur fond
+   sombre, quel que soit le thème, et le magenta du thème papier (#c43d8c) y
+   serait trop foncé. On reprend donc celui de l'édition nuit. */
+/* Ruban collé : le crédit de l'auteur·ice passe sur fond clair, seule zone du
+   hero qui ne dépend plus du plan de la vidéo pour être lisible. Le magenta
+   repasse à celui du thème papier (#c43d8c, 4.78:1 sur blanc) — le rose clair
+   de l'édition nuit, prévu pour un fond sombre, ne donnerait que 3.52:1 et
+   échouerait au seuil AA de 4.5. Bords coupés de
+   travers et léger dévers : c'est ce qui fait lire « scotch » plutôt que
+   « bouton ». */
+.creditBy {
+  color: #c43d8c;
+  transform: rotate(-1.8deg);
+  clip-path: polygon(0 7%, 100% 0, 100% 93%, 0 100%);
+}
+a.creditBy {
+  transition: color var(--t-fast), transform var(--t-fast);
+}
+/* Au survol le ruban se redresse : plus juste qu'un soulignement, qui n'a pas
+   de sens sur une étiquette collée. */
+a.creditBy:hover { color: #8f2a64; transform: rotate(0deg); }
+
+/* Invite à défiler : elle est dans la zone déjà papier, donc en encre. */
+.down {
+  position: absolute;
+  left: 50%;
+  bottom: 3.5vh;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  color: var(--c-muted);
+}
+.down span { font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
+.down i {
+  display: block;
+  width: 1px;
+  height: 26px;
+  background: var(--c-muted);
+  animation: drop 1.8s ease-in-out infinite;
+}
+.down i::after {
+  content: "";
+  position: absolute;
+  margin-left: -3px;
+  margin-top: -5px;
+  width: 7px;
+  height: 7px;
+  border-right: 1px solid var(--c-muted);
+  border-bottom: 1px solid var(--c-muted);
+  transform: rotate(45deg);
+}
+@keyframes drop { 0%, 100% { transform: translateY(0); opacity: .7 } 50% { transform: translateY(6px); opacity: 1 } }
+
+/* ══════════════ Résultats de recherche ══════════════ */
+/* Hauteur d'écran réservée, quelle que soit la largeur. Dès qu'on tape, les
+   rubriques et les rangées disparaissent au profit des seuls résultats : sans
+   cette réserve, le document redevient trop court pour qu'on puisse défiler
+   jusqu'à la barre, et les résultats restent sous la ligne de flottaison. */
+.results { padding-top: 1.75rem; min-height: 100vh; }
+.empty { font-size: 14px; color: var(--c-muted); padding: 1rem 0; }
+
+/* ══════════════ Les quatre modules ══════════════ */
+/* Blocs empilés, image d'un côté et texte de l'autre, les côtés alternant
+   d'un bloc à l'autre. Rien à voir avec les listes plus bas : c'est le rythme
+   de double page qui les distingue. */
+.modules { padding-top: 2rem; }
+.mod {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: center;
+  text-align: left;
+  padding: 2.25rem 0;
+  border-bottom: 1px dotted var(--c-rule);
+}
+.mod:first-child { padding-top: 0; }
+.modImg {
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--c-surface);
+}
+/* L'image est plus haute que son cadre et centrée : la marge de 12 % en haut
+   comme en bas est ce dans quoi la dérive au défilement se déplace, sans
+   jamais découvrir de vide. Elle doit rester supérieure à l'amplitude de
+   `modDrift` une fois le zoom de survol appliqué (8 % × 1.04 ≈ 8.3 % de la
+   hauteur de l'image, soit ≈ 10.3 % de celle du cadre). */
+.modImg img {
+  position: absolute;
+  left: 0;
+  top: -12%;
+  width: 100%;
+  height: 124%;
+  object-fit: cover;
+  display: block;
+  transition: transform .5s ease;
+}
+.modBody { display: flex; flex-direction: column; align-items: flex-start; }
+.modNum {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  color: var(--c-accent-ink);
+  margin-bottom: 8px;
+}
+.modTitle {
   font-family: var(--font-title);
-  font-size: clamp(30px, 5.5vw, 44px);
-  line-height: .95;
+  font-size: clamp(38px, 7vw, 62px);
+  font-weight: 400;
+  line-height: .9;
   letter-spacing: .01em;
   text-transform: uppercase;
   color: var(--c-text);
   transition: color var(--t-fast);
 }
-.tocItem:hover .tocName { color: var(--c-accent-ink); }
-/* Points de suite : relient le titre de rubrique à sa flèche. */
-.tocLeader {
-  flex: 1;
-  min-width: 20px;
-  border-bottom: 1px dotted var(--c-rule);
-  transform: translateY(-6px);
-}
-.tocGo {
-  flex-shrink: 0;
-  color: var(--c-faint);
-  align-self: center;
-  transition: color var(--t-fast), transform var(--t-fast);
-}
-.tocItem:hover .tocGo { color: var(--c-accent); transform: translateX(3px); }
-.tocSub {
-  font-size: 14px;
-  line-height: 1.5;
+.mod:hover .modTitle { color: var(--c-accent-ink); }
+.modText {
+  font-size: 15px;
+  line-height: 1.55;
   color: var(--c-muted);
-  padding-left: calc(1.5em + 14px);
-  max-width: 58ch;
+  margin-top: 12px;
+  max-width: 44ch;
+}
+.modGo {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 18px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  border-bottom: 2px solid var(--c-accent);
+  padding-bottom: 3px;
+  transition: color var(--t-fast);
+}
+.mod:hover .modGo { color: var(--c-accent-ink); }
+@media (min-width: 800px) {
+  .mod { grid-template-columns: 1fr 1fr; gap: 44px; }
+  .mod:nth-child(even) .modImg { order: 2; }
 }
 
 /* ══════════════ Rubriques (listes de figures) ══════════════ */
 .section { padding-top: 2.75rem; }
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted var(--c-rule);
+  margin-bottom: 14px;
+}
+.sectionTitle {
+  font-family: var(--font-body);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.seeAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  border-bottom: 2px solid var(--c-accent);
+  padding-bottom: 2px;
+  white-space: nowrap;
+  transition: color var(--t-fast);
+}
+.seeAll:hover { color: var(--c-accent-ink); }
+
+/* Résultats de recherche : liste d'index, comme au catalogue. */
 .list { display: grid; grid-template-columns: 1fr; }
 @media (min-width: 860px) {
   /* Deux colonnes de sommaire sur grand écran : les filets s'alignent. */
   .list { grid-template-columns: 1fr 1fr; column-gap: 44px; }
+}
+
+/* ══════════════ Vignettes de figure, en rangée qui défile ══════════════ */
+/* Le rail déborde volontairement de la colonne pour que la dernière vignette
+   soit coupée au bord de l'écran : c'est ce qui signale qu'on peut faire
+   défiler, sans flèche ni barre. */
+.rail {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* Le rail déborde jusqu'au bord de l'écran, puis se recale par son padding :
+     la gouttière vient du même token que `.page-container`, sinon les deux
+     divergent sous 600 px et la première vignette sort de l'écran. */
+  margin-inline: calc(-1 * var(--page-pad));
+  padding-inline: var(--page-pad);
+  padding-bottom: 4px;
+  /* Le point d'accroche tient compte de la gouttière : sans ça, l'aimantation
+     colle la première vignette au bord du conteneur et mange le padding. */
+  scroll-padding-inline-start: var(--page-pad);
+}
+.card {
+  flex: 0 0 auto;
+  width: min(58vw, 214px);
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+}
+.cardMedia {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: var(--c-surface);
+}
+.cardMedia video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .5s ease;
+}
+.cardNoClip {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-faint);
+  font-size: 20px;
+}
+.cardName {
+  font-family: var(--font-title);
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .015em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  margin-top: 9px;
+  transition: color var(--t-fast);
+}
+.card:hover .cardName { color: var(--c-accent-ink); }
+.cardSub {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  margin-top: 4px;
 }
 
 /* ══════════════ Appel à contribution ══════════════ */
@@ -184,13 +474,13 @@
   flex-direction: column;
   gap: 1.5rem;
 }
-.ctaStats { display: flex; gap: 2.5rem; }
 @media (min-width: 860px) {
   /* Sur grand écran, les chiffres tiennent la colonne de gauche et l'appel
      occupe la mesure de droite : la double page se remplit. */
   .cta { display: grid; grid-template-columns: minmax(200px, 1fr) 2fr; gap: 2.5rem; }
   .ctaStats { flex-direction: column; gap: 1.5rem; }
 }
+.ctaStats { display: flex; gap: 2.5rem; }
 .ctaStat { display: flex; flex-direction: column; gap: 2px; }
 .ctaNum {
   font-family: var(--font-title);
@@ -208,12 +498,7 @@
   line-height: 1.4;
   margin-top: 6px;
 }
-.ctaBody {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-}
+.ctaBody { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
 .ctaTitle {
   font-family: var(--font-title);
   font-size: 30px;
@@ -224,12 +509,7 @@
   color: var(--c-text);
   max-width: 22ch;
 }
-.ctaText {
-  font-size: 14.5px;
-  color: var(--c-muted);
-  line-height: 1.6;
-  max-width: 56ch;
-}
+.ctaText { font-size: 14.5px; color: var(--c-muted); line-height: 1.6; max-width: 56ch; }
 .ctaBtn { margin-top: 6px; }
 
 /* ══════════════ Bandeau World Cable Tricks ══════════════ */
@@ -248,6 +528,7 @@
   height: 48px;
   object-fit: contain;
   flex-shrink: 0;
+  transition: transform var(--t-mid);
 }
 .wctBody { flex: 1; min-width: 0; }
 .wctTitle {
@@ -259,11 +540,7 @@
   color: var(--c-text);
   margin-bottom: 4px;
 }
-.wctText {
-  font-size: 13.5px;
-  color: var(--c-muted);
-  line-height: 1.5;
-}
+.wctText { font-size: 13.5px; color: var(--c-muted); line-height: 1.5; }
 .wctBtn {
   flex-shrink: 0;
   display: inline-flex;
@@ -288,19 +565,85 @@
 }
 
 @media (max-width: 760px) {
-  /* couverture compactée : on resserre le vertical pour faire remonter la
-     barre de recherche (action n°1) dans le premier écran. */
-  .cover { padding: calc(1.5rem + var(--nav-h)) 1.25rem 1.75rem; }
-  .kicker { margin-bottom: 14px; }
-  .searchWrap { margin-top: 1.5rem; }
-  .standfirst { font-size: 14px; }
-  .tocSub { padding-left: 0; font-size: 13.5px; }
+  /* La légende passe sous la recherche pour ne pas croiser le titre. */
+  .heroInner { bottom: 16vh; }
+  .credit { font-size: 9.5px; letter-spacing: .1em; }
+  .modText { font-size: 14px; }
   .ctaStats { gap: 1.75rem; }
   .ctaNum { font-size: 44px; }
-  /* Quand on tape, le contenu passe du sommaire aux seuls résultats (souvent
-     un spinner ou peu de lignes) : la page se raccourcit et le scroll qui
-     épinglait la barre sous la navbar (handleSearchFocus) saute vers le haut,
-     ramenant la couverture. On réserve une hauteur d'écran à la zone de
-     résultats pour garder la barre épinglée, clavier ouvert. */
-  .results { min-height: 100vh; }
+}
+
+/* ══════════════ Animations au défilement ══════════════
+   Pilotées par `animation-timeline: view()` : la progression suit la position
+   de l'élément dans le viewport, sans une ligne de JavaScript — ni observateur,
+   ni classe à poser. Le tout est sous `@supports` : là où la propriété n'existe
+   pas encore (Firefox 154 la garde derrière un drapeau), le même effet est
+   rejoué en JavaScript par `useScrollDrive` — les valeurs des deux
+   implémentations doivent rester alignées.
+
+   Les deux animations utilisent `translate` et non `transform` : cette
+   propriété est indépendante, elle se compose donc avec le `transform: scale()`
+   du survol au lieu de l'écraser. */
+@supports (animation-timeline: view()) {
+  /* Apparition : le bloc monte et se révèle en entrant dans l'écran. */
+  .mod {
+    animation-name: modReveal;
+    animation-duration: auto;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    animation-timeline: view();
+    animation-range: entry 12% cover 34%;
+  }
+  /* Dérive : l'image glisse dans son cadre pendant toute la traversée de
+     l'écran. L'amplitude est bornée par la marge de débattement de `.modImg
+     img`, pas par le goût : au-delà, le cadre découvre du vide. */
+  .modImg img {
+    animation-name: modDrift;
+    animation-duration: auto;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+    animation-timeline: view();
+    animation-range: cover 0% cover 100%;
+  }
+}
+@keyframes modReveal {
+  from { opacity: 0; translate: 0 22px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+@keyframes modDrift {
+  from { translate: 0 -8%; }
+  to   { translate: 0 8%; }
+}
+
+/* ══════════════ Zoom des images ══════════════
+   Le survol n'existe pas au doigt, et un `:hover` non protégé reste collé
+   après un appui sur certains navigateurs mobiles — la vignette resterait
+   zoomée. On sépare donc les deux gestes : survol sur les périphériques qui
+   pointent, appui sur les autres. */
+@media (hover: hover) {
+  .mod:hover .modImg img,
+  .card:hover .cardMedia video { transform: scale(1.04); }
+  .wctBanner:hover .wctLogo { transform: scale(1.06); }
+}
+@media (hover: none) {
+  /* Transition raccourcie : un appui dure moins qu'un survol, une montée en
+     500 ms n'aurait pas le temps d'aboutir avant le relâchement. */
+  .modImg img,
+  .cardMedia video { transition-duration: .18s; }
+  .card:active .cardMedia video { transform: scale(1.04); }
+  .wctBanner:active .wctLogo { transform: scale(1.06); }
+
+  .mod:active .modImg img { transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heroVid { transition: none; }
+  .mod, .modImg img { animation: none; opacity: 1; translate: none; }
+  .down i { animation: none; }
+  .mod:hover .modImg img,
+  .card:hover .cardMedia video,
+  .card:active .cardMedia video,
+  .mod:active .modImg img,
+  .wctBanner:hover .wctLogo,
+  .wctBanner:active .wctLogo { transform: none; }
 }

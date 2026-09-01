@@ -1,0 +1,337 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Permanent+Marker&family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>WakeRef — proto C · mix</title>
+<style>
+  :root{
+    --c-bg:#dcd2de; --c-surface:#d4c8d7;
+    --c-rule:#2a1e3055; --c-text:#2a1e30; --c-muted:#635268; --c-faint:#7c6b82;
+    --c-accent:#c43d8c; --c-accent-ink:#a32d72;
+    --f-title:'Bebas Neue',sans-serif; --f-body:'Archivo',system-ui,sans-serif; --f-hand:'Permanent Marker',cursive;
+    --page:1040px; --nav:56px;
+    --grain:radial-gradient(rgba(42,30,48,.05) 1px, transparent 1px);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  *{scrollbar-width:none}*::-webkit-scrollbar{display:none}
+  body{background-color:var(--c-bg);background-image:var(--grain);background-size:3px 3px;
+       color:var(--c-text);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+
+  .bar{position:sticky;top:0;z-index:50;height:var(--nav);display:flex;align-items:center;
+       justify-content:space-between;padding:0 max(1.25rem,calc((100% - var(--page))/2));
+       border-bottom:1px dotted transparent;transition:background-color .2s,border-color .2s}
+  .bar.solid{background-color:var(--c-bg);background-image:var(--grain);background-size:3px 3px;border-bottom-color:var(--c-rule)}
+  .burger{display:flex;flex-direction:column;justify-content:center;gap:5px;width:34px;height:34px;margin-left:-6px}
+  .burger span{display:block;width:21px;height:2px;background:var(--c-text)}
+  .wm{font-family:var(--f-title);font-size:25px;letter-spacing:.05em;text-transform:uppercase;line-height:1;
+      position:absolute;left:50%;transform:translateX(-50%)}
+  .tools{display:flex;align-items:center;gap:10px;margin-right:-6px}
+  .tools button{width:32px;height:32px;display:flex;align-items:center;justify-content:center}
+  .lang{font-size:11px;font-weight:700;letter-spacing:.12em}
+  .lang b{border-bottom:2px solid var(--c-accent);padding-bottom:2px}
+  .lang span{color:var(--c-faint)}
+
+  .wrap{max-width:var(--page);margin:0 auto;padding:0 1.25rem 4rem}
+  .sec{padding-top:2.75rem}
+  .sec-t{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--c-muted);
+         padding-bottom:8px;border-bottom:1px dotted var(--c-rule);margin-bottom:14px}
+
+  /* sommaire */
+  .toc-i{width:100%;display:flex;flex-direction:column;gap:5px;text-align:left;padding:15px 0 14px;
+         border-bottom:1px dotted var(--c-rule);transition:border-color .12s}
+  .toc-i:hover{border-bottom-color:var(--c-accent)}
+  .toc-h{display:flex;align-items:baseline;gap:14px}
+  .toc-n{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--c-accent-ink);width:1.5em;flex:none}
+  .toc-name{font-family:var(--f-title);font-size:clamp(30px,5.5vw,44px);line-height:.95;letter-spacing:.01em;
+            text-transform:uppercase;transition:color .12s}
+  .toc-i:hover .toc-name{color:var(--c-accent-ink)}
+  .toc-l{flex:1;min-width:20px;border-bottom:1px dotted var(--c-rule);transform:translateY(-6px)}
+  .toc-s{font-size:14px;line-height:1.5;color:var(--c-muted);padding-left:calc(1.5em + 14px);max-width:58ch}
+
+  /* ligne d'index */
+  .row{display:flex;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px dotted var(--c-rule);
+       transition:padding-left .12s,border-color .12s}
+  .row:hover{padding-left:8px;border-bottom-style:solid;border-bottom-color:var(--c-accent)}
+  .row-b{flex:1;min-width:0}
+  .row-n{font-family:var(--f-title);font-size:25px;line-height:1;letter-spacing:.015em;text-transform:uppercase;
+         display:block;margin-bottom:5px;transition:color .12s}
+  .row:hover .row-n{color:var(--c-accent-ink)}
+  .tags{display:flex;gap:0 7px;flex-wrap:wrap}
+  .tag{font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--c-muted)}
+  .tag.k{color:var(--c-text);font-weight:700}
+  .tag+.tag::before{content:"·";margin-right:7px;color:var(--c-faint);font-weight:400}
+  .dots{display:inline-flex;gap:3px;flex:none}
+  .dot{width:5px;height:5px;background:#2a1e3030}
+  .dot.on{background:var(--c-text)}.dot.hi{background:var(--c-accent)}
+
+  /* appel à contribution + partenaire */
+  .cta{margin-top:3rem;padding:1.75rem 0;border-top:2px solid var(--c-text);border-bottom:1px dotted var(--c-rule);
+       display:grid;gap:2.5rem}
+  @media(min-width:860px){.cta{grid-template-columns:minmax(200px,1fr) 2fr}}
+  .nums{display:flex;gap:2.5rem}
+  @media(min-width:860px){.nums{flex-direction:column;gap:1.5rem}}
+  .num{font-family:var(--f-title);font-size:54px;line-height:.85;color:var(--c-accent-ink)}
+  .numl{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--c-muted);
+        max-width:15ch;line-height:1.4;margin-top:6px}
+  .cta h2{font-family:var(--f-title);font-size:30px;font-weight:400;line-height:1;text-transform:uppercase;max-width:22ch}
+  .cta p{font-size:14.5px;color:var(--c-muted);line-height:1.6;max-width:56ch;margin-top:10px}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;font-size:11.5px;font-weight:700;
+       letter-spacing:.12em;text-transform:uppercase;margin-top:1rem}
+  .btn-a{background:var(--c-accent);color:#fff}
+  .wct{margin-top:2rem;padding:1.25rem 0;border-bottom:1px dotted var(--c-rule);display:flex;align-items:center;gap:1.25rem}
+  .wct-t{font-family:var(--f-title);font-size:22px;line-height:1;text-transform:uppercase}
+  .wct-x{font-size:13.5px;color:var(--c-muted)}
+  .wct-b{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+         border-bottom:2px solid var(--c-accent);padding:6px 0;white-space:nowrap}
+  .note{font-family:var(--f-hand);color:var(--c-accent-ink)}
+
+  .bar{position:fixed;left:0;right:0;top:0}
+  .bar:not(.solid) .wm,.bar:not(.solid) .lang b,.bar:not(.solid) .tools button{color:#f2eedf}
+  .bar:not(.solid) .burger span{background:#f2eedf}
+  .bar:not(.solid) .lang span{color:#f2eedfaa}
+
+  /* ══ Couverture plein écran ══
+     Le dégradé se termine sur la couleur du papier : la vidéo se fond dans la
+     page au lieu de s'arrêter net (technique reprise de home-immersive). */
+  .hero{position:relative;height:100svh;min-height:540px;overflow:hidden;background:#1a1420}
+  .hero img,.hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .hero video{opacity:0;transition:opacity .9s ease}
+  .hero video.show{opacity:1}
+  /* ══ Raccord vidéo → papier ══
+     Trois principes pour qu'aucune ligne ne se voie :
+     1. ORDRE. Le fondu papier est le calque du DESSUS (en CSS le premier
+        dégradé listé est le plus haut). Le voile sombre passe dessous et
+        s'éteint avant le bas : sinon il assombrit le papier au ras du raccord
+        et crée une barre nette avec la page.
+     2. COURBE. Les paliers suivent une progression douce (3 %, 8 %, 17 %…)
+        au lieu d'une rampe linéaire : sans ça l'œil voit l'instant où le
+        dégradé démarre.
+     3. GRAIN. Le hero reçoit le même grain que la page, sur toute sa hauteur.
+        Sans lui, le dernier pixel du hero est un aplat lisse et la page en
+        dessous est texturée — la frontière se devine à ça seul. */
+  .grade{position:absolute;inset:0;z-index:1;background:
+    radial-gradient(rgba(42,30,48,.05) 1px, transparent 1px) 0 0 / 3px 3px,
+    linear-gradient(180deg,
+      rgba(220,210,222,0) 55%,
+      rgba(220,210,222,.03) 63%,
+      rgba(220,210,222,.08) 70%,
+      rgba(220,210,222,.17) 76%,
+      rgba(220,210,222,.30) 82%,
+      rgba(220,210,222,.48) 87%,
+      rgba(220,210,222,.68) 92%,
+      rgba(220,210,222,.87) 96%,
+      rgba(220,210,222,1) 100%),
+    linear-gradient(180deg,
+      rgba(26,20,32,.4) 0%,
+      transparent 18%,
+      transparent 40%,
+      rgba(26,20,32,.42) 62%,
+      rgba(26,20,32,.30) 74%,
+      transparent 84%),
+    linear-gradient(90deg,rgba(26,20,32,.4),transparent 58%)}
+  /* Copie remontée : elle ne colle plus au bas de l'écran. */
+  .hero-in{position:absolute;left:0;right:0;bottom:29vh;z-index:2;width:100%;max-width:var(--page);
+           margin:0 auto;padding:0 1.25rem}
+  .hero .kick{font-size:10.5px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+              color:#f2eedfcc;margin-bottom:14px}
+  .hero .kick b{font-family:var(--f-title);font-size:15px;letter-spacing:.06em;color:#f2eedf;font-weight:400}
+  .hero h1{font-family:var(--f-title);font-weight:400;font-size:clamp(44px,9vw,92px);letter-spacing:.005em;
+           line-height:.86;text-transform:uppercase;max-width:14ch;color:#f2eedf;margin-bottom:18px}
+  .hero .search{display:flex;align-items:center;gap:12px;max-width:560px;padding:12px 2px;
+                border-bottom:2px solid #f2eedf;color:#f2eedf}
+  .hero .search input{flex:1;font:inherit;font-size:17px;background:none;border:0;outline:none;color:#f2eedf}
+  .hero .search input::placeholder{color:#f2eedf99}
+
+  /* Invite à défiler : libellé + flèche, franchement plus lisible qu'un chevron seul. */
+  .down{position:absolute;left:50%;bottom:3.5vh;transform:translateX(-50%);z-index:2;
+        display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--c-muted)}
+  .down span{font-size:10px;font-weight:700;letter-spacing:.22em;text-transform:uppercase}
+  .down i{display:block;width:1px;height:26px;background:var(--c-muted);animation:drop 1.8s ease-in-out infinite}
+  .down i::after{content:"";position:absolute;margin-left:-3px;margin-top:-5px;width:7px;height:7px;
+                 border-right:1px solid var(--c-muted);border-bottom:1px solid var(--c-muted);transform:rotate(45deg)}
+  @keyframes drop{0%,100%{transform:translateY(0);opacity:.7}50%{transform:translateY(6px);opacity:1}}
+  @media(prefers-reduced-motion:reduce){.down i{animation:none}}
+
+  .switch{position:fixed;right:12px;bottom:12px;z-index:80;display:flex;flex-direction:column;gap:5px;
+          background:rgba(26,20,32,.9);padding:9px 11px;font-size:10px;letter-spacing:.1em;
+          text-transform:uppercase;color:#f2eedf}
+  .switch b{font-weight:700;color:#f2eedf88;font-size:9px}
+  .switch button{color:#f2eedf99;text-align:left;padding:1px 0}
+  .switch button.on{color:#f2eedf;text-decoration:underline;text-decoration-color:var(--c-accent);
+                    text-underline-offset:3px;text-decoration-thickness:2px}
+
+  /* ══ Rubriques : blocs empilés, image d'un côté, texte de l'autre ══
+     Pas de titre de section, pas de rail. Les côtés alternent d'un bloc à
+     l'autre — c'est ce qui donne le rythme de double page. */
+  .mods{padding-top:2.5rem}
+  .mod{display:grid;grid-template-columns:1fr;gap:16px;align-items:center;
+       padding:2.25rem 0;border-bottom:1px dotted var(--c-rule)}
+  .mod:first-child{padding-top:0}
+  .mod .im{aspect-ratio:4/3;overflow:hidden;background:var(--c-surface)}
+  .mod .im img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s ease}
+  .mod:hover .im img{transform:scale(1.03)}
+  .mod .nu{font-size:10px;font-weight:700;letter-spacing:.16em;color:var(--c-accent-ink);margin-bottom:8px}
+  .mod .ti{font-family:var(--f-title);font-size:clamp(38px,7vw,62px);line-height:.9;letter-spacing:.01em;
+           text-transform:uppercase;transition:color .12s}
+  .mod:hover .ti{color:var(--c-accent-ink)}
+  .mod .de{font-size:15px;line-height:1.55;color:var(--c-muted);margin-top:12px;max-width:44ch}
+  .mod .go{display:inline-block;margin-top:18px;font-size:10.5px;font-weight:700;letter-spacing:.12em;
+           text-transform:uppercase;color:var(--c-text);border-bottom:2px solid var(--c-accent);padding-bottom:3px}
+  @media(min-width:800px){
+    .mod{grid-template-columns:1fr 1fr;gap:44px}
+    .mod:nth-child(even) .im{order:2}
+  }
+
+  /* ══ Vignettes vidéo ══ */
+  .sechead{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+           padding-bottom:8px;border-bottom:1px dotted var(--c-rule);margin-bottom:16px}
+  .sechead h2{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--c-muted)}
+  .seeall{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--c-text);
+          border-bottom:2px solid var(--c-accent);padding-bottom:2px;white-space:nowrap}
+  .rail{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -1.25rem;padding:0 1.25rem 4px}
+  .pc{flex:0 0 auto;width:min(58vw,214px);scroll-snap-align:start}
+  .pv{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--c-surface)}
+  .pv video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+  .pv .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--c-faint);
+          font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+  .pv .stamp{position:absolute;top:8px;right:8px;width:44px;height:44px;border-radius:50%;
+             border:2px solid var(--c-accent);color:var(--c-accent);display:flex;align-items:center;
+             justify-content:center;text-align:center;font-family:var(--f-hand);font-size:9px;line-height:1.05;
+             transform:rotate(-10deg);mix-blend-mode:multiply;background:rgba(220,210,222,.35)}
+  .pv .play{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:44px;height:44px;
+            border-radius:50%;border:2px solid #f2eedf;display:grid;place-items:center;color:#f2eedf;transition:opacity .2s}
+  .pc:hover .play{opacity:0}
+  .pc-n{font-family:var(--f-title);font-size:21px;line-height:1;letter-spacing:.015em;text-transform:uppercase;margin-top:9px}
+  .pc-s{font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--c-muted);margin-top:4px}
+  .wrap{padding-top:0}
+</style></head><body>
+<header class="bar" id="bar">
+  <button class="burger"><span></span><span></span></button>
+  <div class="wm">WakeRef</div>
+  <div class="tools">
+    <button aria-label="Thème">☾</button>
+    <span class="lang"><b>FR</b> <span>/ EN</span></span>
+    <button aria-label="Rechercher">⌕</button>
+  </div>
+</header>
+<section class="hero" id="hero">
+  <img id="heroImg" src="home-photo-placeholder.jpg" alt="" hidden>
+  <video id="v0" class="show" src="1779789499255.mp4" muted loop playsinline preload="auto"></video>
+  <video id="v1" src="1779789817819.mp4" muted loop playsinline preload="auto"></video>
+  <div class="grade"></div>
+  <div class="hero-in">
+    <p class="kick"><b>WakeRef</b> — Wakeboard &amp; Wakeskate</p>
+    <h1>Tous les tricks, une seule référence.</h1>
+    <div class="search">⌕<input placeholder="Rechercher une figure…"></div>
+  </div>
+  <div class="down"><span>Scroll</span><i></i></div>
+</section>
+
+<div class="wrap">
+  <div class="mods" id="mods"></div>
+  <section class="sec">
+    <div class="sechead"><h2>Figures les plus consultées</h2><span class="seeall">Tout voir →</span></div>
+    <div class="rail" id="railMost"></div>
+  </section>
+  <section class="sec">
+    <div class="sechead"><h2>Dernières vidéos ajoutées</h2><span class="seeall">Tout voir →</span></div>
+    <div class="rail" id="railNew"></div>
+  </section>
+  <section class="cta">
+    <div class="nums">
+      <div><div class="num" id="n1">221</div><div class="numl">figures référencées</div></div>
+      <div><div class="num" id="n2">55%</div><div class="numl">ont déjà une vidéo</div></div>
+    </div>
+    <div>
+      <h2>Envie d'être mis·e en avant sur WakeRef ?</h2>
+      <p>Il manque encore des vidéos sur de nombreuses figures. Partage les tiennes avec la commu et deviens la réf !</p>
+      <button class="btn btn-a">Soumettre ma vidéo</button>
+    </div>
+  </section>
+  <a class="wct">
+    <img src="wct-logo.png" alt="" style="width:48px;height:48px;object-fit:contain">
+    <div><div class="wct-t">Tu maîtrises ces tricks ?</div><div class="wct-x">Ajoute-les sur World Cable Tricks et construis ton profil de rider.</div></div>
+    <span class="wct-b">Crée ton profil WCT →</span>
+  </a>
+</div>
+
+<div class="switch">
+  <b>Couverture</b>
+  <button id="bVideo" class="on">Vidéo</button>
+  <button id="bPhoto">Photo</button>
+</div>
+
+<script>
+  const bar=document.getElementById('bar');
+  const onS=()=>bar.classList.toggle('solid',scrollY>innerHeight-120);
+  addEventListener('scroll',onS,{passive:true});onS();
+  const D={"stats": {"total_figures": 221, "figures_with_video": 121}, "most": [{"name": "Railey", "slug": "railey", "cat": "Railey", "sport": "wakeboard", "diff": 3, "ctx": ["air_trick"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/121/1781896672100.mp4", "creator": "Casey Taylor"}, {"name": "Mexican Roll", "slug": "mexican-roll", "cat": "Front", "sport": "wakeboard", "diff": 2, "ctx": ["kicker"], "clip": null, "creator": null}, {"name": "Fat Chance", "slug": "fat-chance", "cat": "Front", "sport": "wakeboard", "diff": 5, "ctx": ["kicker", "air_trick"], "clip": null, "creator": null}, {"name": "Whirly Bird", "slug": "whirly-bird", "cat": "Tantrum", "sport": "wakeboard", "diff": 4, "ctx": ["kicker", "air_trick"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/72/1780309449333.mp4", "creator": "The Peacock Brothers"}, {"name": "Tantrum", "slug": "tantrum", "cat": "Tantrum", "sport": "wakeboard", "diff": 3, "ctx": ["kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/67/1780319886997.mp4", "creator": "X WAKE"}, {"name": "313", "slug": "313", "cat": "Railey", "sport": "wakeboard", "diff": 4, "ctx": ["air_trick"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/123/1788173302790.mp4", "creator": "JB ONeill"}, {"name": "Roast Beef", "slug": "roast-beef", "cat": "Grabs", "sport": "wakeboard", "diff": 3, "ctx": ["kicker", "air_trick"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/90/1785536624917.mp4", "creator": "Tom Lanot"}, {"name": "TS FS 360", "slug": "ts-fs-360", "cat": "Spin", "sport": "wakeboard", "diff": 3, "ctx": ["kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/8/1785536529678.mp4", "creator": "Ile Vegni"}, {"name": "Nose Grab", "slug": "nose-grab", "cat": "Grabs", "sport": "wakeboard", "diff": 2, "ctx": ["kicker", "air_trick"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/85/1785536463124.mp4", "creator": "Ile Vegni"}, {"name": "HS BS 180", "slug": "hs-bs-180", "cat": "Spin", "sport": "wakeboard", "diff": 1, "ctx": ["kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/2/1785536416957.mp4", "creator": "Ile Vegni"}], "recent": [{"name": "313", "slug": "313", "cat": "Railey", "sport": "wakeboard", "diff": 4, "ctx": ["air_trick"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/123/1788173302790.mp4", "creator": "JB ONeill"}, {"name": "Mexican Roll", "slug": "mexican-roll", "cat": "Front", "sport": "wakeboard", "diff": 2, "ctx": ["kicker"], "clip": null, "creator": null}, {"name": "Roast Beef", "slug": "roast-beef", "cat": "Grabs", "sport": "wakeboard", "diff": 3, "ctx": ["kicker", "air_trick"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/90/1785536624917.mp4", "creator": "Tom Lanot"}, {"name": "TS FS 360", "slug": "ts-fs-360", "cat": "Spin", "sport": "wakeboard", "diff": 3, "ctx": ["kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/8/1785536529678.mp4", "creator": "Ile Vegni"}, {"name": "Nose Grab", "slug": "nose-grab", "cat": "Grabs", "sport": "wakeboard", "diff": 2, "ctx": ["kicker", "air_trick"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/85/1785536463124.mp4", "creator": "Ile Vegni"}, {"name": "HS BS 180", "slug": "hs-bs-180", "cat": "Spin", "sport": "wakeboard", "diff": 1, "ctx": ["kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/2/1785536416957.mp4", "creator": "Ile Vegni"}, {"name": "Double TS Back Roll", "slug": "double-ts-back-roll", "cat": "Backroll", "sport": "wakeboard", "diff": 5, "ctx": ["kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/161/1785536288601.mp4", "creator": "Clement Nadal"}, {"name": "East Mobe", "slug": "east-mobe", "cat": "Front", "sport": "wakeboard", "diff": 5, "ctx": ["air_trick", "kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/162/1785536091136.mp4", "creator": "Esteban Diruy"}, {"name": "Double Tantrum to Blind", "slug": "double-tantrum-to-blind", "cat": "Tantrum", "sport": "wakeboard", "diff": 5, "ctx": ["kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/225/1782236169593.mp4", "creator": "Liam Peacock"}, {"name": "Underwhirly", "slug": "underwhirly", "cat": "Backroll", "sport": "wakeboard", "diff": 4, "ctx": ["kicker"], "clip": "https://xntrvrdfbtouvulrdxid.supabase.co/storage/v1/object/public/videos/224/1782224612140.mp4", "creator": "JB ONeill"}]};
+  document.getElementById('n1').textContent=D.stats.total_figures;
+  document.getElementById('n2').textContent=Math.round(D.stats.figures_with_video/D.stats.total_figures*100)+'%';
+
+  const vs=[document.getElementById('v0'),document.getElementById('v1')];
+  let cur=0;
+  vs.forEach(v=>v.play().catch(()=>{}));
+  setInterval(()=>{
+    if(!document.getElementById('heroImg').hidden)return;
+    const nxt=(cur+1)%vs.length;
+    vs[nxt].currentTime=0;vs[nxt].play().catch(()=>{});
+    vs[nxt].classList.add('show');vs[cur].classList.remove('show');
+    cur=nxt;
+  },9000);
+
+  const MODS=[
+    {n:'01',t:'Catalogue',x:'221 figures de wakeboard, wakeskate et wakeboard assis — chacune décomposée, expliquée et illustrée en vidéo.',i:'section-placeholder-1.jpg'},
+    {n:'02',t:'Quiz',x:"Un extrait, quatre réponses. Apprends à reconnaître les tricks — pour l'œil du rider comme pour celui du juge.",i:'section-placeholder-2.jpg'},
+    {n:'03',t:'Compo',x:"Construis ton run trick par trick et lis ta note sur 20. Check s'il est bien équilibré avant de te lancer.",i:'section-placeholder-3.jpg'},
+    {n:'04',t:'Juge',x:'Regarde un vrai run, saisis ce que tu vois, compare à la solution. Le meilleur entraînement pour affûter ton œil.',i:'section-placeholder-4.jpg'},
+  ];
+  document.getElementById('mods').innerHTML=MODS.map(m=>`
+    <a class="mod"><div class="im"><img src="${m.i}" alt="" loading="lazy"></div>
+      <div class="tx"><div class="nu">${m.n}</div><div class="ti">${m.t}</div>
+      <div class="de">${m.x}</div><span class="go">Ouvrir →</span></div></a>`).join('');
+
+  const lvl=['','facile','plutôt facile','moyen','dur','très dur'];
+  const card=f=>{
+    const media=f.clip?`<video src="${f.clip}#t=0.1" muted loop playsinline preload="none"></video>`
+                      :`<div class="ph">pas encore de clip</div>`;
+    return `<article class="pc"><div class="pv">${media}<div class="stamp">${lvl[f.diff]||''}</div>
+      ${f.clip?'<div class="play">▶</div>':''}</div>
+      <div class="pc-n">${f.name}</div>
+      <div class="pc-s">${[f.cat,f.creator].filter(Boolean).join(' · ')}</div></article>`;
+  };
+  document.getElementById('railMost').innerHTML=D.most.map(card).join('');
+  document.getElementById('railNew').innerHTML=D.recent.map(card).join('');
+
+  const cards=[...document.querySelectorAll('.pc')];
+  const tactile=matchMedia('(hover:none)').matches;
+  const poster=new IntersectionObserver(es=>es.forEach(e=>{
+    if(!e.isIntersecting)return;
+    const v=e.target.querySelector('video');
+    if(v&&v.preload==='none'){v.preload='metadata';v.load()}
+    poster.unobserve(e.target);
+  }),{rootMargin:'400px'});
+  cards.forEach(c=>poster.observe(c));
+  if(tactile){
+    const play=new IntersectionObserver(es=>es.forEach(e=>{
+      const v=e.target.querySelector('video');if(!v)return;
+      if(e.isIntersecting){v.preload='auto';v.play().catch(()=>{})}
+      else{v.pause();try{v.currentTime=0.1}catch{}}
+    }),{threshold:.65});
+    cards.forEach(c=>play.observe(c));
+  } else {
+    cards.forEach(c=>{
+      const v=c.querySelector('video');if(!v)return;
+      c.addEventListener('mouseenter',()=>{v.preload='auto';v.play().catch(()=>{})});
+      c.addEventListener('mouseleave',()=>{v.pause();try{v.currentTime=0.1}catch{}});
+    });
+  }
+
+  const img=document.getElementById('heroImg');
+  const set=(a,b)=>{a.classList.add('on');b.classList.remove('on')};
+  bVideo.onclick=()=>{img.hidden=true;vs.forEach(v=>{v.hidden=false;v.play().catch(()=>{})});set(bVideo,bPhoto)};
+  bPhoto.onclick=()=>{img.hidden=false;vs.forEach(v=>{v.hidden=true;v.pause()});set(bPhoto,bVideo)};
+</script></body></html>

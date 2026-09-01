@@ -418,11 +418,6 @@ export default function FigureDetail() {
         </nav>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>{figure.name}</h1>
-          {/* Tampon de niveau : l'élément signature de la direction, apposé
-              de travers sur la couverture de la fiche. */}
-          <span className="stamp" role="img" aria-label={`${tr.diffStamp} ${figure.difficulty}/5`}>
-            <span aria-hidden="true">{tr.diffStamp}<br />{figure.difficulty}/5</span>
-          </span>
         </div>
         <div className={styles.metaRow}>
           <div className={styles.meta}>

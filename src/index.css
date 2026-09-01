@@ -68,7 +68,8 @@
   --font-display: var(--font-body);
 
   /* Pas de coins arrondis : la maquette n'a que des angles vifs.
-     --r-round reste pour ce qui est réellement circulaire (tampon, pastille). */
+     --r-round reste pour ce qui est réellement circulaire (bouton de lecture
+     Instagram, cercle de score du quiz). */
   --r-sm: 0; --r-md: 0; --r-lg: 0; --r-xl: 0;
   --r-round: 999px;
 
@@ -76,6 +77,9 @@
   --t-mid:  200ms ease;
 
   --page-max: 1040px;
+  /* Gouttière latérale de la colonne. Unique source de vérité : les rangées qui
+     débordent jusqu'au bord de l'écran s'en servent pour se recaler. */
+  --page-pad: 1.25rem;
   --nav-h:  56px;
 
   /* Grain du papier, appliqué au body */
@@ -169,7 +173,7 @@ input, textarea, select {
   max-width: var(--page-max);
   width: 100%;
   margin: 0 auto;
-  padding: 0 1.25rem 4rem;
+  padding: 0 var(--page-pad) 4rem;
 }
 
 /* Filet pointillé : le seul séparateur de la direction (avec le blanc). */
@@ -307,24 +311,6 @@ select.input {
 }
 .diff-dot.on { background: var(--d, var(--c-text)); }
 
-/* ── Tampon rond : l'élément signature de la direction ── */
-.stamp {
-  display: inline-flex; align-items: center; justify-content: center;
-  text-align: center;
-  width: 46px; height: 46px;
-  border-radius: var(--r-round);
-  border: 2px solid var(--c-accent);
-  color: var(--c-accent);
-  font-family: var(--font-hand);
-  font-size: 9px;
-  line-height: 1.05;
-  padding: 2px;
-  transform: rotate(-10deg);
-  opacity: .92;
-  mix-blend-mode: multiply;
-}
-[data-theme="dark"] .stamp { mix-blend-mode: screen; }
-
 /* Picto casque (motif de marque) — mark vectoriel via mask, dimensionnable
    et colorable : règle la taille via `height` et la couleur via `color`. */
 .picto-mark {
@@ -409,7 +395,8 @@ select.input {
   :root { --nav-h: 52px; }
 }
 @media (max-width: 600px) {
-  .page-container { padding: 0 1rem 3rem; }
+  :root { --page-pad: 1rem; }
+  .page-container { padding: 0 var(--page-pad) 3rem; }
 }
 
 /* Respect du réglage système « réduire les animations » */
