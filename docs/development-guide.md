@@ -1,6 +1,6 @@
 # Development Guide — WakeRef
 
-> Generated: 2026-06-11 · Deep Scan
+> Generated: 2026-06-11 · Updated: 2026-09-02 (full rescan) · Deep Scan
 
 ## Prerequisites
 
@@ -35,7 +35,7 @@ Only `VITE_`-prefixed vars are exposed to the client (Vite convention). `src/lib
 
 No migration framework — schema lives in SQL files run against Supabase.
 
-**From scratch:** in the Supabase **SQL Editor**, run `scripts/wakeref_post_restore.sql`. It creates extensions, functions, the `figures_full` view, RLS policies, grants, triggers, indexes, and the `videos` Storage bucket. Then create the admin user manually (step 4).
+**From scratch:** in the Supabase **SQL Editor**, run `scripts/wakeref_post_restore.sql`. It creates extensions, functions, the `figures_full` and `figures_card` views, RLS policies, grants, triggers, indexes, and the `videos` Storage bucket. Then create the admin user manually (step 4). One-off changes applied by hand live in `scripts/migrations/`; `scripts/competition_parcours.sql` carries the competition module's table + RPC + policies.
 
 **Restore from a backup:**
 ```bash
@@ -70,8 +70,41 @@ npm run preview  # serve the production build locally
 | `npm run dev` | Vite dev server at `:5173` |
 | `npm run build` | Generate sitemap, then `vite build` → `dist/` |
 | `npm run preview` | Preview the production build |
+| `npm run lint` | ESLint 9 flat config (`eslint.config.js`) over `src/`, `scripts/`, `*.config.js` |
 
-There is **no test runner and no linter configured** in `package.json`. "Verification" today means running the app and exercising flows manually.
+Standalone Node scripts (run with `node`, they load `.env.local` via `dotenv` when they need the DB):
+
+| Script | What it does |
+|--------|--------------|
+| `scripts/generate-sitemap.js` | Called by `npm run build`; best-effort sitemap generation |
+| `scripts/gen-aliases.mjs` | Generates spoken aliases for figures (feeds `figures.aliases`, used by the voice matcher) |
+| `scripts/test-normalize-jib.mjs` | Manual harness for the jib composer — run it after touching `normalizeJib.js` |
+| `scripts/download-videos.mjs` | Bulk-exports videos from Storage into `videos-export/` |
+
+There is **no test runner** configured. "Verification" today means `npm run lint` plus running the app and exercising flows manually. The lint config layers `js.configs.recommended` + `eslint-plugin-react` (flat, `jsx-runtime` — React 19 needs no `import React`) + `react-hooks` + `react-refresh`; unused vars are a warning, `react/prop-types` is off (plain JS project).
+
+## 7. Verifying a change
+
+There is no test runner, so verification is:
+
+1. `npm run lint` — must end at **0 errors / 0 warnings**. The `react-hooks` rules are the strict React-Compiler set: no `setState` synchronously inside a `useEffect` body, no component declared during render (hoist it to module scope), no ref `.current` access during render.
+   *Current state: the tree does not satisfy this — 14 errors / 7 warnings over 12 files. Fix what you touch, and don't add to it. By rule:*
+   - *6 × `react/no-unescaped-entities` — raw French apostrophes in JSX (`admin/CompetitionSetup` ×4, `JudgeVoice`, `admin/AdminDashboard`). Mechanical.*
+   - *5 × `react-hooks/set-state-in-effect` — `FigureDetail:64`, `admin/AdminCompetitions:22`, `admin/AdminVideos:80`, `admin/CompetitionSetup:107`, `competition/CompetitionView:24`. Each needs the effect re-read; a blind fix can change first-render behaviour.*
+   - *2 × `react-hooks/immutability` — `admin/CompetitionSetup:238` (`pseen` reassigned after render) and `admin/FigureForm:203` (`genSlug` used before declaration). The two most substantive ones.*
+   - *1 × `no-useless-escape` — `lib/normalizeJib.js:238`.*
+2. `npm run dev` and exercise the flow. Prefer this over a full build.
+3. For DB-visible changes, check the page **as `anon`** (private window), not only as the logged-in admin — RLS hides unpublished figures and takedown videos.
+4. Jib composer changes: `node scripts/test-normalize-jib.mjs`.
+
+## Working on the voice stack
+
+The two house models are published on Hugging Face and loaded at runtime — nothing to install locally:
+
+- `almorelle/whisper-wakeref-onnx` — isolated tricks (whisper-base, fp32), used with vocabulary bias.
+- `almorelle/whisper-wakeref-jib-onnx` — jib passes (whisper-small, q8), used without bias, then normalized by `normalizeJib`.
+
+`/judge/voix` is the lab: compare engines (Web Speech vs local Whisper base/small/large-v3-turbo vs the house models), then record (clip, confirmed label) pairs into IndexedDB and export them as an audiofolder `.zip`. The fine-tuning pipelines and model cards live in `training/tricks/` and `training/jib/` — see their READMEs before retraining. First local transcription downloads the model from the HF CDN; it is cached by the browser afterwards, and a pass on the small model takes ~8–15 s, which is why the competition Run tab queues transcription in the background instead of blocking the judge.
 
 ## Edge Functions (email)
 
@@ -93,7 +126,10 @@ Then create a **Database Webhook** (Dashboard → Database → Webhooks): table 
 - **Data access:** always go through the singleton `src/lib/supabase.js`. There is no API layer — components query Supabase directly. Prefer the `figures_full` view for reads; prefer RPCs for anything that must not be a raw table query.
 - **Schema changes:** apply in Supabase, then mirror into `scripts/wakeref_post_restore.sql` and `scripts/wakeref_schema.sql`; keep `src/data/categories.js` / `contexts.js` in sync. Update `CLAUDE.md` if architecture-level facts change.
 - **Switch groups & takedowns:** when touching figures/videos, remember videos are shared across a switch group (`coalesce(switch_of, id)`) and that `takedown_requested = true` hides a video from all public reads.
-
-## Known doc drift
-
-`README.md` and `CLAUDE.md` say "React 18 + React Router 6". `package.json` actually pins **React 19.2** and **react-router-dom 7.15**. Trust `package.json`.
+- **Domain logic stays out of components.** Scoring (`lib/compoGrids.js`), diffing (`lib/judgeDiff.js`), the course/run models (`lib/competition/*`) and the voice pipeline (`lib/voiceMatch.js`, `normalizeJib.js`, `whisperStt.js`) are React-free modules. `compoGrids.js` in particular must stay React-free — it is imported by both `Compo` and `RunSaisie`, and a React import there would create a cycle.
+- **Adding a scoring grid** = one entry in `GRIDS` (`lib/compoGrids.js`) + its translations. Scoring is **binary** (no degree thresholds) and normalized to **/20**, so grids stay comparable.
+- **Slugs referenced by grids** live in `SCORING_SLUGS`. Slugs are editable in admin, so a rename silently breaks a scoring item — a dev-only guard warns when a referenced slug is missing from `figures`. Check the console after renaming anything.
+- **Adding a jib trick to the voice composer** = a line in the `VOCAB` of `lib/normalizeJib.js` (sourced from `scripts/jib-atoms.md`), never a new regex. Verify with `node scripts/test-normalize-jib.mjs`.
+- **Never precache the STT stack.** `@huggingface/transformers` must stay a dynamic import, and its chunk / `.wasm` / `ort-*` assets must stay in `workbox.globIgnores` — a regular visitor must never download tens of MB for a judge-only tool.
+- **Approach axis is discipline-dependent**: `hs`/`ts` standing, `regular`/`fakie` seated. There is no DB CHECK — add any new value in both `admin/FigureForm.jsx` and `FigureDetail.jsx`.
+- **Judging state is device-local.** Heats live in `localStorage['wakeref_heat_<code>']` and the voice dataset in IndexedDB; renaming a key discards a judge's work in progress.

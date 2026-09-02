@@ -1,6 +1,6 @@
 # Data Models — WakeRef
 
-> Generated: 2026-06-11 · Updated: 2026-06-13 (built-on tree + trick decomposition columns, `jib` context → `feature`) · Source of truth: `scripts/wakeref_schema.sql` (reference dump) and `scripts/wakeref_post_restore.sql` (executable: view, functions, RLS, grants, bucket).
+> Generated: 2026-06-11 · Updated: 2026-09-02 (full rescan — seated discipline, multi-discipline columns, aliases, `figures_card`, `figure_views`, `judge_runs`, `parcours`) · Source of truth: `scripts/wakeref_schema.sql` (reference dump) and `scripts/wakeref_post_restore.sql` (executable: view, functions, RLS, grants, bucket).
 
 WakeRef stores all data in a single Supabase PostgreSQL database (`public` schema). There is no ORM and no migration framework — schema changes are applied by hand in the Supabase SQL Editor and mirrored into the two SQL files above. The frontend talks to the database directly through PostgREST (the `@supabase/supabase-js` client), so the **RLS policies, the `figures_full` view, and the RPC functions _are_ the API contract** (see `api-contracts.md`).
 
@@ -15,12 +15,15 @@ WakeRef stores all data in a single Supabase PostgreSQL database (`public` schem
 | `video_submissions` | Public video suggestions awaiting moderation | ❌ (admin reads) | ✅ insert only |
 | `takedown_requests` | Copyright removal requests from video authors | ❌ (admin reads) | ✅ insert only |
 | `compositions` | Saved runs from the Compo page (no auth) | ❌ (read via RPC by id) | ✅ insert only |
+| `figure_views` | Per-figure, per-day view counter (popularity) | ❌ (written via RPC, read via `most_viewed_figures`) | ✅ increment via RPC only |
+| `judge_runs` | Reference runs + their official `solution`, used by `/judge` training | ❌ (read via 2 RPCs) | ❌ |
+| `parcours` | Competition course definitions, shared with judges by short code | ❌ (read via `get_parcours(code)`) | ❌ |
 
 "Public write" = the anonymous (`anon`) role. All admin mutations run as the `authenticated` role.
 
 ## Enumerated types
 
-- `sport_type` — `wakeboard` | `wakeskate` (column `figures.sport`, default `wakeboard`)
+- `sport_type` — `wakeboard` | `wakeskate` | `seated` (column `figures.sport`, default `wakeboard`). `seated` = wakeboard assis / handiwake; it is a first-class discipline, never a label bolted onto a name.
 - `video_source` — used by `videos.source_type`, default `upload` (the other value is the external/embed case)
 
 ## Tables
@@ -60,11 +63,17 @@ The canonical category list is also duplicated client-side in `src/data/categori
 | `inverts` | `smallint` | number of inverts/flips (default 0) |
 | `rewind_degs` | `smallint[]` | per-rewind amplitudes in degrees (default `{}`) |
 | `rotation_type` | `text[]` | per-rotation-unit modifier; CHECK ⊆ `{ole, handle_pass}`, default `{}` |
+| `sports` | `text[]` NOT NULL | **multi-discipline membership**, always ⊇ `{sport}`. A trick native to one discipline gains reach in another by being added here — never by duplicating the row |
+| `tips_seated`, `tips_seated_en` | `text[]` | per-discipline tip override; falls back to `tips` / `tips_en` when empty |
+| `tips_wakeskate`, `tips_wakeskate_en` | `text[]` | idem for wakeskate |
+| `aliases` | `text[]` NOT NULL default `{}` | spoken/written aliases used by the **voice matcher** (`src/lib/voiceMatch.js`) and search; generated with `scripts/gen-aliases.mjs` |
 | `created_at`, `updated_at` | `timestamptz` | `updated_at` auto-maintained by trigger `figures_updated_at` |
 
 **Switch groups.** A figure and its switch variant form a "switch group" keyed by `coalesce(switch_of, id)`. Videos are shared across the whole group (see the view and `home_stats`).
 
 **Built-on tree.** `built_on_id` links a trick to the simpler trick it extends, forming a directed acyclic graph (each trick has at most one parent, but many children). The view exposes the immediate parent (`built_on_figure`), the direct children (`built_on_children` — the "+1" level of the tree), and the recursively-resolved root (`base_figure`). Switch variants are excluded from parent/child display. The `figures_built_on_acyclic` trigger rejects cycles and self-references.
+
+**Disciplines & approach axis.** `sport` is the *native* discipline of a trick; `sports[]` is where it is *offered* (always a superset). A trick shared with another discipline stays a single row and gains a `tips_<discipline>[]` override — never a duplicate figure. The `approach[]` column carries **two different vocabularies depending on the discipline**: standing disciplines use `hs` / `ts` (heelside/toeside), while **seated uses `regular` / `fakie`** (forward vs backward entry, `fakie` being the seated peer of `ts`). There is **no CHECK constraint** on this column — the valid set is enforced only by the front end (`admin/FigureForm.jsx` offers the right options, `FigureDetail.jsx` maps all four to labels and accent colors). Any new approach value must be added in both places.
 
 **Trick decomposition.** The `spin` / `inverts` / `rewind_degs` / `rotation_type` columns drive `src/lib/trickDecomposition.js`, which breaks a trick into its elementary rotation units (full turns, residual 180°, rewinds, ollie/handle-pass modifiers) for the breakdown UI in `FigureDetail.jsx` and the rotation builder in `admin/FigureForm.jsx`.
 
@@ -99,11 +108,55 @@ Columns: `video_id` (FK → `videos.id`), `name`, `email` (NOT NULL), `message`,
 |--------|------|-------|
 | `id` | `text` PK | short shareable id used in `/compo/:id` |
 | `name` | `text` | CHECK `length <= 80` |
-| `data` | `jsonb` NOT NULL | minimal run snapshot; CHECK `pg_column_size(data) <= 51200` (50 KB) |
-| `score` | `integer` | denormalized total |
+| `data` | `jsonb` NOT NULL | minimal run snapshot (entries, jib passes, off-course entries, **`gridKey`**); CHECK `pg_column_size(data) <= 51200` (50 KB) |
+| `score` | `integer` | denormalized score, normalized to /20 so runs from different grids stay comparable |
 | `created_at` | `timestamptz` | |
 
 Anti-abuse: trigger `compositions_rate_limit` (BEFORE INSERT, `security definer`) rejects inserts when ≥ 20 rows were created in the last minute. Anonymous users can insert and read **one** row by id via `get_composition(cid)`, but cannot list the table.
+
+### `figure_views` — popularity counters
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `figure_id` | `integer` FK → `figures.id` | part of the composite PK |
+| `day` | `date` default `CURRENT_DATE` | part of the composite PK — one row per figure per day |
+| `views` | `integer` NOT NULL default 0 | incremented by `track_figure_view(fig_id)` |
+
+Written only through the `security definer` RPC (anon has no table grant beyond the admin `select`), read back through `most_viewed_figures(days, lim)`. Indexed on `day` for the rolling window.
+
+### `judge_runs` — reference runs for `/judge` training
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | `bigint` identity PK | |
+| `name` | `text` NOT NULL | CHECK `length <= 120` |
+| `discipline` | `sport_type` NOT NULL | which discipline the run belongs to |
+| `grid_key` | `text` NOT NULL | which scoring grid the solution was built against (`wakeboard`, `wakeskate`, `seated_mp1`, `seated_mp5`) |
+| `difficulty` | `text` NOT NULL | CHECK ∈ `{easy, medium, hard}` |
+| `category` | `text` | free grouping label |
+| `source_type` | `video_source` NOT NULL default `upload` | Storage upload vs external URL |
+| `video_path` | `text` | path inside the `videos` bucket when uploaded |
+| `video_url` | `text` | external URL otherwise |
+| `solution` | `jsonb` NOT NULL | the official run; CHECK `pg_column_size(solution) <= 51200` (50 KB) |
+| `published` | `boolean` NOT NULL default `false` | only published runs are listed publicly |
+| `created_at`, `updated_at` | `timestamptz` | `updated_at` maintained by trigger `judge_runs_updated_at` |
+
+**Anon has no policy on this table.** Public access goes exclusively through `list_judge_runs()` (metadata of published runs, no solution) and `get_judge_run_solution(p_id)` (the solution, published runs only) — both `security definer`. That separation is what lets the trainee judge a run before revealing the answer.
+
+### `parcours` — competition courses
+
+| Column | Type | Notes |
+|--------|------|-------|
+| `id` | `text` PK | 8-char base36 short code — this is what the judge types at `/competition` |
+| `name` | `text` NOT NULL UNIQUE | CHECK `1 <= length <= 80` |
+| `data` | `jsonb` NOT NULL | course snapshot `{cableSpin, nbPoulies, poulieStart, parcours[]}`; CHECK `pg_column_size(data) <= 51200` (50 KB) |
+| `created_at`, `updated_at` | `timestamptz` | `updated_at` maintained by trigger `parcours_touch` |
+
+Both the PK and `name` are unique, so an insert can raise `23505` for two different reasons; `src/lib/competition/api.js` disambiguates (name taken → `DuplicateNameError`, otherwise regenerate the code and retry, up to 5 attempts). Admin has full CRUD; anon reads a single row through `get_parcours(code)`.
+
+## The `figures_card` view (light read model)
+
+`figures_card` is a `security_invoker` projection used wherever the full detail payload would be wasteful: `id, slug, name, sport, sports, difficulty, contexts, aliases` plus `category_name` / `category_slug`. It backs the figure grid (`/figures`), the home rows, and — cached under `localStorage` key `wakeref_voice_figures` — the **offline figure catalogue of the voice matcher**. `most_viewed_figures` and `recent_video_figures` both `returns setof figures_card`.
 
 ## The `figures_full` view (the real read model)
 
@@ -127,6 +180,8 @@ Because the view is `security_invoker`, the underlying tables' RLS policies stil
 | `figures_updated_at` | `figures` | BEFORE UPDATE | sets `updated_at = now()` via `set_updated_at()` |
 | `figures_built_on_acyclic` | `figures` | BEFORE INSERT/UPDATE OF `built_on_id` | walks the parent chain via `check_built_on_acyclic()`; raises on a cycle or self-reference |
 | `compositions_rate_limit` | `compositions` | BEFORE INSERT | global rate limit (20/min) via `compositions_rate_limit()` |
+| `parcours_touch` | `parcours` | BEFORE UPDATE | sets `updated_at = now()` via `parcours_touch()` |
+| `judge_runs_updated_at` | `judge_runs` | BEFORE UPDATE | sets `updated_at = now()` via `set_updated_at()` |
 
 ## Indexes
 
@@ -138,6 +193,7 @@ Because the view is `security_invoker`, the underlying tables' RLS policies stil
 | `figures_built_on_id_idx` | `figures(built_on_id)` | built-on parent/children sub-queries |
 | `figures_category_id_idx` | `figures(category_id)` | figure → category join |
 | `prerequisites_requires_id_idx` | `prerequisites(requires_id)` | prerequisites sub-query |
+| `figure_views_day_idx` | `figure_views(day)` | rolling popularity window (`most_viewed_figures`) |
 
 ## Extensions
 
@@ -150,7 +206,8 @@ RLS is enabled on every table. Policies (defined in `wakeref_post_restore.sql`):
 - **Public SELECT:** `categories` (all), `figures` (`published = true`), `prerequisites` (all), `videos` (`takedown_requested = false`).
 - **Admin (authenticated) full access:** `figures`, `categories`, `prerequisites`, `videos` — `for all using ((select auth.role()) = 'authenticated')`. The `auth.role()` call is wrapped in a sub-select so PostgreSQL evaluates it once per query (initplan) instead of once per row.
 - **Public INSERT only:** `takedown_requests`, `video_submissions`, `compositions`. Admin gets SELECT (+ UPDATE on submissions, DELETE on compositions).
-- **Storage** (`videos` bucket): public SELECT; INSERT/DELETE restricted to `authenticated`.
+- **Admin-only tables:** `figure_views` (admin SELECT), `judge_runs` (admin `for all`), `parcours` (admin SELECT/INSERT/UPDATE/DELETE). **None of them grants anything to `anon`** — public reads happen through `security definer` RPCs only.
+- **Storage** (`videos` bucket): public SELECT; INSERT/DELETE restricted to `authenticated`. Judge-run videos live in the same bucket.
 
 ## How schema changes are managed
 

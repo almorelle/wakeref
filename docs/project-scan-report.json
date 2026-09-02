@@ -1,51 +1,88 @@
 {
   "workflow_version": "1.2.0",
   "timestamps": {
-    "started": "2026-06-11T00:00:00Z",
-    "last_updated": "2026-06-13T00:00:00Z",
-    "completed": "2026-06-13T00:00:00Z"
+    "started": "2026-09-02T07:34:50Z",
+    "last_updated": "2026-09-02T07:46:33Z"
   },
   "mode": "full_rescan",
   "scan_level": "deep",
   "document_output_language": "English",
   "project_root": "/Users/wushu/ws/perso/wakeref",
   "project_knowledge": "/Users/wushu/ws/perso/wakeref/docs",
-  "repository_type": "monolith",
-  "project_parts": [
+  "completed_steps": [
     {
-      "part_id": "wakeref",
-      "project_type_id": "web",
-      "display_name": "WakeRef SPA",
-      "root_path": "/Users/wushu/ws/perso/wakeref",
-      "primary_framework": "React 19 + Vite 8",
-      "backend": "Supabase (PostgreSQL + Auth + Storage + Edge Functions)"
+      "step": "step_1",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:36:49Z",
+      "summary": "Classified as monolith, 1 part, project_type=web (single package.json, no workspace manifest; src/ SPA + supabase/functions Deno + scripts/ Node ESM)."
+    },
+    {
+      "step": "step_2",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:36:49Z",
+      "summary": "Existing docs inventoried: README.md, CLAUDE.md, docs/*.md (9 files, generated 2026-06-13), _bmad-output/project-context.md, proto-assets/ (7 design/handoff docs), training/{jib,tricks}/README.md + model cards, scripts/jib-atoms.md."
+    },
+    {
+      "step": "step_3",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:36:49Z",
+      "summary": "Stack: React 19.2 + Vite 8 (rolldown) + react-router-dom 7.15 + supabase-js 2.106 + @huggingface/transformers 4.2 (dynamic import) + jszip; ESLint 9 flat, no test runner; CSS Modules; vite-plugin-pwa autoUpdate."
+    },
+    {
+      "step": "step_4",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:36:49Z",
+      "summary": "Deep scan of critical dirs: src/pages (26 pages incl. judge/competition/legal), src/components (17 + competition/CableMinimap), src/lib (18 modules incl. competition/* and voice stack), src/{hooks,contexts,data,i18n}, scripts/, supabase/functions/, .github/workflows/backup.yml. Mapped every .from()/.rpc()/storage call, all 15 RPC signatures, RLS policies and grants."
+    },
+    {
+      "step": "step_5",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:46:33Z",
+      "summary": "Regenerated source-tree-analysis.md: full annotated tree incl. src/lib/competition/*, the voice stack, src/pages/competition/*, 6 new admin pages, training/ and proto-assets/; added the device-local data-flow block."
+    },
+    {
+      "step": "step_6",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:46:33Z",
+      "summary": "development-guide.md: added lint to the scripts table, a standalone-scripts table, a '7. Verifying a change' section and a 'Working on the voice stack' section; 7 new working conventions; removed the obsolete 'Known doc drift' section."
+    },
+    {
+      "step": "step_8",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:46:33Z",
+      "summary": "architecture.md rewritten: local-first judging tier, domain-engine table, voice pipeline, bundle strategy (rolldown + precache exclusions), authorization model incl. RPC-only tables, 6 risks."
+    },
+    {
+      "step": "step_9",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:46:33Z",
+      "summary": "project-overview.md rewritten; data-models.md extended (figure_views, judge_runs, parcours, figures_card, sports[]/tips_*/aliases columns, approach axis, 2 triggers, 1 index, RLS); api-contracts.md extended (12 RPCs with security mode, access matrix, page->data map, device-local contracts section); component-inventory.md rewritten."
+    },
+    {
+      "step": "step_10",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:46:33Z",
+      "summary": "index.md regenerated as the AI retrieval entry point: quick reference, doc map, external docs (project-context, proto-assets, training, jib-atoms), 7 caveats."
+    },
+    {
+      "step": "step_11",
+      "status": "completed",
+      "timestamp": "2026-09-02T07:46:33Z",
+      "summary": "Validation: all internal doc links resolve; every backticked repo path cited in docs/ + CLAUDE.md exists (fixed one dead reference to scripts/seed-seated-figures.sql); no stale React 18 / 'no linter' / '12 categories' claims remain. Also corrected CLAUDE.md (grids moved to lib/compoGrids.js, context hooks in -context.js, 14 categories, 3 new tables + 2 views, new Judging modules section)."
     }
   ],
-  "project_types": [
-    { "part_id": "wakeref", "project_type_id": "web", "display_name": "Web App" }
-  ],
+  "current_step": "complete",
   "findings": {
-    "project_classification": "Monolith web SPA (React 19/Vite 8) over Supabase BaaS; no API layer (RLS + figures_full view + RPCs are the contract)",
-    "technology_stack": "React 19, react-router-dom 7, Vite 8, vite-plugin-pwa, @supabase/supabase-js 2, CSS Modules; JS/JSX (no TypeScript); Vercel hosting",
-    "data_models": "7 tables (figures, categories, prerequisites, videos, video_submissions, takedown_requests, compositions) + figures_full view; sport_type/video_source enums; RLS on all tables; 6 RPCs; switch groups + bilingual fields; built-on tree (figures.built_on_id, acyclic trigger, view exposes parent/children/root) + trick-decomposition columns (spin/inverts/rewind_degs/rotation_type); contexts: jib renamed to feature",
-    "api": "No REST API; PostgREST + 6 RPC functions + videos Storage bucket + 2 Deno Edge Functions (send-contact, notify-video-submission via Resend)",
-    "components": "React function components + CSS Modules; 2 contexts (Language, Theme); hooks useAuth/useToast/useT; 8 public pages + 10 admin pages (lazy/code-split)"
+    "project_classification": "monolith / web SPA, no API layer, Supabase BaaS",
+    "technology_stack": "React 19.2 on Vite 8 (rolldown), Supabase JS 2.106, CSS Modules, PWA",
+    "new_since_2026_06_13": "judge module (/judge training + /judge/voix voice lab), competition module (/competition/:code + admin CompetitionSetup, parcours table), legal pages + Footer, figures_card view, figure_views + track_figure_view, compo grids extracted to src/lib/compoGrids.js, RunSaisie shared component, France2026 sheet",
+    "open_issues": [
+      "vercel.json sends Permissions-Policy: microphone=() on every route (verified live on https://wakeref.app/judge/voix) \u2014 this disables getUserMedia for the site itself, so /judge/voix and the competition Run tab dictation cannot work in production. Fix would be microphone=(self).",
+      "npm run lint exits 1: 14 errors / 7 warnings spread over 12 files. By rule: react/no-unescaped-entities x6, react-hooks/set-state-in-effect x5, react-hooks/immutability x2, no-useless-escape x1; warnings: react-hooks/exhaustive-deps x4, no-unused-vars x3. Hot spot: src/pages/admin/CompetitionSetup.jsx (6 errors); the competition module holds 9 of the 14.",
+      "Empty stray directory 'src/{components,pages,pages/admin,lib,hooks,assets}/' from a failed brace expansion (2026-05-14), untracked by git.",
+      "_bmad-output/project-context.md is still dated 2026-06-13 and carries stale claims (sport enum without 'seated', 'README/CLAUDE may say React 18'). Regenerate with bmad-generate-project-context."
+    ]
   },
-  "completed_steps": [
-    { "step": "step_1", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Classified as monolith with 1 part (web: React 19 + Supabase)" },
-    { "step": "step_2", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Found existing docs: README.md, CLAUDE.md" },
-    { "step": "step_3", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Tech stack: React 19 / Vite 8 / Supabase" },
-    { "step": "step_4", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Conditional analysis complete; data-models.md, api-contracts.md, component-inventory.md written" },
-    { "step": "step_5", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Source tree documented" },
-    { "step": "step_6", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Dev/deployment guides written" },
-    { "step": "step_8", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Architecture doc written (single part)" },
-    { "step": "step_9", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "All supporting docs written" },
-    { "step": "step_10", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Master index generated" },
-    { "step": "step_11", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Validation complete; no incomplete markers" },
-    { "step": "step_12", "status": "completed", "timestamp": "2026-06-11T00:00:00Z", "summary": "Workflow complete" },
-    { "step": "refresh", "status": "completed", "timestamp": "2026-06-13T00:00:00Z", "summary": "Incremental rescan (HEAD 4fb6701): updated data-models, api-contracts, component-inventory, source-tree-analysis, architecture, project-overview, index for built-on tree + trick decomposition + jib->feature context" }
-  ],
-  "current_step": "completed",
   "outputs_generated": [
     "project-scan-report.json",
     "index.md",
@@ -56,7 +93,24 @@
     "api-contracts.md",
     "component-inventory.md",
     "development-guide.md",
-    "deployment-guide.md"
+    "deployment-guide.md",
+    "../CLAUDE.md (corrections)"
   ],
-  "resume_instructions": "Workflow complete. To refresh, re-run document-project and choose Re-scan; for a focused area choose Deep-dive."
+  "resume_instructions": "Workflow complete \u2014 nothing to resume.",
+  "repository_type": "monolith",
+  "project_parts": [
+    {
+      "part_id": "root",
+      "root_path": "/Users/wushu/ws/perso/wakeref",
+      "project_type_id": "web",
+      "display_name": "WakeRef SPA (React 19 + Vite 8 over Supabase)"
+    }
+  ],
+  "project_types": [
+    {
+      "part_id": "root",
+      "project_type_id": "web",
+      "display_name": "Web Application"
+    }
+  ]
 }

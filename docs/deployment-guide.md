@@ -1,6 +1,6 @@
 # Deployment Guide — WakeRef
 
-> Generated: 2026-06-11 · Deep Scan
+> Generated: 2026-06-11 · Updated: 2026-09-02 (full rescan) · Deep Scan
 
 WakeRef deploys as a **static SPA on Vercel**, backed by a **Supabase** project (PostgreSQL + Auth + Storage + Edge Functions). There is no server to operate — the only build artifact is `dist/`.
 
@@ -22,6 +22,8 @@ GitHub Actions ─ daily pg_dump ───────────────�
   - `/assets/(.*)` → `Cache-Control: public, max-age=31536000, immutable` (hashed Vite assets).
   - `sw.js`, `registerSW.js`, `manifest.webmanifest` → `max-age=0, must-revalidate` (so the PWA service worker updates promptly).
 - **Security headers** on all routes: `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: SAMEORIGIN`, `Strict-Transport-Security` (HSTS, 2 yr, preload), `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+
+> ⚠️ **`microphone=()` disables the microphone for the site itself**, not just third-party frames — an empty allowlist means "no origin, including `self`". Verified live: `curl -I https://wakeref.app/judge/voix` returns `permissions-policy: camera=(), microphone=(), geolocation=()`. Both voice surfaces call `navigator.mediaDevices.getUserMedia({ audio: true })` — `/judge/voix` (push-to-talk + dataset recording) and the competition **Run tab** dictation (`src/lib/competition/voice.js`) — so they are expected to fail with `NotAllowedError` in production while working fine on `npm run dev` (no such header locally). Enabling them requires `microphone=(self)` in `vercel.json`.
 
 ## Build settings
 
@@ -45,7 +47,15 @@ Then add the two env vars in the Vercel dashboard (Production + Preview).
 
 ## PWA / Service Worker
 
-Configured via `vite-plugin-pwa` in `vite.config.js`: `registerType: 'autoUpdate'`, Workbox `skipWaiting` + `clientsClaim`. Manifest declares name/colors/icons and `display: standalone` (installable on mobile). The cache headers above ensure the SW and manifest are revalidated on each load so updates roll out quickly.
+Configured via `vite-plugin-pwa` in `vite.config.js`: `registerType: 'autoUpdate'`, Workbox `skipWaiting` + `clientsClaim`, `injectRegister: null` (the SW is registered by hand in `main.jsx` through `virtual:pwa-register`). Manifest declares name/colors/icons and `display: standalone` (installable on mobile). The cache headers above ensure the SW and manifest are revalidated on each load so updates roll out quickly.
+
+**Precache exclusions matter here.** `workbox.globIgnores` deliberately drops the `transformers-*` chunk, every `.wasm`, `ort-*` and `jszip*` from the precache manifest, and the Whisper weights are fetched from the **Hugging Face CDN at runtime** rather than shipped in `dist/`. Consequences to keep in mind when operating the site:
+
+- a regular visitor never downloads the (tens of MB) speech stack;
+- the voice tools therefore need **network access to `huggingface.co` / `cdn-lfs*.hf.co` on first use** — they are not usable fully offline until the browser has cached a model;
+- if a Content-Security-Policy is ever added to `vercel.json`, it must allow those hosts plus `wasm-unsafe-eval`, or local STT breaks.
+
+Vendor chunking (`build.rolldownOptions.advancedChunks`, Vite 8 / rolldown — *not* `rollupOptions`) isolates `react`, `supabase` and `transformers` so the speech chunk stays out of the critical path.
 
 ## Supabase deployment pieces
 
@@ -83,3 +93,5 @@ psql "$SUPABASE_DB_URL" < scripts/wakeref_post_restore.sql
 
 - The project targets the Supabase **free plan** — avoid paid-only features (e.g. Storage image transforms).
 - Custom domain: `wakeref.app` (referenced throughout SEO, sitemap, and Edge Functions).
+- **Judging data is not on the server.** A heat scored at `/competition/:code` lives only in that browser's `localStorage` (`wakeref_heat_<code>`), and the voice training corpus only in IndexedDB. Clearing site data on a judge's device loses the scoring; only the course itself (`parcours` table) can be recovered. There is no multi-judge sync and nothing to back up server-side for these features.
+- **Deploy checklist for the judging tools:** the `Permissions-Policy` caveat above, HF CDN reachability, and `https` (getUserMedia requires a secure context — fine on Vercel).
