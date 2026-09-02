@@ -258,12 +258,123 @@ a.creditBy:hover { color: #8f2a64; transform: rotate(0deg); }
 }
 @keyframes drop { 0%, 100% { transform: translateY(0); opacity: .7 } 50% { transform: translateY(6px); opacity: 1 } }
 
+/* ══════════════ Mode recherche : la couverture se replie ══════════════
+   Dès la première frappe, le hero passe de 100svh à un bandeau : il ne reste
+   que la barre de recherche, calée sous la navbar, et les résultats se posent
+   juste dessous. Sans ce repli, la couverture gardait sa hauteur pleine et
+   laissait ~200 px de vide entre le champ et le premier résultat — la légende,
+   les 18vh de `.heroInner` et l'invite à défiler.
+
+   Le passage est franc, pas un morphing : `bottom: 18vh` → flux normal et
+   `100svh` → `auto` ne s'animent pas. On l'assume avec une courte descente de
+   la barre, et les résultats qui se révèlent en dessous font le reste. */
+.heroSearching {
+  height: auto;
+  min-height: 0;
+  padding-top: calc(var(--nav-h) + 12px);
+  /* Cette réserve n'est pas une marge : c'est la course du fondu vers le
+     papier, solidaire des paliers de `.heroSearching .grade`. Elle est large
+     parce qu'un raccord court se voit : la vidéo et le papier n'ont pas la
+     même luminosité, et il faut de la distance pour passer de l'un à l'autre
+     sans montrer de ligne. C'est aussi, à 4 px près, tout l'écart entre la
+     barre et le premier résultat : les deux réglages sont le même curseur, on
+     ne rapproche pas la liste sans raidir le raccord. La barre s'arrête vers
+     62 %, le fondu démarre juste après. */
+  padding-bottom: 4.25rem;
+}
+.heroSearching .heroInner {
+  /* `relative` et non `static` : le bloc doit rentrer dans le flux pour donner
+     sa hauteur au bandeau, mais `z-index` ne s'applique qu'à un élément
+     positionné. En `static` le `z-index: 3` était ignoré et `.grade` (absolu,
+     z-index 2) repeignait son voile d'encre par-dessus la barre de recherche —
+     elle disparaissait. `inset: auto` neutralise le `bottom: 18vh` du plein
+     écran, qui remonterait le bloc hors du bandeau. */
+  position: relative;
+  inset: auto;
+  animation: none;
+  /* Même gouttière que `.page-container`, sinon la barre se décale de 4 px
+     par rapport aux résultats sous 600 px de large. */
+  padding-inline: var(--page-pad);
+}
+.heroSearching .kicker { display: none; }
+/* Le titre est masqué à l'œil mais gardé dans l'arbre d'accessibilité : en
+   `display: none` la page n'aurait plus de `<h1>` pendant toute la recherche. */
+.heroSearching .title {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+.heroSearching .searchWrap { animation: heroPin .22s ease both; }
+@keyframes heroPin { from { opacity: 0; transform: translateY(-9px); } to { opacity: 1; transform: none; } }
+
+/* Le dégradé du hero plein écran est calé en pourcentages sur 100svh : réduit
+   à un bandeau, sa montée vers le papier retomberait en plein sur la barre de
+   recherche et effacerait le texte crème. On le rejoue donc à l'échelle du
+   bandeau — mêmes trois principes qu'en haut de ce fichier :
+
+   1. ORDRE. Le fondu papier au-dessus, le voile d'encre en dessous.
+   2. COURBE. Les paliers sont ceux du plein écran, reportés proportionnellement
+      sur la course 56 % → 100 % au lieu de 55 % → 100 %. Une rampe linéaire,
+      c'est ce qu'il y avait ici au départ, et sa cassure de pente se voyait.
+   3. GRAIN. Repris à l'identique.
+
+   Le voile d'encre S'ÉTEINT avant le bas (transparent dès 88 %) au lieu de
+   s'épaissir : sinon il assombrit la vidéo juste au moment où le papier monte,
+   et l'écart de luminosité entre les deux fait une barre nette — c'est
+   exactement ce qui rendait le raccord brutal.
+
+   Placé APRÈS la règle `[data-theme='dark']` plus haut : à spécificité égale
+   (deux sélecteurs simples de part et d'autre), c'est l'ordre qui tranche. */
+.heroSearching .grade {
+  background:
+    var(--grain) 0 0 / 3px 3px,
+    linear-gradient(180deg,
+      rgba(220, 210, 222, 0) 62%,
+      rgba(220, 210, 222, .03) 69%,
+      rgba(220, 210, 222, .08) 74%,
+      rgba(220, 210, 222, .17) 80%,
+      rgba(220, 210, 222, .30) 85%,
+      rgba(220, 210, 222, .48) 89%,
+      rgba(220, 210, 222, .68) 93%,
+      rgba(220, 210, 222, .87) 97%,
+      rgba(220, 210, 222, 1) 100%),
+    linear-gradient(180deg,
+      rgba(26, 20, 32, .6) 0%,
+      rgba(26, 20, 32, .58) 55%,
+      rgba(26, 20, 32, .34) 78%,
+      transparent 88%);
+}
+:global([data-theme='dark']) .heroSearching .grade {
+  background:
+    var(--grain) 0 0 / 3px 3px,
+    linear-gradient(180deg,
+      rgba(26, 20, 32, 0) 62%,
+      rgba(26, 20, 32, .05) 69%,
+      rgba(26, 20, 32, .12) 74%,
+      rgba(26, 20, 32, .22) 80%,
+      rgba(26, 20, 32, .36) 85%,
+      rgba(26, 20, 32, .55) 89%,
+      rgba(26, 20, 32, .74) 93%,
+      rgba(26, 20, 32, .9) 97%,
+      rgba(26, 20, 32, 1) 100%),
+    linear-gradient(180deg,
+      rgba(26, 20, 32, .6) 0%,
+      rgba(26, 20, 32, .58) 55%,
+      rgba(26, 20, 32, .34) 78%,
+      transparent 88%);
+}
+
 /* ══════════════ Résultats de recherche ══════════════ */
-/* Hauteur d'écran réservée, quelle que soit la largeur. Dès qu'on tape, les
-   rubriques et les rangées disparaissent au profit des seuls résultats : sans
-   cette réserve, le document redevient trop court pour qu'on puisse défiler
-   jusqu'à la barre, et les résultats restent sous la ligne de flottaison. */
-.results { padding-top: 1.75rem; min-height: 100vh; }
+/* Pas de `min-height: 100vh` ici : cette réserve n'existait que pour rendre le
+   document assez long pour qu'on puisse défiler jusqu'à la barre de recherche,
+   restée basse dans la couverture. La couverture se replie maintenant d'elle-
+   même (`.heroSearching`), la barre est déjà en haut. */
+/* Quasi nul : la réserve basse de `.heroSearching` finit en papier plein, elle
+   fait déjà tout l'espacement avant la liste. */
+.results { padding-top: .25rem; }
 .empty { font-size: 14px; color: var(--c-muted); padding: 1rem 0; }
 
 /* ══════════════ Les quatre modules ══════════════ */
@@ -468,7 +579,9 @@ a.creditBy:hover { color: #8f2a64; transform: rotate(0deg); }
 .cta {
   margin-top: 3rem;
   padding: 1.75rem 0;
-  border-top: 2px solid var(--c-text);
+  /* Même graisse que le filet du footer : la direction n'a qu'une épaisseur de
+     filet plein, la hiérarchie se fait au pointillé (`--c-rule`) ou au blanc. */
+  border-top: 1px solid var(--c-text);
   border-bottom: 1px dotted var(--c-rule);
   display: flex;
   flex-direction: column;
@@ -476,9 +589,12 @@ a.creditBy:hover { color: #8f2a64; transform: rotate(0deg); }
 }
 @media (min-width: 860px) {
   /* Sur grand écran, les chiffres tiennent la colonne de gauche et l'appel
-     occupe la mesure de droite : la double page se remplit. */
+     occupe la mesure de droite : la double page se remplit. Les places sont
+     dites explicitement parce que le DOM, lui, porte l'appel EN PREMIER — sur
+     un seul rang, il doit passer au-dessus des chiffres. */
   .cta { display: grid; grid-template-columns: minmax(200px, 1fr) 2fr; gap: 2.5rem; }
-  .ctaStats { flex-direction: column; gap: 1.5rem; }
+  .ctaStats { flex-direction: column; gap: 1.5rem; grid-column: 1; grid-row: 1; }
+  .ctaBody { grid-column: 2; grid-row: 1; }
 }
 .ctaStats { display: flex; gap: 2.5rem; }
 .ctaStat { display: flex; flex-direction: column; gap: 2px; }
@@ -638,6 +754,7 @@ a.creditBy:hover { color: #8f2a64; transform: rotate(0deg); }
 
 @media (prefers-reduced-motion: reduce) {
   .heroVid { transition: none; }
+  .heroSearching .searchWrap { animation: none; }
   .mod, .modImg img { animation: none; opacity: 1; translate: none; }
   .down i { animation: none; }
   .mod:hover .modImg img,

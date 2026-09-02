@@ -111,47 +111,27 @@ export default function Home() {
   // clip d'illustration par figure, pour les vignettes des deux rangées
   const [clips, setClips] = useState({})
   const heroRefs = useRef([])
-  const searchRef = useRef(null)
   const modulesRef = useRef(null)
   const navigate = useNavigate()
   const tr = useT()
+
+  // Dès la première frappe, la page bascule en mode recherche : la couverture
+  // se replie en bandeau et les résultats prennent la place du sommaire.
+  const hasQuery = query.trim().length > 0
 
   // Les blocs de rubrique s'animent au défilement. Sur Chrome et Safari c'est
   // du CSS pur (`animation-timeline: view()`, cf. Home.module.css) ; ce hook ne
   // fait quelque chose que sur les moteurs qui ne l'ont pas encore, Firefox
   // aujourd'hui. La `<nav>` n'est montée qu'en dehors d'une recherche.
-  useScrollDrive(modulesRef, !query.trim())
+  useScrollDrive(modulesRef, !hasQuery)
 
-  // Sur mobile, la barre de recherche est basse dans la couverture ; quand le
-  // clavier s'ouvre il masque les résultats affichés en dessous. Au focus, on
-  // remonte la barre juste sous la navbar pour libérer l'espace au-dessus du
-  // clavier. Le délai laisse le clavier amorcer son ouverture (sinon iOS
-  // recale la position après notre scroll).
-  // Amène la barre juste sous la navbar, pour que les résultats soient dans le
-  // champ de vision. La couverture fait un écran entier : sans ça, ils
-  // s'affichent sous la ligne de flottaison et paraissent absents.
-  const pinSearch = useCallback((delay = 0) => {
-    setTimeout(() => {
-      const el = searchRef.current
-      if (!el) return
-      const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'), 10) || 52
-      const top = el.getBoundingClientRect().top + window.scrollY - navH - 8
-      if (Math.abs(window.scrollY - top) < 8) return
-      // Repositionnement instantané, pas `smooth` : la couverture en 100svh
-      // et les vidéos qui tournent font annuler l'animation de défilement par
-      // le navigateur — vérifié, on restait bloqué à quelques pixels du haut.
-      window.scrollTo({ top, behavior: 'auto' })
-    }, delay)
-  }, [])
-
-  // Sur mobile, on remonte dès le focus : le clavier va occuper le bas de
-  // l'écran, et le délai lui laisse le temps de s'ouvrir (sinon iOS recale la
-  // position après notre défilement). Sur desktop, remonter au simple clic
-  // serait brutal — on attend la première frappe.
-  const handleSearchFocus = () => {
-    if (window.innerWidth > 760) return
-    pinSearch(300)
-  }
+  // La couverture se replie sous la navbar : on revient en haut pour que la
+  // barre de recherche et ses résultats soient dans le champ de vision. Un
+  // repositionnement instantané, pas `smooth` : la couverture qui change de
+  // hauteur sous l'animation la ferait annuler par le navigateur.
+  useEffect(() => {
+    if (hasQuery && window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'auto' })
+  }, [hasQuery])
 
   useEffect(() => {
     supabase.rpc('home_stats').then(({ data }) => {
@@ -235,8 +215,16 @@ export default function Home() {
   // pause tout de suite : il continue de tourner sous le fondu, sans quoi on
   // verrait son image figée pendant toute la transition — c'était le défaut.
   // Il n'est arrêté qu'une fois hors de vue, pour libérer le décodage.
+  //
+  // En mode recherche, la couverture n'est plus qu'un bandeau derrière la barre
+  // et la rotation est en veille : on arrête tout plutôt que de laisser des
+  // vidéos se décoder sous les résultats.
   useEffect(() => {
     if (!hero.length) return
+    if (hasQuery) {
+      heroRefs.current.forEach(el => { if (el && !el.paused) el.pause() })
+      return
+    }
     const actif = heroRefs.current[heroIdx]
     if (actif) {
       try { actif.currentTime = 0 } catch { /* pas encore seekable */ }
@@ -248,7 +236,7 @@ export default function Home() {
       })
     }, HOLD_MS + 150)
     return () => clearTimeout(t)
-  }, [heroIdx, hero.length])
+  }, [heroIdx, hero.length, hasQuery])
 
   // Bascule anticipée. On n'attend pas `ended` : à ce moment-là le clip est
   // déjà arrêté sur sa dernière image, et le fondu se jouerait sur un arrêt sur
@@ -256,7 +244,7 @@ export default function Home() {
   // minuteur calculé sur la durée : il suit la lecture réelle et ne dérive pas
   // si le clip se met à bufferiser.
   useEffect(() => {
-    if (hero.length < 2) return
+    if (hero.length < 2 || hasQuery) return
     const el = heroRefs.current[heroIdx]
     if (!el) return
     let bascule = false
@@ -274,14 +262,14 @@ export default function Home() {
     }
     el.addEventListener('timeupdate', surveille)
     return () => el.removeEventListener('timeupdate', surveille)
-  }, [heroIdx, hero.length, nextClip])
+  }, [heroIdx, hero.length, hasQuery, nextClip])
 
   // Filet de sécurité : un clip dont les métadonnées ne chargent pas n'émettrait
   // jamais `ended` et figerait la rotation. Le minuteur est suspendu quand
   // l'onglet passe en arrière-plan — le navigateur y met déjà les vidéos en
   // pause, la rotation défilerait donc dans le vide.
   useEffect(() => {
-    if (hero.length < 2) return
+    if (hero.length < 2 || hasQuery) return
     let t
     const arm = () => {
       clearTimeout(t)
@@ -296,12 +284,7 @@ export default function Home() {
     arm()
     document.addEventListener('visibilitychange', onVisible)
     return () => { clearTimeout(t); document.removeEventListener('visibilitychange', onVisible) }
-  }, [heroIdx, hero.length, nextClip])
-
-  const hasQuery = query.trim().length > 0
-  useEffect(() => {
-    if (hasQuery && window.innerWidth > 760) pinSearch()
-  }, [hasQuery, pinSearch])
+  }, [heroIdx, hero.length, hasQuery, nextClip])
 
   useEffect(() => {
     const q = query.trim()
@@ -336,7 +319,7 @@ export default function Home() {
       />
 
       {/* ── Couverture plein écran ── */}
-      <header className={styles.hero}>
+      <header className={`${styles.hero} ${hasQuery ? styles.heroSearching : ''}`}>
         {hero.map((c, i) => (
           <video
             key={c.id}
@@ -368,7 +351,7 @@ export default function Home() {
           <p className={styles.kicker}>{tr.heroEyebrow}</p>
           <h1 className={styles.title}>{tr.heroTitle}</h1>
 
-          <div className={styles.searchWrap} ref={searchRef}>
+          <div className={styles.searchWrap}>
             <Icon name="search" size={19} />
             <input
               className={styles.searchInput}
@@ -377,7 +360,6 @@ export default function Home() {
               placeholder={tr.searchPlaceholder}
               value={query}
               onChange={e => setQuery(e.target.value)}
-              onFocus={handleSearchFocus}
               autoComplete="off"
             />
             {query && (
@@ -390,7 +372,7 @@ export default function Home() {
           {/* Légende du clip en cours : le trick, et qui l'a filmé. Elle vit
               dans le bloc de copie et non en bas d'écran — plus bas, elle
               tomberait dans le fondu vers le papier et deviendrait illisible. */}
-          {current?.figure && (
+          {current?.figure && !hasQuery && (
             <p className={styles.credit} key={current.id}>
               <Link
                 to={`/figures/${current.figure.slug}`}
@@ -417,13 +399,17 @@ export default function Home() {
         </div>
 
 
-        <div className={styles.down} aria-hidden="true">
-          <span>Scroll</span><i />
-        </div>
+        {/* L'invite à défiler n'a plus de sens quand la couverture est repliée
+            en bandeau : sous elle il n'y a plus une page, mais des résultats. */}
+        {!hasQuery && (
+          <div className={styles.down} aria-hidden="true">
+            <span>Scroll</span><i />
+          </div>
+        )}
       </header>
 
       <div className="page-container">
-        {query.trim() && (
+        {hasQuery && (
           <div className={styles.results}>
             {searching && <span className="spinner" />}
             {!searching && searchResults?.length === 0 && (
@@ -437,7 +423,7 @@ export default function Home() {
           </div>
         )}
 
-        {!query.trim() && (
+        {!hasQuery && (
           <>
             {/* ── Les quatre modules, en blocs empilés qui alternent ── */}
             <nav ref={modulesRef} className={styles.modules} aria-label={tr.summary}>
@@ -485,6 +471,13 @@ export default function Home() {
             )}
 
             <section className={styles.cta}>
+              <div className={styles.ctaBody}>
+                <h2 className={styles.ctaTitle}>{tr.ctaTitle}</h2>
+                <p className={styles.ctaText}>{tr.ctaText}</p>
+                <button className={`btn btn-submit ${styles.ctaBtn}`} onClick={() => navigate('/submit')}>
+                  <Icon name="upload" size={16} /> {tr.ctaButton}
+                </button>
+              </div>
               {stats && (
                 <div className={styles.ctaStats}>
                   <div className={styles.ctaStat}>
@@ -497,13 +490,6 @@ export default function Home() {
                   </div>
                 </div>
               )}
-              <div className={styles.ctaBody}>
-                <h2 className={styles.ctaTitle}>{tr.ctaTitle}</h2>
-                <p className={styles.ctaText}>{tr.ctaText}</p>
-                <button className={`btn btn-submit ${styles.ctaBtn}`} onClick={() => navigate('/submit')}>
-                  <Icon name="upload" size={16} /> {tr.ctaButton}
-                </button>
-              </div>
             </section>
 
             <a

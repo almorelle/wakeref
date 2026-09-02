@@ -240,7 +240,8 @@
 .diff {
   background: none;
   border: 0;
-  border-top: 2px solid var(--c-text);
+  /* 1 px : la direction n'a qu'une graisse de filet plein (cf. footer, .cta). */
+  border-top: 1px solid var(--c-text);
   border-radius: 0;
 }
 .diffHead, .diffRow {
