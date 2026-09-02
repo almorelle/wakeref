@@ -21,9 +21,9 @@ GitHub Actions ─ daily pg_dump ───────────────�
 - **Caching:**
   - `/assets/(.*)` → `Cache-Control: public, max-age=31536000, immutable` (hashed Vite assets).
   - `sw.js`, `registerSW.js`, `manifest.webmanifest` → `max-age=0, must-revalidate` (so the PWA service worker updates promptly).
-- **Security headers** on all routes: `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: SAMEORIGIN`, `Strict-Transport-Security` (HSTS, 2 yr, preload), `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+- **Security headers** on all routes: `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Frame-Options: SAMEORIGIN`, `Strict-Transport-Security` (HSTS, 2 yr, preload), `Permissions-Policy: camera=(), microphone=(self), geolocation=()`.
 
-> ⚠️ **`microphone=()` disables the microphone for the site itself**, not just third-party frames — an empty allowlist means "no origin, including `self`". Verified live: `curl -I https://wakeref.app/judge/voix` returns `permissions-policy: camera=(), microphone=(), geolocation=()`. Both voice surfaces call `navigator.mediaDevices.getUserMedia({ audio: true })` — `/judge/voix` (push-to-talk + dataset recording) and the competition **Run tab** dictation (`src/lib/competition/voice.js`) — so they are expected to fail with `NotAllowedError` in production while working fine on `npm run dev` (no such header locally). Enabling them requires `microphone=(self)` in `vercel.json`.
+> **Why `microphone=(self)` and not `microphone=()`.** An empty allowlist means "no origin, **including `self`**" — it vetoes the feature for the site itself, not just for third-party frames. Until 2026-09-02 this header shipped as `microphone=()`, which blocked `navigator.mediaDevices.getUserMedia({ audio: true })` in production on both voice surfaces — `/judge/voix` (push-to-talk + dataset recording) and the competition **Run tab** dictation (`src/lib/competition/voice.js`) — while everything worked in `npm run dev`, where `vercel.json` is not applied. `(self)` grants nothing by itself: the browser still asks the user for permission. Keep `camera` and `geolocation` closed — nothing in the app uses them.
 
 ## Build settings
 
@@ -94,4 +94,4 @@ psql "$SUPABASE_DB_URL" < scripts/wakeref_post_restore.sql
 - The project targets the Supabase **free plan** — avoid paid-only features (e.g. Storage image transforms).
 - Custom domain: `wakeref.app` (referenced throughout SEO, sitemap, and Edge Functions).
 - **Judging data is not on the server.** A heat scored at `/competition/:code` lives only in that browser's `localStorage` (`wakeref_heat_<code>`), and the voice training corpus only in IndexedDB. Clearing site data on a judge's device loses the scoring; only the course itself (`parcours` table) can be recovered. There is no multi-judge sync and nothing to back up server-side for these features.
-- **Deploy checklist for the judging tools:** the `Permissions-Policy` caveat above, HF CDN reachability, and `https` (getUserMedia requires a secure context — fine on Vercel).
+- **Deploy checklist for the judging tools:** `Permissions-Policy` must keep `microphone=(self)` (see above), HF CDN reachability, and `https` (getUserMedia requires a secure context — fine on Vercel).

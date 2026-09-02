@@ -77,7 +77,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Auth is a **single admin; never add a public sign-up flow** — `authenticated` gets full CRUD via RLS.
 - RLS hides unpublished figures / takedown videos from `anon` — verify visibility **as anon**.
 - Public-insert inboxes are abuse vectors: only `compositions` is rate-limited (20/min); `video_submissions` (fires a notification email) and `takedown_requests` are not. Anyone with a code can read a run via `get_composition(id)` or a course via `get_parcours(code)` — store nothing sensitive there.
-- **Known production issue:** `vercel.json` sends `Permissions-Policy: microphone=()` on every route, which disables `getUserMedia` for the site itself — the voice surfaces work in dev and fail in production. Fixing it means `microphone=(self)`.
+- **Don't tighten `Permissions-Policy` back to `microphone=()`** in `vercel.json`. An empty allowlist bans the feature for the site itself, not just third parties, and silently kills both voice surfaces in production while dev keeps working (the header isn't applied there). `microphone=(self)` is required and grants nothing on its own — the browser still prompts the user. `camera` and `geolocation` stay closed.
 
 ### i18n & UI conventions
 
