@@ -7,6 +7,13 @@ import styles from './FigureForm.module.css'
 import { useLocation } from 'react-router-dom'
 import Icon from '../../components/Icon'
 
+// Slug d'une figure : minuscules, sans accents, séparé par des tirets.
+// Au niveau module (pas dans le composant) : il est appelé depuis le callback de
+// chargement, donc avant sa propre déclaration si on le laisse en const local.
+const genSlug = (name) =>
+  name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
 // Un « slot » de type de rotation : un par 360° complet (spin d'abord, puis
 // chaque rewind ≥ 360°), plus le cas particulier d'une rotation BS impaire
 // (180/540/900…) suivie d'un rewind de 180° — celui-ci étant forcément BS,
@@ -207,9 +214,6 @@ export default function FigureForm() {
     })
   }, [id, isEdit, duplicateFrom])
 
-  const genSlug = (name) =>
-    name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-      .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
 
   const set = (key, value) => setForm(f => ({ ...f, [key]: value }))
 

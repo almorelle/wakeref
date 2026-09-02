@@ -78,7 +78,7 @@ export default function AdminDashboard() {
       <h1 className={styles.title}>Dashboard</h1>
 
       <section>
-        <p className="section-title">Vue d'ensemble</p>
+        <p className="section-title">Vue d&apos;ensemble</p>
         <div className={styles.grid}>
           {overview.map(t => renderTile(t, null))}
         </div>

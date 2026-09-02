@@ -57,11 +57,12 @@ function InstagramCard({ v, label }) {
 // la carte approche du viewport — perf sur les figures à galerie longue.
 function useInView(rootMargin = '300px') {
   const ref = useRef(null)
-  const [inView, setInView] = useState(false)
+  // Pas d'IntersectionObserver (vieux navigateur) → on monte tout de suite, décidé
+  // à l'initialisation plutôt que par un setState dans l'effet.
+  const [inView, setInView] = useState(() => typeof IntersectionObserver === 'undefined')
   useEffect(() => {
     const el = ref.current
     if (!el || inView) return
-    if (typeof IntersectionObserver === 'undefined') { setInView(true); return }
     const io = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) { setInView(true); io.disconnect() }
     }, { rootMargin })

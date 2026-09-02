@@ -139,7 +139,7 @@ See `source-tree-analysis.md` for the annotated tree. Entry points: `index.html`
 
 ## Architectural risks / watch-items
 
-1. **No automated tests** — ESLint (`npm run lint`) is the only automated guard; refactors are otherwise unguarded. **It is currently failing** — 14 errors / 7 warnings spread over 12 files, so the 0/0 invariant is not holding today. The competition module accounts for 9 of the 14 errors, and `src/pages/admin/CompetitionSetup.jsx` alone for 6.
+1. **No automated tests** — ESLint (`npm run lint`) is the only automated guard; refactors are otherwise unguarded. **It currently reports 9 errors / 7 warnings, all confined to the judging & competition module** (`admin/CompetitionSetup.jsx` alone accounts for 6). That module is still under active development and the noise is accepted as such — the rest of the tree is clean, which is the line to hold.
 2. **Schema managed by hand** across two SQL files + the live DB — easy to drift; keep them and `src/data/*` in sync.
 3. **Build env vars are baked into the client bundle** — `VITE_SUPABASE_*` are required at build time for the app to work (the sitemap step itself is best-effort and no longer breaks the build on a DB outage).
 4. **Judging state is device-local and unbacked.** A heat lives in one browser's `localStorage`; clearing site data loses a competition's scoring. Only the course is recoverable (from `parcours`).

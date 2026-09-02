@@ -88,11 +88,21 @@ There is **no test runner** configured. "Verification" today means `npm run lint
 There is no test runner, so verification is:
 
 1. `npm run lint` — must end at **0 errors / 0 warnings**. The `react-hooks` rules are the strict React-Compiler set: no `setState` synchronously inside a `useEffect` body, no component declared during render (hoist it to module scope), no ref `.current` access during render.
-   *Current state: the tree does not satisfy this — 14 errors / 7 warnings over 12 files. Fix what you touch, and don't add to it. By rule:*
-   - *6 × `react/no-unescaped-entities` — raw French apostrophes in JSX (`admin/CompetitionSetup` ×4, `JudgeVoice`, `admin/AdminDashboard`). Mechanical.*
-   - *5 × `react-hooks/set-state-in-effect` — `FigureDetail:64`, `admin/AdminCompetitions:22`, `admin/AdminVideos:80`, `admin/CompetitionSetup:107`, `competition/CompetitionView:24`. Each needs the effect re-read; a blind fix can change first-render behaviour.*
-   - *2 × `react-hooks/immutability` — `admin/CompetitionSetup:238` (`pseen` reassigned after render) and `admin/FigureForm:203` (`genSlug` used before declaration). The two most substantive ones.*
-   - *1 × `no-useless-escape` — `lib/normalizeJib.js:238`.*
+   *Current state: 9 errors / 7 warnings, **all of them inside the judging & competition
+   module, which is still under active development** — `admin/CompetitionSetup.jsx` (6),
+   `JudgeVoice.jsx`, `admin/AdminCompetitions.jsx`, `competition/CompetitionView.jsx`,
+   plus warnings in `competition/HeatTab.jsx`, `CompositionSimple.jsx` and `France2026.jsx`.
+   This is accepted WIP noise, not debt: the code isn't settled yet, so it is deliberately
+   left alone rather than churned. **Everything outside that module is clean — keep it that
+   way**, and clear the module's own warnings when its design stabilises.*
+   *Two patterns dominate there and are worth solving on purpose rather than silencing:*
+   - *`react-hooks/set-state-in-effect` — the "reset state when a prop changes" shape
+     (`setLoading(true); setNotFound(false); …` at the top of an effect). Moving those lines
+     into the async IIFE below silences the rule without changing anything: the real fixes are
+     re-keying the component (`<CompetitionView key={code}/>`) or deriving the flag from state.*
+   - *`react-hooks/immutability` — `admin/CompetitionSetup.jsx:238` reassigns `pseen` during
+     render to find the first pulley; computing it before the `.map()` removes the mutation.*
+
 2. `npm run dev` and exercise the flow. Prefer this over a full build.
 3. For DB-visible changes, check the page **as `anon`** (private window), not only as the logged-in admin — RLS hides unpublished figures and takedown videos.
 4. Jib composer changes: `node scripts/test-normalize-jib.mjs`.

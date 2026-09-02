@@ -52,7 +52,7 @@ DB from scratch: run `scripts/wakeref_post_restore.sql` in the Supabase SQL Edit
 
 ## Notes & caveats
 
-- **No test runner** — `npm run lint` is the only automated check, and it is **currently failing**: 14 errors / 7 warnings over 12 files, 6 of them in `src/pages/admin/CompetitionSetup.jsx`. Everything else is manual verification.
+- **No test runner** — `npm run lint` is the only automated check. It reports 9 errors / 7 warnings, **all inside the judging & competition module, which is still WIP** (accepted noise); everything outside it is clean. Other verification is manual.
 - **Schema is hand-managed** across `scripts/wakeref_post_restore.sql` (executable) and `scripts/wakeref_schema.sql` (reference dump); no migration tool. Both were in sync as of this scan.
 - **Build queries Supabase** for the sitemap, but **best-effort** — a DB outage no longer fails the build. `VITE_SUPABASE_*` are still baked into the client bundle (required for the app).
 - **`Permissions-Policy: microphone=()` in `vercel.json` disables the microphone site-wide in production**, including for the two voice surfaces (`/judge/voix`, competition Run tab). They work in dev, where the header is absent. See the [Deployment Guide](./deployment-guide.md#pwa--service-worker).

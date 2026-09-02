@@ -235,7 +235,7 @@ function assemble(items) {
 export function composeJib(input, { tricks } = {}) {
   if (!input) return ''
   let t = input.toLowerCase()
-  t = t.replace(/[.,;:!?\-]+/g, ' ')        // ponctuation & tirets → espace
+  t = t.replace(/[.,;:!?-]+/g, ' ')         // ponctuation & tirets → espace
   t = t.replace(/(\d)\s?mm\b/g, '$1')        // unités parasites : 90mm→90, 2.7mm→2 7
   t = t.replace(/transferto\b/g, 'transfert to')
   t = applyRotations(t)

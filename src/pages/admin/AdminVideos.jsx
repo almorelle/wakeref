@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useToast } from '../../hooks/useToast'
@@ -56,7 +56,7 @@ export default function AdminVideos() {
   })
   const [file, setFile] = useState(null)
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const [{ data: figs }, { data: vids }] = await Promise.all([
       supabase.from('figures').select('id, name').order('name'),
       supabase.from('videos')
@@ -66,21 +66,20 @@ export default function AdminVideos() {
     ])
     setFigures(figs || [])
     setVideos(vids || [])
-    setLoading(false)
-  }
 
-  useEffect(() => { void (async () => { await load() })() }, [])
-
-  // Préremplissage via ?figure= (flux Figures→Vidéos) : renseigne le champ figure
-  // + le titre avec le nom de la figure une fois la liste chargée.
-  useEffect(() => {
-    if (!figures.length || !prefigureId) return
-    const f = figures.find(x => String(x.id) === String(prefigureId))
-    if (f) {
-      setForm(s => (s.title ? s : { ...s, title: f.name }))
-      setFigureSearch(prev => prev || f.name)
+    // Préremplissage via ?figure= (flux Figures→Vidéos) : renseigne le titre avec le
+    // nom de la figure. Fait ICI, au moment où la liste arrive, plutôt que dans un
+    // effet réagissant à `figures` (setState synchrone dans un effet).
+    const pre = prefigureId && (figs || []).find(x => String(x.id) === String(prefigureId))
+    if (pre) {
+      setForm(s => (s.title ? s : { ...s, title: pre.name }))
+      setFigureSearch(prev => prev || pre.name)
     }
-  }, [figures, prefigureId])
+
+    setLoading(false)
+  }, [prefigureId])
+
+  useEffect(() => { void (async () => { await load() })() }, [load])
 
   // Fermeture du menu au clic extérieur.
   useEffect(() => {
