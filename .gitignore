@@ -477,3 +477,4 @@ public/sitemap.xml
 _bmad/
 # Export local des vidéos Storage (scripts/download-videos.mjs)
 videos-export/
+docs/.archive/
