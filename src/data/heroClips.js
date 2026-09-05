@@ -13,7 +13,7 @@
 // Pour changer la sélection : éditer ce tableau. Si ça devient fréquent, l'étape
 // suivante est une colonne `hero_order` sur `videos` pilotée depuis l'admin.
 export const HERO_CLIP_IDS = [
-  175, // Blind Judge — Andrea Smolinska         720×960    9.0s
+  175, // Blind Judge — Andrea Smolinska         720×720    9.3s
   385, // TS FS 360 — Ile Vegni                  720×720    4.1s
   220, // Back Mobe — Parker Wasson              720×720    6.7s
   179, // Kickflip — Telma Cester                360×640    4.1s
@@ -35,3 +35,11 @@ export const HERO_CLIP_IDS = [
 // Dossier Storage des illustrations de rubrique, dans le bucket `videos`.
 // Un fichier par module, nommé d'après lui : Catalogue.jpg, Quiz.jpg…
 export const MODULE_IMAGE_DIR = 'illustrations/photos'
+
+// À tenir synchronisé avec HERO_CLIP_IDS[0] — Home.jsx le vérifie en dev, et
+// `node scripts/hero-poster.mjs` régénère l'image à partir d'ici.
+export const HERO_FIRST = {
+  id: 175,
+  path: '126/1779789817819.mp4',
+  poster: '/hero-poster.jpg',
+}

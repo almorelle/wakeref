@@ -36,6 +36,13 @@ export default defineConfig({
         // ET les binaires onnxruntime (.wasm, jusqu'à ~24 Mo). Les poids du modèle
         // Whisper viennent du CDN Hugging Face → hors dist, jamais précachés non plus.
         globIgnores: ['**/transformers-*.js', '**/*.wasm', '**/ort-*', '**/jszip*'],
+        // Aux js/css/html du défaut on ajoute les polices et la première image
+        // de la couverture. Les deux sont sur le chemin critique du premier
+        // écran : servies par le service worker, elles n'ont plus à être
+        // revalidées à chaque visite. Pour les polices c'est en plus une
+        // affaire de stabilité — tant que Bebas n'est pas là, le titre est
+        // composé dans un repli, et la moindre latence rouvre le remplacement.
+        globPatterns: ['**/*.{js,css,html,woff2}', 'hero-poster.jpg'],
       },
       manifest: {
         name: 'WakeRef',

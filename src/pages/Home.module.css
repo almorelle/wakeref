@@ -132,7 +132,13 @@
   letter-spacing: .005em;
   line-height: .86;
   text-transform: uppercase;
-  max-width: 14ch;
+  /* 5.6em, et surtout PAS 14ch : le `ch` se mesure dans la police courante, or
+     celle-ci change au chargement de Bebas. La boîte grandissait donc de 44 %
+     pendant que le texte, lui, grandissait de 74 % — le titre se recoupait, et
+     le bloc étant ancré par le bas, la colonne entière remontait. `em` ne
+     dépend que de la taille de fonte : la boîte ne bouge plus. La valeur est
+     l'exact équivalent de l'ancienne mesure (le « 0 » de Bebas fait 0.4 em). */
+  max-width: 5.6em;
   text-wrap: balance;
   color: #f2eedf;
   margin-bottom: 18px;
@@ -164,15 +170,33 @@
 .clearBtn { color: #f2eedfcc; padding: 2px; display: flex; align-items: center; }
 .clearBtn:hover { color: #f2eedf; }
 
+/* Case de la légende, TOUJOURS montée et de hauteur fixe. La légende, elle,
+   n'arrive qu'après la requête et change à chaque clip — sans cette case, le
+   bloc de couverture (ancré par le bas) grandissait à l'arrivée des données et
+   se remesurait à chaque nom de trick plus long que le précédent : la colonne
+   sautait à chaque rotation. La légende est donc sortie du flux et posée
+   dedans ; les 14.5vh qui séparent le bloc de l'invite à défiler absorbent le
+   dépassement d'un crédit qui passerait à deux lignes. */
+.creditSlot {
+  position: relative;
+  margin-top: 14px;
+  max-width: 560px;
+  /* Un ruban : sa ligne de texte (10.5px × le 1.55 hérité du body) plus les
+     4px et 3px de rembourrage de `.tape`. Exprimé en calc pour rester exact —
+     une valeur ronde décalerait tout le bloc, qui est ancré par le bas. */
+  height: calc(10.5px * 1.55 + 7px);
+}
+
 /* Légende du clip : sous la recherche, dans la zone assombrie où elle reste
    lisible. Elle rejoue son apparition à chaque changement de clip. */
 .credit {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 14px;
-  max-width: 560px;
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: .12em;
@@ -574,6 +598,21 @@ a.creditBy:hover { color: #8f2a64; transform: rotate(0deg); }
   color: var(--c-muted);
   margin-top: 4px;
 }
+
+/* Vignette en attente : la structure et les HAUTEURS EXACTES d'une vignette
+   pleine, en aplat. Sans elle, les deux rangées ne se montaient qu'à l'arrivée
+   des données et poussaient tout le bas de page. C'est hors du premier écran,
+   donc invisible pour un audit en labo — mais le CLS terrain suit la page sur
+   toute sa vie, et un visiteur qui descend pendant le chargement prenait le
+   décalage en entier. Les valeurs ci-dessous sont celles de `.cardName`
+   (21px, line-height 1) et `.cardSub` (10.5px × le 1.55 hérité du body). */
+.skelName,
+.skelSub {
+  display: block;
+  background: var(--c-surface);
+}
+.skelName { height: 21px; margin-top: 9px; width: 68%; }
+.skelSub  { height: calc(10.5px * 1.55); margin-top: 4px; width: 44%; }
 
 /* ══════════════ Appel à contribution ══════════════ */
 .cta {

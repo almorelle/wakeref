@@ -5,7 +5,7 @@ import { searchFigures } from '../lib/searchFigures'
 import FigureCard from '../components/FigureCard'
 import { useT } from '../i18n/useT'
 import { externalUrl } from '../lib/url'
-import { HERO_CLIP_IDS, MODULE_IMAGE_DIR } from '../data/heroClips'
+import { HERO_CLIP_IDS, HERO_FIRST, MODULE_IMAGE_DIR } from '../data/heroClips'
 import useScrollDrive from '../hooks/useScrollDrive'
 import styles from './Home.module.css'
 import SEO from '../components/SEO'
@@ -32,6 +32,28 @@ const ROW_MAX = 10
 const ROW_POOL = 30
 
 const storageUrl = path => supabase.storage.from('videos').getPublicUrl(path).data.publicUrl
+
+// Le premier clip est figé en dur dans `heroClips` pour partir dès le premier
+// rendu. Les deux déclarations doivent rester d'accord, sinon la couverture
+// ouvre sur un clip puis saute sur un autre à l'arrivée de la requête.
+if (import.meta.env.DEV && HERO_FIRST.id !== HERO_CLIP_IDS[0]) {
+  console.warn(
+    `[Home] HERO_FIRST.id (${HERO_FIRST.id}) ≠ HERO_CLIP_IDS[0] (${HERO_CLIP_IDS[0]}). ` +
+    'Corriger src/data/heroClips.js puis relancer `node scripts/hero-poster.mjs`.',
+  )
+}
+
+// Vignette d'attente : les mêmes boîtes qu'une vignette pleine, pour que la
+// rangée occupe sa place définitive avant l'arrivée des données.
+function SkeletonCard() {
+  return (
+    <span className={styles.card} aria-hidden="true">
+      <span className={styles.cardMedia} />
+      <span className={styles.skelName} />
+      <span className={styles.skelSub} />
+    </span>
+  )
+}
 
 // Vignette d'une figure : le clip tourne en muet au survol (desktop) ou dès
 // que la carte est franchement à l'écran (tactile). Le poster n'est demandé que
@@ -106,11 +128,27 @@ export default function Home() {
   const [mostViewed, setMostViewed] = useState([])
   const [videos, setVideos] = useState([])
   const [stats, setStats] = useState(null)
-  const [hero, setHero] = useState([])
+  // La couverture démarre sur le clip figé dans `heroClips`, sans attendre la
+  // requête : c'est le plus grand élément de la page, donc son LCP. La requête
+  // ne fait ensuite qu'y ajouter la légende et la suite de la rotation.
+  const [hero, setHero] = useState(() => [{
+    id: HERO_FIRST.id,
+    url: storageUrl(HERO_FIRST.path),
+    poster: HERO_FIRST.poster,
+    creator: null,
+    creatorUrl: null,
+    figure: null,
+  }])
   const [heroIdx, setHeroIdx] = useState(0)
   // clip d'illustration par figure, pour les vignettes des deux rangées
   const [clips, setClips] = useState({})
+  // Les deux rangées gardent leur place en aplat tant qu'on ne sait pas si
+  // elles auront du contenu (cf. SkeletonCard).
+  const [rowsLoading, setRowsLoading] = useState(true)
   const heroRefs = useRef([])
+  // Dernier clip effectivement lancé, pour ne rembobiner que sur un vrai
+  // changement — l'effet de lecture se rejoue aussi quand la liste s'allonge.
+  const dernierIdx = useRef(-1)
   const modulesRef = useRef(null)
   const navigate = useNavigate()
   const tr = useT()
@@ -148,30 +186,36 @@ export default function Home() {
     // celles qui ont un clip jouable et on complète avec les suivantes, dans
     // l'ordre rendu par la RPC.
     ;(async () => {
-      const [mv, rv] = await Promise.all([
-        supabase.rpc('most_viewed_figures', { days: 30, lim: ROW_POOL }),
-        supabase.rpc('recent_video_figures', { lim: ROW_POOL }),
-      ])
-      const most = mv.data || []
-      const recent = rv.data || []
+      try {
+        const [mv, rv] = await Promise.all([
+          supabase.rpc('most_viewed_figures', { days: 30, lim: ROW_POOL }),
+          supabase.rpc('recent_video_figures', { lim: ROW_POOL }),
+        ])
+        const most = mv.data || []
+        const recent = rv.data || []
 
-      const ids = [...new Set([...most, ...recent].map(f => f.id))]
-      if (!ids.length) return
-      const { data: vids } = await supabase
-        .from('videos')
-        .select('figure_id, file_path, creator_name, sort_order')
-        .in('figure_id', ids)
-        .not('file_path', 'is', null)
-        .eq('takedown_requested', false)
-        .order('sort_order')
-      const map = {}
-      for (const v of vids || []) {
-        if (!map[v.figure_id]) map[v.figure_id] = { url: storageUrl(v.file_path), creator: v.creator_name }
+        const ids = [...new Set([...most, ...recent].map(f => f.id))]
+        if (!ids.length) return
+        const { data: vids } = await supabase
+          .from('videos')
+          .select('figure_id, file_path, creator_name, sort_order')
+          .in('figure_id', ids)
+          .not('file_path', 'is', null)
+          .eq('takedown_requested', false)
+          .order('sort_order')
+        const map = {}
+        for (const v of vids || []) {
+          if (!map[v.figure_id]) map[v.figure_id] = { url: storageUrl(v.file_path), creator: v.creator_name }
+        }
+        setClips(map)
+        const jouables = list => list.filter(f => map[f.id]).slice(0, ROW_MAX)
+        setMostViewed(jouables(most))
+        setVideos(jouables(recent))
+      } finally {
+        // Quoi qu'il arrive les rangées cessent d'être en attente : sinon les
+        // vignettes en aplat resteraient à l'écran indéfiniment.
+        setRowsLoading(false)
       }
-      setClips(map)
-      const jouables = list => list.filter(f => map[f.id]).slice(0, ROW_MAX)
-      setMostViewed(jouables(most))
-      setVideos(jouables(recent))
     })()
 
     // Couverture : une requête groupée sur les ids de `heroClips`. Elle rapporte
@@ -196,6 +240,9 @@ export default function Home() {
         .map(v => ({
           id: v.id,
           url: storageUrl(v.file_path),
+          // Seul le clip d'ouverture a un poster : les suivants se révèlent en
+          // fondu par-dessus le précédent, il n'y a jamais de fond à couvrir.
+          poster: v.id === HERO_FIRST.id ? HERO_FIRST.poster : null,
           creator: v.creator_name,
           creatorUrl: v.creator_url,
           figure: byFig.get(v.figure_id) || null,
@@ -227,9 +274,16 @@ export default function Home() {
     }
     const actif = heroRefs.current[heroIdx]
     if (actif) {
-      try { actif.currentTime = 0 } catch { /* pas encore seekable */ }
+      // Rembobinage sur un VRAI changement de clip seulement. L'effet se rejoue
+      // aussi quand la requête complète la liste (`hero.length` passe de 1 à N,
+      // le clip d'ouverture étant monté d'avance) : rembobiner là couperait la
+      // lecture en cours sous les yeux du visiteur.
+      if (dernierIdx.current !== heroIdx) {
+        try { actif.currentTime = 0 } catch { /* pas encore seekable */ }
+      }
       actif.play().catch(() => {})
     }
+    dernierIdx.current = heroIdx
     const t = setTimeout(() => {
       heroRefs.current.forEach((el, i) => {
         if (el && i !== heroIdx && !el.paused) el.pause()
@@ -326,6 +380,10 @@ export default function Home() {
             ref={el => { heroRefs.current[i] = el }}
             className={`${styles.heroVid} ${i === heroIdx ? styles.heroVidOn : ''}`}
             src={c.url}
+            /* Première image du clip d'ouverture, servie depuis public/ et
+               préchargée dans index.html : elle couvre l'écran le temps que la
+               vidéo ait de quoi afficher, au lieu de l'aplat sombre du hero. */
+            poster={c.poster || undefined}
             muted playsInline
             /* `autoPlay` en plus de l'appel à play() dans l'effet : selon l'état
                de l'onglet, la lecture programmatique peut être refusée alors que
@@ -371,31 +429,37 @@ export default function Home() {
 
           {/* Légende du clip en cours : le trick, et qui l'a filmé. Elle vit
               dans le bloc de copie et non en bas d'écran — plus bas, elle
-              tomberait dans le fondu vers le papier et deviendrait illisible. */}
-          {current?.figure && !hasQuery && (
-            <p className={styles.credit} key={current.id}>
-              <Link
-                to={`/figures/${current.figure.slug}`}
-                className={`${styles.tape} ${styles.creditTrick}`}
-              >
-                {current.figure.name}
-              </Link>
-              {current.creator && (
-                <>
-                  {current.creatorUrl ? (
-                    <a
-                      href={externalUrl(current.creatorUrl, { ref: true })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${styles.tape} ${styles.creditBy}`}
-                    >{current.creator}</a>
-                  ) : (
-                    <span className={`${styles.tape} ${styles.creditBy}`}>{current.creator}</span>
-                  )}
-                </>
-              )}
-            </p>
-          )}
+              tomberait dans le fondu vers le papier et deviendrait illisible.
+              Sa case, elle, est toujours montée et de hauteur fixe : la légende
+              n'arrive qu'après la requête et change à chaque clip, or le bloc
+              qui la contient est ancré par le bas — sans case, la colonne
+              sautait à l'arrivée des données puis à chaque rotation. */}
+          <div className={styles.creditSlot}>
+            {current?.figure && !hasQuery && (
+              <p className={styles.credit} key={current.id}>
+                <Link
+                  to={`/figures/${current.figure.slug}`}
+                  className={`${styles.tape} ${styles.creditTrick}`}
+                >
+                  {current.figure.name}
+                </Link>
+                {current.creator && (
+                  <>
+                    {current.creatorUrl ? (
+                      <a
+                        href={externalUrl(current.creatorUrl, { ref: true })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`${styles.tape} ${styles.creditBy}`}
+                      >{current.creator}</a>
+                    ) : (
+                      <span className={`${styles.tape} ${styles.creditBy}`}>{current.creator}</span>
+                    )}
+                  </>
+                )}
+              </p>
+            )}
+          </div>
         </div>
 
 
@@ -446,26 +510,30 @@ export default function Home() {
               ))}
             </nav>
 
-            {mostViewed.length > 0 && (
+            {(rowsLoading || mostViewed.length > 0) && (
               <section className={styles.section}>
                 <div className={styles.sectionHead}>
                   <h2 className={styles.sectionTitle}>{tr.mostViewedFigures}</h2>
                   <Link to="/figures" className={styles.seeAll}>{tr.seeAll} <Icon name="arrow-right" size={14} /></Link>
                 </div>
                 <div className={styles.rail}>
-                  {mostViewed.map(f => <PreviewCard key={f.id} figure={f} clip={clips[f.id]} />)}
+                  {rowsLoading
+                    ? Array.from({ length: ROW_MAX }, (_, i) => <SkeletonCard key={i} />)
+                    : mostViewed.map(f => <PreviewCard key={f.id} figure={f} clip={clips[f.id]} />)}
                 </div>
               </section>
             )}
 
-            {videos.length > 0 && (
+            {(rowsLoading || videos.length > 0) && (
               <section className={styles.section}>
                 <div className={styles.sectionHead}>
                   <h2 className={styles.sectionTitle}>{tr.recentVideos}</h2>
                   <Link to="/figures" className={styles.seeAll}>{tr.seeAll} <Icon name="arrow-right" size={14} /></Link>
                 </div>
                 <div className={styles.rail}>
-                  {videos.map(f => <PreviewCard key={f.id} figure={f} clip={clips[f.id]} />)}
+                  {rowsLoading
+                    ? Array.from({ length: ROW_MAX }, (_, i) => <SkeletonCard key={i} />)
+                    : videos.map(f => <PreviewCard key={f.id} figure={f} clip={clips[f.id]} />)}
                 </div>
               </section>
             )}
@@ -478,18 +546,17 @@ export default function Home() {
                   <Icon name="upload" size={16} /> {tr.ctaButton}
                 </button>
               </div>
-              {stats && (
-                <div className={styles.ctaStats}>
-                  <div className={styles.ctaStat}>
-                    <span className={styles.ctaNum}>{stats.total}</span>
-                    <span className={styles.ctaLabel}>{tr.ctaFiguresLabel}</span>
-                  </div>
-                  <div className={styles.ctaStat}>
-                    <span className={styles.ctaNum}>{stats.pct}%</span>
-                    <span className={styles.ctaLabel}>{tr.ctaVideosLabel}</span>
-                  </div>
+              {}
+              <div className={styles.ctaStats}>
+                <div className={styles.ctaStat}>
+                  <span className={styles.ctaNum}>{stats ? stats.total : '\u00a0'}</span>
+                  <span className={styles.ctaLabel}>{tr.ctaFiguresLabel}</span>
                 </div>
-              )}
+                <div className={styles.ctaStat}>
+                  <span className={styles.ctaNum}>{stats ? `${stats.pct}%` : '\u00a0'}</span>
+                  <span className={styles.ctaLabel}>{tr.ctaVideosLabel}</span>
+                </div>
+              </div>
             </section>
 
             <a

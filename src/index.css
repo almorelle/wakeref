@@ -59,7 +59,7 @@
      - title : Bebas Neue, les titres éditoriaux (capitales condensées)
      - body  : Archivo, le texte courant ET le chrome d'interface
      - hand  : Permanent Marker, réservé aux annotations et aux tampons */
-  --font-title: 'Bebas Neue', 'Archivo', sans-serif;
+  --font-title: 'Bebas Neue', 'Bebas Fallback', 'Archivo', sans-serif;
   --font-body:  'Archivo', system-ui, sans-serif;
   --font-hand:  'Permanent Marker', 'Bebas Neue', cursive;
   /* Alias rétro-compatible : l'ancien --font-display portait surtout du
@@ -427,6 +427,16 @@ select.input {
   font-style: normal;
   font-weight: 400;
   src: url('/fonts/bebas-neue-v16-latin-regular.woff2') format('woff2');
+}
+
+/* Repli métrique de Bebas Neue — deuxième famille de `--font-title`.*/
+@font-face {
+  font-family: 'Bebas Fallback';
+  src: local('Arial'), local('Helvetica'), local('Roboto');
+  size-adjust: 57.5%;
+  ascent-override: 156.6%;
+  descent-override: 52.2%;
+  line-gap-override: 0%;
 }
 
 /* permanent-marker-regular - latin */
