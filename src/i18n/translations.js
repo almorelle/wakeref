@@ -14,9 +14,9 @@ export const t = {
     tileCatalogSub:   'Explore chaque trick — décomposé, expliqués et en vidéo.',
     tileQuizTitle:    'Quiz',
     tileQuizSub:      'Apprend à reconnaître les tricks — pour l\'œil du rider et du juge.',
-    tileCompoTitle:   'Compo',
+    tileCompoTitle:   'Composition',
     tileCompoSub:     'Construit et enregistre tes runs — check s\'ils sont bien équilibrés.',
-    tileJudgeTitle:   'Juge',
+    tileJudgeTitle:   'Entraînement juge',
     tileJudgeSub:     'Entraine-toi comme en compétition — affûte ton œil de juge.',
     categories:    'Catégories',
     summary:       'Sommaire',
@@ -129,7 +129,7 @@ export const t = {
     ],
 
     // Compo
-    compo: 'Compo',
+    compo: 'Composition',
     compoTitle:      'Composition de run',
     compoAdd:        'Ajouter une figure…',
     compoEmpty:      'Aucune figure saisie',
@@ -192,7 +192,7 @@ export const t = {
     compoExitTricks: 'Trick de sortie',
     compoNone:       'Aucune',
     judge: {
-      nav: 'Juge',
+      nav: 'Entraînement juge',
       title: 'Entraînement juge',
       intro: 'Choisis un run ci-dessous, regarde-le et saisis-le, puis compare à la solution. Filtre par niveau ou discipline si besoin.',
       difficulty: 'Niveau',
@@ -345,9 +345,9 @@ export const t = {
     tileCatalogSub:    'Browse every trick  — with breakdown, how-to\'s and video.',
     tileQuizTitle:     'Quiz',
     tileQuizSub:       'Recognize tricks — for the rider\'s and the judge\'s eye.',
-    tileCompoTitle:    'Compo',
+    tileCompoTitle:    'Composition',
     tileCompoSub:      'Build and save your runs — find out if they\'re well balanced.',
-    tileJudgeTitle:    'Judge',
+    tileJudgeTitle:    'Judge training',
     tileJudgeSub:      'Train yourself as in a competition — sharpen your judging eye.',
     categories:        'Categories',
     summary:           'Contents',
@@ -460,7 +460,7 @@ export const t = {
     ],
 
     // Compo
-    compo: 'Compo',
+    compo: 'Composition',
     compoTitle:      'Run composition',
     compoAdd:        'Add a trick…',
     compoEmpty:      'No tricks added yet',
@@ -523,7 +523,7 @@ export const t = {
     compoExitTricks: 'Exit trick',
     compoNone:       'None',
     judge: {
-      nav: 'Judge',
+      nav: 'Judge training',
       title: 'Judge training',
       intro: 'Pick a run below, watch it and enter it, then compare to the solution. Filter by level or discipline if needed.',
       difficulty: 'Difficulty',
