@@ -82,7 +82,7 @@ export default function Compo() {
   // so it's derived (not reset via an effect).
   const linkValid = savedId !== null && savedSig === snapshot
 
-  // Load a saved run when the URL carries an id (/compo/:id)
+  // Load a saved run when the URL carries an id (/composition/:id)
   useEffect(() => {
     if (!id) return
     let cancelled = false
@@ -159,7 +159,7 @@ export default function Compo() {
     setShowSave(false)
   }
 
-  const shareUrl = savedId ? `${window.location.origin}/compo/${savedId}` : ''
+  const shareUrl = savedId ? `${window.location.origin}/composition/${savedId}` : ''
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl)
@@ -178,7 +178,7 @@ export default function Compo() {
         titleEn="Run composition"
         descriptionFr="Compose ton run (wakeboard, wakeskate, wakeboard assis) et calcule ton score."
         descriptionEn="Build your run (wakeboard, wakeskate, seated) and compute your score."
-        path="/compo"
+        path="/composition"
       />
       <ToastContainer toasts={toasts} />
       <div className={styles.layout}>

@@ -66,7 +66,7 @@ export default function AdminCompositions() {
               </div>
               <span className={styles.score}>{r.score ?? '—'}/20</span>
               <div className={styles.actions}>
-                <Link className="btn btn-ghost btn-sm" to={`/compo/${r.id}`} target="_blank" rel="noopener noreferrer">
+                <Link className="btn btn-ghost btn-sm" to={`/composition/${r.id}`} target="_blank" rel="noopener noreferrer">
                   <Icon name="external-link" /> Voir
                 </Link>
                 <button className="btn btn-danger btn-sm" onClick={() => remove(r)}>

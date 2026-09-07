@@ -38,7 +38,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Build, lint & verification
 
-- **`npm run lint` (ESLint 9) is the only automated check — there are no tests.** The target is 0 errors / 0 warnings. ⚠️ **9 errors / 7 warnings remain, ALL inside the judging & competition module** (`admin/CompetitionSetup.jsx`, `admin/AdminCompetitions.jsx`, `competition/CompetitionView.jsx`, `competition/HeatTab.jsx`, `JudgeVoice.jsx`, `CompositionSimple.jsx`, `France2026.jsx`) — that module is **still under active development**, so its noise is accepted and deliberately not churned. **Everything else is clean: any new error you introduce outside that module is yours.** Inside it, prefer solving the pattern (re-key the component, derive the flag) over moving a `setState` one line down to silence the rule.
+- **`npm run lint` (ESLint 9) is the only automated check — there are no tests.** The target is 0 errors / 0 warnings. ⚠️ **9 errors / 7 warnings remain, ALL inside the judging & competition module** (`admin/ParcoursSetup.jsx`, `admin/AdminParcours.jsx`, `competition/CompetitionView.jsx`, `competition/HeatTab.jsx`, `JudgeVoice.jsx`, `CompositionSimple.jsx`, `France2026.jsx`) — that module is **still under active development**, so its noise is accepted and deliberately not churned. **Everything else is clean: any new error you introduce outside that module is yours.** Inside it, prefer solving the pattern (re-key the component, derive the flag) over moving a `setState` one line down to silence the rule.
 - The `react-hooks` rules are the strict React-Compiler set: no `setState` synchronously inside a `useEffect` body, no component declared during render (hoist it to module scope), no ref `.current` access during render. `react/prop-types` is off; unused vars are warnings (`^[A-Z_]` vars / `^_` args exempt).
 - **`npm run build`** runs `scripts/generate-sitemap.js` then `vite build`. The sitemap step is **best-effort** — a Supabase outage or missing env vars no longer fails the build. To verify a change, prefer **`npm run dev`** over a full build.
 - The `VITE_SUPABASE_*` env vars are baked into the client bundle (`import.meta.env`), so they are still required at build time for the app to work.
@@ -83,7 +83,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 - UI strings live in `src/i18n/translations.js` as `{ fr: {...}, en: {...} }` — add new strings to **both** languages; read them via `useT()`.
 - DB content is bilingual via `field` / `field_en` columns, rendered through `useLocalizedField()` (FR fallback). New DB text fields come in `field` + `field_en` pairs.
-- **Exception — the judging surfaces are French-only by design**: `/judge/voix`, `/composition-simple` and `/competition/*` ship inline FR strings. Judges are francophone and the vocabulary is the FFSNW's. Don't add an EN layer there.
+- **Exception — the judging surfaces are French-only by design**: `/entrainement-juge/voix`, `/grille-composition` and `/juge/*` ship inline FR strings. Judges are francophone and the vocabulary is the FFSNW's. Don't add an EN layer there.
 - **Import the context hooks from the `-context.js` modules**: `useLanguage` / `useLocalizedField` from `src/contexts/language-context.js`, `useTheme` from `src/contexts/theme-context.js`. The matching `.jsx` files export ONLY their Provider (fast-refresh clean) — don't move hooks back.
 - One component per file with a co-located `*.module.css`. Reuse global classes/tokens from `src/index.css` (`.btn`, `.btn-ghost`, `.btn-icon`, `.spinner`, `[data-theme]` vars) before adding new ones — no CSS framework.
 - Theming is `[data-theme]` on `<html>` + a `theme-color` meta update, persisted to `localStorage`. Provider order (`main.jsx`): `StrictMode -> BrowserRouter -> ThemeProvider -> LanguageProvider -> App`.
@@ -102,7 +102,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Contexts** are `kicker`, `feature`, `flat`, `air_trick` (`src/data/contexts.js`). The `jib` context was renamed to `feature`; the `Jib` **category** (id 9, formerly "Slides") is a separate concept.
 - **Categories**: 14 fixed entries, mirrored in `src/data/categories.js` (icons/colors) and the `categories` table — keep both in sync.
 
-### Judging modules (`/judge`, `/competition`, `/composition-simple`)
+### Judging modules (`/entrainement-juge`, `/juge`, `/grille-composition`)
 
 - **Local-first, no server state.** A heat lives only in `localStorage['wakeref_heat_<code>']` (`lib/competition/heatStore.js`); the voice corpus only in IndexedDB (`lib/voiceDataset.js`). The ONLY thing that travels between devices is the *parcours*, read by short code via `get_parcours`. Don't add multi-judge sync assumptions, and don't rename a storage key without a migration — that discards a judge's work in progress.
 - **Scoring is binary and normalized to /20** (`score20`), no degree thresholds (anti-perf invariant), so grids stay comparable. Adding a grid = one entry in `GRIDS` (`lib/compoGrids.js`) + translations.

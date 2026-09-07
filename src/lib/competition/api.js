@@ -1,7 +1,7 @@
 // Accès données des parcours de compétition (table `parcours`, cf.
 // scripts/competition_parcours.sql). Wrappers minces sur le singleton Supabase —
 // pas de couche API intermédiaire (convention repo). Le parcours est l'objet
-// partageable par short-code : édité/administré côté admin, lu par code côté /competition.
+// partageable par short-code : édité/administré côté admin, lu par code côté /juge.
 import { supabase } from '../supabase'
 
 // short-code : 8 octets aléatoires en base36 (même schéma que les compositions).

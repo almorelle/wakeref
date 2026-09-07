@@ -1,6 +1,6 @@
 -- Module compétition — table `parcours` (incrément 2 : persistance + partage par code).
 -- Un parcours est l'objet PARTAGEABLE : édité côté admin, chargé par son short-code
--- côté /competition. Seul le parcours voyage entre devices (pas de sync de saisie v1).
+-- côté /juge. Seul le parcours voyage entre devices (pas de sync de saisie v1).
 -- Calque le pattern `compositions` : id text = short-code client-généré, data jsonb,
 -- fonction security-definer pour la lecture publique par code sans SELECT global anon.
 --
@@ -8,7 +8,7 @@
 
 -- ── table ───────────────────────────────────────────────────────────────────
 create table if not exists public.parcours (
-  id          text        not null,                                   -- short-code partageable (URL /competition/<code>)
+  id          text        not null,                                   -- short-code partageable (URL /juge/<code>)
   name        text        not null unique check (char_length(name) between 1 and 80),
   data        jsonb       not null check (pg_column_size(data) <= 51200),  -- { cableSpin, nbPoulies, poulieStart, parcours }
   created_at  timestamptz not null default now(),

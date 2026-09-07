@@ -25,8 +25,8 @@ export default function Footer() {
           <h2 className={styles.colTitle}>{tr.footerExplore}</h2>
           <Link to="/figures">{tr.figures}</Link>
           <Link to="/quiz">{tr.quiz}</Link>
-          <Link to="/compo">{tr.compo}</Link>
-          <Link to="/judge">{tr.judge.nav}</Link>
+          <Link to="/composition">{tr.compo}</Link>
+          <Link to="/entrainement-juge">{tr.judge.nav}</Link>
         </nav>
 
         <nav className={styles.col} aria-label={tr.footerAbout}>

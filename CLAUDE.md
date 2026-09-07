@@ -39,7 +39,7 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
 - `takedown_requests` — copyright removal requests from video authors
 - `compositions` — saved runs from the Compo page (no auth); short text `id` used in the share URL, minimal JSONB snapshot in `data` (incl. `gridKey`), denormalized `score` (normalized to /20). Public can insert + load one by id via the `get_composition(cid)` function; only admin can list/delete (RLS)
 - `figure_views` — per-figure/day counter; written by the `track_figure_view` RPC, read back through `most_viewed_figures`
-- `judge_runs` — reference runs for `/judge` (video + `solution` JSONB + `published`). No `anon` policy: public access only via `list_judge_runs()` (metadata, **no solution**) and `get_judge_run_solution(id)`
+- `judge_runs` — reference runs for `/entrainement-juge` (video + `solution` JSONB + `published`). No `anon` policy: public access only via `list_judge_runs()` (metadata, **no solution**) and `get_judge_run_solution(id)`
 - `parcours` — competition courses; `id` = 8-char share code, `data` = course snapshot. No `anon` policy: public read only via `get_parcours(code)`
 
 Two read views: **`figures_full`** (detail — JSON aggregates for videos/prereqs/switch group/built-on tree) and **`figures_card`** (light list payload + `aliases`; also cached in `localStorage` as the offline catalogue of the voice matcher). Both are `security_invoker` — recreating one without it leaks unpublished rows.
@@ -50,7 +50,7 @@ Full-text search on figures uses a GIN index with French `unaccent`.
 
 The Compo page scores a run against a discipline-specific grid. The scoring engine lives in **`src/lib/compoGrids.js`** — a React-free module shared by `Compo` and the `<RunSaisie>` capture component (React-free specifically to avoid an import cycle between them); `src/pages/Compo.jsx` only owns state, persistence and sharing. All grids live in `GRIDS` there, keyed by grid id — `wakeboard`, `wakeskate`, `seated_mp1` (MP1→MP3), `seated_mp5` (MP3→MP5); seated has two grids (handicap class). Each grid = `{ discipline, modes, sections }`; a section item is `{ key, test(ctx) }` where `ctx = { entries, all }` (`all` includes jib pseudo-entries). Scoring is **binary, no degree thresholds** (anti-perf invariant) and **normalized to /20** (`score20`) so grids are comparable. The active `gridKey` drives the grid selector (cross-discipline switch locked once a figure exists), the per-grid add modes (incl. `flat`), the jib approach axis (hs/ts vs regular/fakie), and the figure-search sport filter. Figure slugs referenced by tests are centralized in `SCORING_SLUGS` (in `compoGrids.js`) with a dev-only guard in `Compo` that warns when a referenced slug is absent from `figures` (slugs are editable in admin → silent drift). "Body varial" and similar concepts with no backing field use explicit slug lists (`WS_BODY_VARIALS`). Adding a grid = one entry in `GRIDS` + translations. The figure data these grids depend on (the Ollie family, wakeskate reclassements) is recorded in `_bmad-output/implementation-artifacts/compo-figures-data.md` — the live DB is the source of truth; that file is just the trace of the one-time seed/reclass operations.
 
-### Judging modules (`/judge`, `/competition`, `/composition-simple`)
+### Judging modules (`/entrainement-juge`, `/juge`, `/grille-composition`)
 
 Roughly half the codebase is now judging tooling, and it follows different rules from the public app:
 
@@ -78,7 +78,7 @@ Two languages: `fr` (default) and `en`. Language is persisted to `localStorage` 
 - All UI strings live in `src/i18n/translations.js` as a `{ fr: {…}, en: {…} }` object
 - `src/i18n/useT.js` — hook to get the current-language translation map
 - `src/contexts/LanguageContext.jsx` — exports the Provider only. Import the hooks from `src/contexts/language-context.js`: `useLanguage()` and `useLocalizedField()` (returns the `_en` variant of a DB field when available, falls back to FR). Same split for the theme: Provider in `ThemeContext.jsx`, `useTheme` in `theme-context.js` — keeping the `.jsx` files fast-refresh clean
-- The judging surfaces (`/judge/voix`, `/composition-simple`, `/competition/*`) are **French-only by design** — judges are francophone; don't add EN strings there
+- The judging surfaces (`/entrainement-juge/voix`, `/grille-composition`, `/juge/*`) are **French-only by design** — judges are francophone; don't add EN strings there
 - Bilingual DB fields follow the pattern: `field` (FR) and `field_en` (EN)
 
 ### Auth
@@ -91,9 +91,10 @@ Admin-only auth via Supabase email/password. `useAuth` (`src/hooks/useAuth.js`) 
 
 Every route except `/` is lazy-loaded (`React.lazy` + `<Suspense>`). Three groups in `App.jsx`:
 
-- **Public** (`PublicLayout` — `Navbar` + `<Outlet>` + `Footer`): `/`, `/figures`, `/figures/:slug`, `/quiz`, `/compo`, `/compo/:id`, `/compo-old` (legacy `CompositionSimple`), `/judge`, `/judge/voix`, `/contact`, `/submit`, `/legal`, `/terms`, `/privacy`
-- **Admin** (`AdminLayout`, auth-guarded): `/admin` + `figures`, `figures/new`, `figures/:id/edit`, `videos`, `takedowns`, `no-videos`, `submissions`, `compositions`, `judge-runs`, `judge-runs/new`, `judge-runs/:id/edit`, `competitions`, `competitions/new`, `competitions/:id/edit` — plus `/admin/login` outside the guard
-- **Chromeless public** (no `Navbar`/`Footer`, full-screen judging surfaces): `/composition-simple` (`France2026` — feuille de note grilles France 2026), `/competition` and `/competition/:code` (`CompetitionView` — le juge charge un parcours par son code)
+- **Public** (`PublicLayout` — `Navbar` + `<Outlet>` + `Footer`): `/`, `/figures`, `/figures/:slug`, `/quiz`, `/composition`, `/composition/:id`, `/grille-composition-old` (legacy `CompositionSimple`), `/entrainement-juge`, `/entrainement-juge/voix`, `/contact`, `/submit`, `/legal`, `/terms`, `/privacy`
+- **Admin** (`AdminLayout`, auth-guarded): `/admin` + `figures`, `figures/new`, `figures/:id/edit`, `videos`, `takedowns`, `no-videos`, `submissions`, `compositions`, `runs-entrainement-juge`, `runs-entrainement-juge/new`, `runs-entrainement-juge/:id/edit`, `parcours`, `parcours/new`, `parcours/:id/edit` — plus `/admin/login` outside the guard
+- **Chromeless public** (no `Navbar`/`Footer`, full-screen judging surfaces): `/grille-composition` (`France2026` — feuille de note grilles France 2026), `/juge` and `/juge/:code` (`CompetitionView` — le juge charge un parcours par son code)
+- **Legacy redirects** (renamed 2026-09-07): `/compo*` → `/composition*`, `/judge*` → `/entrainement-juge*`, `/competition*` → `/juge*`. They exist in **two layers, both needed** — `vercel.json` `redirects` (308, so crawlers consolidate and link-unfurl bots that don't run JS follow through) and matching routes in `App.jsx` (for in-SPA navigation, and for returning PWA users whose service worker serves the shell from cache without ever hitting the edge). Don't delete one as a duplicate of the other. Both declare the **closed set of legacy suffixes one at a time** — never a splat or `:path*` — so an unknown deep path like `/compo/a/b/c` stays a 404 at its real URL instead of being rewritten to a path that never existed. In `App.jsx` the target is rebuilt from the route param, never by `String.replace` on the pathname: the router matches case-insensitively, so `/Compo/x` must redirect like `/compo/x`. `/compo-old` and `/composition-simple` were deliberately NOT redirected. **`/competitions` and `/admin/competitions` are reserved** for the upcoming public competitions agenda — do not claim them for anything else (see `_bmad-output/implementation-artifacts/deferred-work.md`)
 
 ### Database setup
 

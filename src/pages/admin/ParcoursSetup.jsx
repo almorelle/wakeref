@@ -12,7 +12,7 @@ import {
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
-import styles from './CompetitionSetup.module.css'
+import styles from './ParcoursSetup.module.css'
 
 // ── état + reducer ──────────────────────────────────────────────────────────
 // Le reducer NORMALISE le parcours après chaque action (renumérotation des poulies
@@ -87,7 +87,7 @@ function reducer(state, action) {
 }
 
 // ── vue ─────────────────────────────────────────────────────────────────────
-export default function CompetitionSetup() {
+export default function ParcoursSetup() {
   const [state, dispatch] = useReducer(reducer, undefined, initState)
   const { cableSpin, nbPoulies, poulieStart, parcours } = state
   const { id } = useParams()
@@ -133,7 +133,7 @@ export default function CompetitionSetup() {
       } else {
         const code = await insertParcours({ name: trimmed, data })
         toast('Parcours créé.', 'success')
-        navigate(`/admin/competitions/${code}/edit`)
+        navigate(`/admin/parcours/${code}/edit`)
       }
     } catch (e) {
       toast(e instanceof DuplicateNameError ? 'Ce nom est déjà pris.' : 'Échec de l’enregistrement.', 'error')
@@ -142,7 +142,7 @@ export default function CompetitionSetup() {
     }
   }
 
-  const shareUrl = savedCode ? `${window.location.origin}/competition/${savedCode}` : ''
+  const shareUrl = savedCode ? `${window.location.origin}/juge/${savedCode}` : ''
   const copyLink = async () => {
     try { await navigator.clipboard.writeText(shareUrl); toast('Lien copié.', 'success') } catch { /* ignore */ }
   }
@@ -172,7 +172,7 @@ export default function CompetitionSetup() {
       <div className={styles.page}>
         <h1 className={styles.title}>Parcours introuvable</h1>
         <p className={styles.help}>Ce parcours n’existe pas ou a été supprimé.</p>
-        <button className={styles.saveBtn} onClick={() => navigate('/admin/competitions')}>← Retour à la liste</button>
+        <button className={styles.saveBtn} onClick={() => navigate('/admin/parcours')}>← Retour à la liste</button>
       </div>
     )
   }

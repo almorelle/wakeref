@@ -176,7 +176,7 @@ export default function JudgeTraining() {
         titleEn="Judge training"
         descriptionFr="Entraîne-toi à juger un run : saisis les tricks vus en vidéo et compare à la solution."
         descriptionEn="Train your judging eye: enter the tricks you see on video and compare to the solution."
-        path="/judge"
+        path="/entrainement-juge"
       />
       <ToastContainer toasts={toasts} />
 

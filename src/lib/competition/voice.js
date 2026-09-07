@@ -1,5 +1,5 @@
 // Moteur voix du module compétition. Branche les DEUX modèles maison fine-tunés sur
-// la saisie du Run, en réutilisant les libs éprouvées par le lab /judge/voix.
+// la saisie du Run, en réutilisant les libs éprouvées par le lab /entrainement-juge/voix.
 //   • Tricks (kicker + air) : modèle `wakeref` + biais vocab → matchSegment(wakeboard) → nom canonique.
 //   • Jib (passes)          : modèle `wakerefJib` (sans biais/grammaire) → normalizeJib (composeur filet).
 // Archi NON-BLOQUANTE (le small met 8-15 s/passe) : on dicte, l'entrée passe « en cours »,
@@ -15,7 +15,7 @@ export const JIB_CFG = { model: 'wakerefJib', bias: false, constrain: false }
 
 export const micSupported = typeof navigator !== 'undefined' && !!navigator.mediaDevices?.getUserMedia
 
-const FIG_CACHE = 'wakeref_voice_figures' // partagé avec /judge/voix (offline-first)
+const FIG_CACHE = 'wakeref_voice_figures' // partagé avec /entrainement-juge/voix (offline-first)
 
 // Catalogue figures (pour matchSegment) : cache localStorage puis refresh Supabase.
 function useVoiceFigures() {

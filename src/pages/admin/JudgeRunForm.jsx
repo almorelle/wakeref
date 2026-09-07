@@ -141,7 +141,7 @@ export default function JudgeRunForm() {
     setSaving(false)
     if (error) { toast(error.message, 'error'); return }
     toast(isEdit ? 'Run mis à jour !' : 'Run créé !', 'success')
-    navigate('/admin/judge-runs')
+    navigate('/admin/runs-entrainement-juge')
   }
 
   if (loading) return <span className="spinner" />
@@ -150,7 +150,7 @@ export default function JudgeRunForm() {
     <div className={styles.page}>
       <ToastContainer toasts={toasts} />
       <div className={styles.header}>
-        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/judge-runs')}>
+        <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/runs-entrainement-juge')}>
           <Icon name="arrow-left" /> Retour
         </button>
         <h1 className={styles.title}>{isEdit ? 'Modifier le run de référence' : 'Nouveau run de référence'}</h1>
@@ -237,7 +237,7 @@ export default function JudgeRunForm() {
         </div>
 
         <div className={styles.actions}>
-          <button type="button" className="btn btn-ghost" onClick={() => navigate('/admin/judge-runs')}>Annuler</button>
+          <button type="button" className="btn btn-ghost" onClick={() => navigate('/admin/runs-entrainement-juge')}>Annuler</button>
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? 'Enregistrement…' : isEdit ? 'Mettre à jour' : 'Créer le run'}
           </button>

@@ -23,7 +23,7 @@ const loadStored = () => {
 
 // ── Page de saisie manuelle de note ──────────────────────────
 // Cousine légère de Compo : pas de saisie de tricks, on coche directement les
-// items de la grille et on lit la note /20. Non exposée dans le menu (/composition-simple).
+// items de la grille et on lit la note /20. Non exposée dans le menu (/grille-composition-old).
 export default function CompositionSimple() {
   const tr = useT()
   const [stored] = useState(loadStored)
@@ -71,7 +71,7 @@ export default function CompositionSimple() {
         titleEn="Score sheet"
         descriptionFr="Coche les critères de la grille et lis ta note sur 20."
         descriptionEn="Tick the grid criteria and read your score out of 20."
-        path="/compo-old"
+        path="/grille-composition-old"
       />
 
       {/* Sélecteur de grille (discipline / niveau) — menu déroulant compact. */}

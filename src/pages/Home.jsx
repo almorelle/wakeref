@@ -356,8 +356,8 @@ export default function Home() {
   const modules = [
     { to: '/figures', img: 'Catalogue', title: tr.tileCatalogTitle, sub: tr.tileCatalogSub },
     { to: '/quiz',    img: 'Quiz',      title: tr.tileQuizTitle,    sub: tr.tileQuizSub    },
-    { to: '/compo',   img: 'Compo',     title: tr.tileCompoTitle,   sub: tr.tileCompoSub   },
-    { to: '/judge',   img: 'Juge',      title: tr.tileJudgeTitle,   sub: tr.tileJudgeSub   },
+    { to: '/composition',       img: 'Compo',     title: tr.tileCompoTitle,   sub: tr.tileCompoSub   },
+    { to: '/entrainement-juge', img: 'Juge',      title: tr.tileJudgeTitle,   sub: tr.tileJudgeSub   },
   ]
 
   const current = hero[heroIdx]

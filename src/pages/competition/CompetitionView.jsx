@@ -38,12 +38,12 @@ export default function CompetitionView() {
     return () => { cancelled = true }
   }, [code])
 
-  // Saisie de code (/competition sans code)
+  // Saisie de code (/juge sans code)
   if (!code) {
-    const go = (e) => { e.preventDefault(); const c = input.trim(); if (c) navigate(`/competition/${c}`) }
+    const go = (e) => { e.preventDefault(); const c = input.trim(); if (c) navigate(`/juge/${c}`) }
     return (
       <div className={styles.gate}>
-        <div className={styles.brand}>Wake<b>Ref</b> · Compétition</div>
+        <div className={styles.brand}>Wake<b>Ref</b> · Juge</div>
         <form className={styles.gateForm} onSubmit={go}>
           <label className={styles.gateLab}>Code du parcours</label>
           <input className={styles.gateInput} placeholder="ex. a1b2c3d4" value={input} onChange={(e) => setInput(e.target.value)} autoFocus />
@@ -59,7 +59,7 @@ export default function CompetitionView() {
         {notFound ? (
           <>
             <p className={styles.nf}>Parcours introuvable pour le code <code>{code}</code>.</p>
-            <button className={styles.gateBtn} onClick={() => navigate('/competition')}>← Saisir un autre code</button>
+            <button className={styles.gateBtn} onClick={() => navigate('/juge')}>← Saisir un autre code</button>
           </>
         ) : <span className="spinner" />}
       </div>
