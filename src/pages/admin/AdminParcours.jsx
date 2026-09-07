@@ -5,11 +5,11 @@ import { zonesOnly } from '../../lib/competition/model'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
-import styles from './AdminCompetitions.module.css'
+import styles from './AdminParcours.module.css'
 
 const zoneCount = (data) => zonesOnly(data?.parcours || []).length
 
-export default function AdminCompetitions() {
+export default function AdminParcours() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const { toasts, toast } = useToast()
@@ -34,7 +34,7 @@ export default function AdminCompetitions() {
     try {
       const { id } = await duplicateParcours(row)
       toast('Parcours dupliqué.', 'success')
-      navigate(`/admin/competitions/${id}/edit`)
+      navigate(`/admin/parcours/${id}/edit`)
     } catch { toast('Échec de la duplication.', 'error') }
   }
 
@@ -44,7 +44,7 @@ export default function AdminCompetitions() {
 
       <div className={styles.head}>
         <h1 className={styles.title}>Parcours de compétition</h1>
-        <Link className="btn btn-primary btn-sm" to="/admin/competitions/new">
+        <Link className="btn btn-primary btn-sm" to="/admin/parcours/new">
           <Icon name="plus" /> Créer un parcours
         </Link>
       </div>
@@ -74,10 +74,10 @@ export default function AdminCompetitions() {
                 </span>
               </div>
               <div className={styles.actions}>
-                <Link className="btn btn-ghost btn-sm" to={`/competition/${r.id}`} target="_blank" rel="noopener noreferrer">
+                <Link className="btn btn-ghost btn-sm" to={`/juge/${r.id}`} target="_blank" rel="noopener noreferrer">
                   <Icon name="external-link" /> Voir
                 </Link>
-                <Link className="btn btn-ghost btn-sm" to={`/admin/competitions/${r.id}/edit`}>
+                <Link className="btn btn-ghost btn-sm" to={`/admin/parcours/${r.id}/edit`}>
                   <Icon name="pencil" /> Éditer
                 </Link>
                 <button className="btn btn-ghost btn-sm" onClick={() => duplicate(r)}>

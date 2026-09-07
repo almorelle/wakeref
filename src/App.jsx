@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route, Outlet, Navigate, useLocation, useParams } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
@@ -38,8 +38,8 @@ const AdminSubmissions = lazy(() => import('./pages/admin/AdminSubmissions'))
 const AdminCompositions = lazy(() => import('./pages/admin/AdminCompositions'))
 const AdminJudgeRuns = lazy(() => import('./pages/admin/AdminJudgeRuns'))
 const JudgeRunForm = lazy(() => import('./pages/admin/JudgeRunForm'))
-const AdminCompetitions = lazy(() => import('./pages/admin/AdminCompetitions'))
-const CompetitionSetup = lazy(() => import('./pages/admin/CompetitionSetup'))
+const AdminParcours = lazy(() => import('./pages/admin/AdminParcours'))
+const ParcoursSetup = lazy(() => import('./pages/admin/ParcoursSetup'))
 // Consommateur public d'un parcours partagé (hors Navbar, lazy) — comme le labo juge.
 const CompetitionView = lazy(() => import('./pages/competition/CompetitionView'))
 
@@ -55,11 +55,11 @@ export default function App() {
             <Route path="/figures" element={<Figures />} />
             <Route path="/figures/:slug" element={<FigureDetail />} />
             <Route path="/quiz" element={<Quiz />} />
-            <Route path="/compo" element={<Compo />} />
-            <Route path="/compo/:id" element={<Compo />} />
-            <Route path="/compo-old" element={<CompositionSimple />} />
-            <Route path="/judge" element={<JudgeTraining />} />
-            <Route path="/judge/voix" element={<JudgeVoice />} />
+            <Route path="/composition" element={<Compo />} />
+            <Route path="/composition/:id" element={<Compo />} />
+            <Route path="/grille-composition-old" element={<CompositionSimple />} />
+            <Route path="/entrainement-juge" element={<JudgeTraining />} />
+            <Route path="/entrainement-juge/voix" element={<JudgeVoice />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/submit" element={<SubmitVideo />} />
             <Route path="/legal" element={<LegalNotice />} />
@@ -79,20 +79,32 @@ export default function App() {
             <Route path="no-videos" element={<AdminNoVideos />} />
             <Route path="submissions" element={<AdminSubmissions />} />
             <Route path="compositions" element={<AdminCompositions />} />
-            <Route path="judge-runs" element={<AdminJudgeRuns />} />
-            <Route path="judge-runs/new" element={<JudgeRunForm />} />
-            <Route path="judge-runs/:id/edit" element={<JudgeRunForm />} />
-            <Route path="competitions" element={<AdminCompetitions />} />
-            <Route path="competitions/new" element={<CompetitionSetup />} />
-            <Route path="competitions/:id/edit" element={<CompetitionSetup />} />
+            <Route path="runs-entrainement-juge" element={<AdminJudgeRuns />} />
+            <Route path="runs-entrainement-juge/new" element={<JudgeRunForm />} />
+            <Route path="runs-entrainement-juge/:id/edit" element={<JudgeRunForm />} />
+            <Route path="parcours" element={<AdminParcours />} />
+            <Route path="parcours/new" element={<ParcoursSetup />} />
+            <Route path="parcours/:id/edit" element={<ParcoursSetup />} />
           </Route>
 
           {/* Feuille de note (public, hors Navbar) : plein écran, grilles France 2026 */}
-          <Route path="/composition-simple" element={<France2026 />} />
+          <Route path="/grille-composition" element={<France2026 />} />
 
-          {/* Compétition (public, hors Navbar) : le juge charge un parcours par son code */}
-          <Route path="/competition" element={<CompetitionView />} />
-          <Route path="/competition/:code" element={<CompetitionView />} />
+          {/* Juge (public, hors Navbar) : le juge charge un parcours par son code */}
+          <Route path="/juge" element={<CompetitionView />} />
+          <Route path="/juge/:code" element={<CompetitionView />} />
+
+          {/* Anciens chemins encore en circulation (runs partagés, codes de parcours
+              transmis aux juges, pages indexées). L'ensemble des suffixes legacy est
+              clos — rien, un id, un code, /voix — donc on les déclare un par un plutôt
+              qu'avec un splat : `/compo/a/b/c` reste un 404 à son URL réelle au lieu
+              d'être réécrit vers un chemin qui n'a jamais existé. */}
+          <Route path="/compo" element={<Navigate to="/composition" replace />} />
+          <Route path="/compo/:rest" element={<LegacyRedirect to="/composition" />} />
+          <Route path="/judge" element={<Navigate to="/entrainement-juge" replace />} />
+          <Route path="/judge/voix" element={<Navigate to="/entrainement-juge/voix" replace />} />
+          <Route path="/competition" element={<Navigate to="/juge" replace />} />
+          <Route path="/competition/:rest" element={<LegacyRedirect to="/juge" />} />
 
           <Route path='*' element={<NotFound />} />
         </Routes>
@@ -116,4 +128,14 @@ function PublicLayout() {
       <Footer />
     </>
   )
+}
+
+// Redirige un ancien chemin paramétré vers le nouveau : `/compo/x` → `/composition/x`.
+// La cible est reconstruite depuis le param, jamais par substitution sur le pathname —
+// React Router matche sans tenir compte de la casse, donc `/Compo/x` doit rediriger
+// comme `/compo/x` (un `String.replace` y échouerait et servirait une page blanche).
+function LegacyRedirect({ to }) {
+  const { rest } = useParams()
+  const { search, hash } = useLocation()
+  return <Navigate to={`${to}/${rest}${search}${hash}`} replace />
 }

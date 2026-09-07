@@ -43,7 +43,7 @@ export default function AdminJudgeRuns() {
           <h1 className={styles.title}>Runs juge</h1>
           <p className={styles.sub} aria-live="polite">{runs.length} run{runs.length > 1 ? 's' : ''} de référence</p>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/admin/judge-runs/new')}>
+        <button className="btn btn-primary" onClick={() => navigate('/admin/runs-entrainement-juge/new')}>
           <Icon name="plus" /> Nouveau run
         </button>
       </div>
@@ -67,7 +67,7 @@ export default function AdminJudgeRuns() {
             </div>
             <div className={styles.rowActions}>
               <button className="btn btn-ghost btn-sm btn-icon" title="Modifier" aria-label={`Modifier ${r.name}`}
-                onClick={() => navigate(`/admin/judge-runs/${r.id}/edit`)}>
+                onClick={() => navigate(`/admin/runs-entrainement-juge/${r.id}/edit`)}>
                 <Icon name="pencil" />
               </button>
               <button className="btn btn-ghost btn-sm btn-icon" title="Supprimer" aria-label={`Supprimer ${r.name}`}

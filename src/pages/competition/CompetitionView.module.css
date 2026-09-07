@@ -30,7 +30,7 @@
 .pass { font-size: 11px; font-weight: 800; color: var(--c-seated); background: #a855f71e; border: 1px solid #a855f755; border-radius: 999px; padding: 3px 9px; white-space: nowrap; }
 .foot { margin-top: 22px; color: var(--c-faint); font-size: 13px; font-style: italic; }
 
-/* saisie de code (/competition) */
+/* saisie de code (/juge) */
 .gate { min-height: 70vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 22px; }
 .gateForm { display: flex; flex-direction: column; gap: 10px; width: min(340px, 90vw); }
 .gateLab { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--c-faint); }

@@ -517,7 +517,7 @@ export default function JudgeVoice() {
 
   return (
     <div className={styles.page}>
-      <SEO titleFr="Saisie vocale" noindex path="/judge/voix" />
+      <SEO titleFr="Saisie vocale" noindex path="/entrainement-juge/voix" />
 
       <header className={styles.header}>
         <span className={styles.badge}>Outil juge · prototype</span>

@@ -32,7 +32,7 @@ export default defineConfig({
         clientsClaim: true,
         // Saisie vocale (outil juge, non public) : on NE précache RIEN du STT local.
         // Un visiteur lambda ne doit jamais le télécharger ; ces assets ne sont tirés
-        // qu'à la visite de /judge/voix, au runtime. On ignore le chunk transformers
+        // qu'à la visite de /entrainement-juge/voix, au runtime. On ignore le chunk transformers
         // ET les binaires onnxruntime (.wasm, jusqu'à ~24 Mo). Les poids du modèle
         // Whisper viennent du CDN Hugging Face → hors dist, jamais précachés non plus.
         globIgnores: ['**/transformers-*.js', '**/*.wasm', '**/ort-*', '**/jszip*'],
