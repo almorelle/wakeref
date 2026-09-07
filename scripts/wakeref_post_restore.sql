@@ -444,6 +444,71 @@ create table if not exists public.judge_runs (
   updated_at   timestamptz not null default now()
 );
 
+-- Agenda public des compétitions cable (sans rapport avec /juge). Pas de colonne
+-- de statut (passé/en cours/à venir se calculent depuis la date), pas de
+-- discipline (le défaut implicite est « toutes »), aucun texte libre donc aucune
+-- colonne _en : la fiche n'est qu'un carrefour de liens sortants.
+-- date_precision='year' → date_start porte le 31 décembre, jamais affiché : la
+-- compétition reste à venir tant que l'année court, et se range après les
+-- compétitions datées de la même année.
+create table if not exists public.competitions (
+  id                       bigint generated always as identity primary key,
+  name                     text        not null check (char_length(name) between 1 and 160),
+  date_start               date        not null,
+  date_end                 date,                 -- null = compétition d'un seul jour
+  date_precision           text        not null default 'day'
+                             check (date_precision in ('day', 'year')),
+  wakepark                 text        check (char_length(wakepark) <= 160),
+  affiliation              text        not null default 'independent'
+                             check (affiliation in ('federal', 'independent')),
+  tour_name                text        check (char_length(tour_name) <= 160),
+  tour_url                 text        check (char_length(tour_url) <= 500),
+  cancelled                boolean     not null default false,
+  info_url                 text        check (char_length(info_url) <= 500),
+  entry_url                text        check (char_length(entry_url) <= 500),
+  live_video_url           text        check (char_length(live_video_url) <= 500),
+  live_scoring_url         text        check (char_length(live_scoring_url) <= 500),
+  organiser_instagram_url  text        check (char_length(organiser_instagram_url) <= 500),
+  wakepark_url             text        check (char_length(wakepark_url) <= 500),
+  logo_path                text        check (char_length(logo_path) <= 500),  -- bucket `videos`, préfixe competitions/
+  published                boolean     not null default true,
+  created_at               timestamptz not null default now(),
+  updated_at               timestamptz not null default now(),
+  constraint competitions_dates_ordered check (date_end is null or date_end >= date_start),
+  -- L'année seule est stockée sur le 31 décembre. Le formulaire le garantit, mais
+  -- la base est la seule frontière : sans ça, la dérive est invisible (l'écran
+  -- n'affiche que l'année) et casserait le calcul d'état du lot B.
+  constraint competitions_year_is_dec31 check (
+    date_precision <> 'year'
+    or (extract(month from date_start) = 12 and extract(day from date_start) = 31 and date_end is null)
+  ),
+  -- Sept colonnes de liens rendues en href par le lot B. `javascript:` passe la
+  -- validation HTML type="url" : le schéma est le seul endroit où l'exclure.
+  constraint competitions_urls_http check (
+    coalesce(tour_url, 'https://')               ~* '^https?://' and
+    coalesce(info_url, 'https://')               ~* '^https?://' and
+    coalesce(entry_url, 'https://')              ~* '^https?://' and
+    coalesce(live_video_url, 'https://')         ~* '^https?://' and
+    coalesce(live_scoring_url, 'https://')       ~* '^https?://' and
+    coalesce(organiser_instagram_url, 'https://') ~* '^https?://' and
+    coalesce(wakepark_url, 'https://')           ~* '^https?://'
+  )
+);
+
+-- Liens vidéo d'une compétition. Table dédiée et non JSONB : lignes ordonnées et
+-- éditées une par une. `videos` n'est pas réutilisable (figure_id NOT NULL).
+create table if not exists public.competition_videos (
+  id              bigint generated always as identity primary key,
+  competition_id  bigint  not null references public.competitions(id) on delete cascade,
+  url             text    not null check (char_length(url) between 1 and 500 and url ~* '^https?://'),
+  title           text    check (char_length(title) <= 160),
+  sort_order      integer not null default 0,
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists competitions_date_start_idx on competitions (date_start desc);
+create index if not exists competition_videos_competition_idx on competition_videos (competition_id, sort_order);
+
 -- ────────────────────────────────────────────────────────────
 -- 4. TRIGGER
 -- ────────────────────────────────────────────────────────────
@@ -473,6 +538,11 @@ create trigger judge_runs_updated_at
   before update on judge_runs
   for each row execute procedure set_updated_at();
 
+drop trigger if exists competitions_updated_at on competitions;
+create trigger competitions_updated_at
+  before update on competitions
+  for each row execute procedure set_updated_at();
+
 -- ────────────────────────────────────────────────────────────
 -- 5. VUE figures_full → déplacée en section 2 (avant les fonctions
 --    qui retournent `setof figures_full`, pour survivre au drop cascade).
@@ -491,6 +561,8 @@ alter table compositions      enable row level security;
 alter table figure_views      enable row level security;
 alter table judge_runs        enable row level security;
 alter table parcours          enable row level security;
+alter table competitions        enable row level security;
+alter table competition_videos  enable row level security;
 
 -- Supprime les policies existantes avant de les recréer
 drop policy if exists "Lecture publique categories"    on categories;
@@ -543,6 +615,20 @@ create policy "Lecture admin parcours"     on parcours for select using ((select
 create policy "Insertion admin parcours"   on parcours for insert with check ((select auth.role()) = 'authenticated');
 create policy "Maj admin parcours"         on parcours for update using ((select auth.role()) = 'authenticated');
 create policy "Suppression admin parcours" on parcours for delete using ((select auth.role()) = 'authenticated');
+-- competitions : lecture publique des seules fiches publiées ; écriture admin.
+drop policy if exists "Lecture publique competitions"       on competitions;
+drop policy if exists "Ecriture admin competitions"         on competitions;
+drop policy if exists "Lecture publique competition_videos" on competition_videos;
+drop policy if exists "Ecriture admin competition_videos"   on competition_videos;
+create policy "Lecture publique competitions" on competitions for select using (published = true);
+create policy "Ecriture admin competitions"   on competitions for all
+  using ((select auth.role()) = 'authenticated') with check ((select auth.role()) = 'authenticated');
+-- Une vidéo n'est lisible que si sa compétition l'est : sans ce garde-fou, les
+-- liens d'une fiche non publiée resteraient exposés à l'anon.
+create policy "Lecture publique competition_videos" on competition_videos for select
+  using (exists (select 1 from competitions c where c.id = competition_videos.competition_id and c.published = true));
+create policy "Ecriture admin competition_videos" on competition_videos for all
+  using ((select auth.role()) = 'authenticated') with check ((select auth.role()) = 'authenticated');
 
 
 -- ────────────────────────────────────────────────────────────
@@ -601,6 +687,9 @@ grant execute on function public.get_parcours(text)       to anon, authenticated
 -- judge_runs : admin uniquement (l'anon passe par les RPC de lecture, story 2.2).
 grant select, insert, update, delete on public.judge_runs to authenticated;
 grant select on public.figure_views to authenticated;
+grant select on public.competitions, public.competition_videos to anon, authenticated;
+grant insert, update, delete on public.competitions       to authenticated;
+grant insert, update, delete on public.competition_videos to authenticated;
 grant execute on function public.track_figure_view(integer)            to anon, authenticated;
 grant execute on function public.most_viewed_figures(integer, integer)  to anon, authenticated;
 grant execute on function public.recent_video_figures(integer)          to anon, authenticated;

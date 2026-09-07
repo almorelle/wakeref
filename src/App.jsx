@@ -38,6 +38,8 @@ const AdminSubmissions = lazy(() => import('./pages/admin/AdminSubmissions'))
 const AdminCompositions = lazy(() => import('./pages/admin/AdminCompositions'))
 const AdminJudgeRuns = lazy(() => import('./pages/admin/AdminJudgeRuns'))
 const JudgeRunForm = lazy(() => import('./pages/admin/JudgeRunForm'))
+const AdminCompetitions = lazy(() => import('./pages/admin/AdminCompetitions'))
+const CompetitionForm = lazy(() => import('./pages/admin/CompetitionForm'))
 const AdminParcours = lazy(() => import('./pages/admin/AdminParcours'))
 const ParcoursSetup = lazy(() => import('./pages/admin/ParcoursSetup'))
 // Consommateur public d'un parcours partagé (hors Navbar, lazy) — comme le labo juge.
@@ -85,6 +87,9 @@ export default function App() {
             <Route path="parcours" element={<AdminParcours />} />
             <Route path="parcours/new" element={<ParcoursSetup />} />
             <Route path="parcours/:id/edit" element={<ParcoursSetup />} />
+            <Route path="competitions" element={<AdminCompetitions />} />
+            <Route path="competitions/new" element={<CompetitionForm />} />
+            <Route path="competitions/:id/edit" element={<CompetitionForm />} />
           </Route>
 
           {/* Feuille de note (public, hors Navbar) : plein écran, grilles France 2026 */}

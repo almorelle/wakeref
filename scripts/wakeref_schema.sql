@@ -136,3 +136,39 @@ CREATE TABLE public.judge_runs (
                                    updated_at timestamp with time zone NOT NULL DEFAULT now(),
                                    CONSTRAINT judge_runs_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.competitions (
+                                     id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+                                     name text NOT NULL CHECK (char_length(name) >= 1 AND char_length(name) <= 160),
+                                     date_start date NOT NULL,
+                                     date_end date,
+                                     date_precision text NOT NULL DEFAULT 'day'::text CHECK (date_precision = ANY (ARRAY['day'::text, 'year'::text])),
+                                     wakepark text CHECK (char_length(wakepark) <= 160),
+                                     affiliation text NOT NULL DEFAULT 'independent'::text CHECK (affiliation = ANY (ARRAY['federal'::text, 'independent'::text])),
+                                     tour_name text CHECK (char_length(tour_name) <= 160),
+                                     tour_url text CHECK (char_length(tour_url) <= 500),
+                                     cancelled boolean NOT NULL DEFAULT false,
+                                     info_url text CHECK (char_length(info_url) <= 500),
+                                     entry_url text CHECK (char_length(entry_url) <= 500),
+                                     live_video_url text CHECK (char_length(live_video_url) <= 500),
+                                     live_scoring_url text CHECK (char_length(live_scoring_url) <= 500),
+                                     organiser_instagram_url text CHECK (char_length(organiser_instagram_url) <= 500),
+                                     wakepark_url text CHECK (char_length(wakepark_url) <= 500),
+                                     logo_path text CHECK (char_length(logo_path) <= 500),
+                                     published boolean NOT NULL DEFAULT true,
+                                     created_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     updated_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     CONSTRAINT competitions_pkey PRIMARY KEY (id),
+                                     CONSTRAINT competitions_dates_ordered CHECK (date_end IS NULL OR date_end >= date_start),
+                                     CONSTRAINT competitions_year_is_dec31 CHECK (date_precision <> 'year' OR (EXTRACT(month FROM date_start) = 12 AND EXTRACT(day FROM date_start) = 31 AND date_end IS NULL)),
+                                     CONSTRAINT competitions_urls_http CHECK (coalesce(tour_url, 'https://') ~* '^https?://' AND coalesce(info_url, 'https://') ~* '^https?://' AND coalesce(entry_url, 'https://') ~* '^https?://' AND coalesce(live_video_url, 'https://') ~* '^https?://' AND coalesce(live_scoring_url, 'https://') ~* '^https?://' AND coalesce(organiser_instagram_url, 'https://') ~* '^https?://' AND coalesce(wakepark_url, 'https://') ~* '^https?://')
+);
+CREATE TABLE public.competition_videos (
+                                     id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+                                     competition_id bigint NOT NULL,
+                                     url text NOT NULL CHECK (char_length(url) >= 1 AND char_length(url) <= 500 AND url ~* '^https?://'),
+                                     title text CHECK (char_length(title) <= 160),
+                                     sort_order integer NOT NULL DEFAULT 0,
+                                     created_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     CONSTRAINT competition_videos_pkey PRIMARY KEY (id),
+                                     CONSTRAINT competition_videos_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE
+);

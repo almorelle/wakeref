@@ -1,0 +1,88 @@
+.page { max-width: 800px; margin: 0 auto; }
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 12px;
+  border-bottom: 1px dotted var(--c-rule);
+}
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 3rem 1rem; color: var(--c-muted); font-size: 14px; text-align: center;
+}
+
+/* Champs soulignés : il leur faut plus d'air qu'à des champs encadrés. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.groupTitle {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  margin-top: 1rem;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted var(--c-rule);
+}
+
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+.fileInfo {
+  margin-top: 0.4rem;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-muted);
+}
+.fileInfo strong {
+  color: var(--c-text);
+  font-weight: 700;
+  word-break: break-all;
+}
+
+.publishLabel {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dotted var(--c-rule);
+}
+
+
+/* Les six liens sortants : deux colonnes, ils se lisent en bloc. */
+.links { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+/* Après les règles de base : à spécificité égale, c'est l'ordre qui tranche. */
+@media (max-width: 640px) {
+  .row, .links { grid-template-columns: 1fr; }
+}
+
+/* Titre de vidéo + bouton de retrait sur une même ligne. */
+.videoRow { display: flex; align-items: center; gap: 8px; }
+.videoRow .input { flex: 1; min-width: 0; }
+
+/* Cases à gauche, bouton d'enregistrement à droite. */
+.actions .publishLabel:first-of-type { margin-right: auto; }
