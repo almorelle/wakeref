@@ -1,0 +1,75 @@
+.page {
+  max-width: 620px;
+  margin: 0 auto;
+  padding-top: 2rem;
+}
+
+/* Titre de rubrique, comme les autres pages du site */
+.header {
+  margin-bottom: 2.25rem;
+  padding-bottom: 14px;
+  border-bottom: 1px dotted var(--c-rule);
+}
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(34px, 6.5vw, 54px);
+  line-height: .9;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.sub {
+  font-size: 15px;
+  color: var(--c-muted);
+  line-height: 1.6;
+  max-width: 56ch;
+  margin-top: 10px;
+}
+
+/* Les champs sont soulignés : il leur faut plus d'air qu'à des champs encadrés,
+   sinon deux filets consécutifs se lisent comme les lignes d'un tableau. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+/* Erreur : filet en marge plutôt qu'un pavé teinté */
+.error {
+  font-size: 13.5px;
+  color: var(--c-danger);
+  background: none;
+  border: 0;
+  border-left: 3px solid var(--c-danger);
+  border-radius: 0;
+  padding: 6px 0 6px 12px;
+  line-height: 1.5;
+}
+
+/* Confirmation : le message passe en annotation manuscrite — c'est le seul
+   moment du parcours où le site s'adresse directement à la personne. */
+.success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 3rem 0;
+  text-align: center;
+}
+.successIcon { color: var(--c-success); }
+.success p {
+  font-family: var(--font-hand);
+  font-size: 17px;
+  color: var(--c-accent-ink);
+  line-height: 1.45;
+  max-width: 34ch;
+  transform: rotate(-1deg);
+}
+
+/* Indication sous un champ : dit ce qu'on accepte, pour éviter qu'on renonce
+   faute de connaître la réponse exacte. */
+.hint { font-size: 12.5px; color: var(--c-muted); margin-top: 6px; }
+/* Rappel de modération : la promesse compte autant que le formulaire. */
+.note { font-size: 12.5px; color: var(--c-faint); margin-top: 4px; }
+/* Deux sorties après l'envoi : en proposer une autre, ou aller voir le fil. */
+.successActions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }

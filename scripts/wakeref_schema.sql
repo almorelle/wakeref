@@ -173,3 +173,12 @@ CREATE TABLE public.competition_videos (
                                      CONSTRAINT competition_videos_pkey PRIMARY KEY (id),
                                      CONSTRAINT competition_videos_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE
 );
+CREATE TABLE public.competition_submissions (
+                                     id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+                                     name text NOT NULL CHECK (char_length(name) >= 2 AND char_length(name) <= 160),
+                                     date_text text NOT NULL CHECK (char_length(date_text) >= 2 AND char_length(date_text) <= 80),
+                                     url text CHECK (url IS NULL OR (char_length(url) <= 500 AND url ~* '^https?://')),
+                                     status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'handled'::text, 'rejected'::text])),
+                                     created_at timestamp with time zone NOT NULL DEFAULT now(),
+                                     CONSTRAINT competition_submissions_pkey PRIMARY KEY (id)
+);

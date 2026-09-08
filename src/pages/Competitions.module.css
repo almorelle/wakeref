@@ -286,7 +286,6 @@
 .compact .card { gap: 0; }
 .compact .name { font-size: 15px; line-height: 1.25; }
 .compact .when { font-size: 10px; letter-spacing: .1em; }
-.compact .card::after { display: none; }
 .compact .meta { font-size: 10.5px; }
 
 /* La colonne se resserre : les cartes compactes se rapprochent de la ligne. */
@@ -310,3 +309,29 @@
 .compact .node { width: var(--node); }
 .compact .logo, .compact .logoFallback { max-height: 26px; }
 .compact .logoFallback { font-size: 13px; }
+
+/* Appel à contribution, en tête de fil. En ruban plutôt qu'en lien souligné :
+   un lien discret sur une page qui s'ouvre déjà scrollée à « aujourd'hui »
+   n'était vu par personne. L'autocollant, lui, se lit comme posé sur la page —
+   il n'appartient pas au fil, donc il ne se confond pas avec une entrée. */
+.suggest {
+  max-width: var(--page-max);
+  width: 100%;
+  margin: 0 auto .75rem;
+  padding: 0 1.25rem;
+}
+.suggestTape {
+  display: inline-block;
+  background: #fff;
+  color: #c43d8c;
+  padding: 6px 12px 5px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  transform: rotate(-1.6deg);
+  clip-path: var(--tape-clip-alt);
+  filter: var(--tape-shadow);
+  transition: transform var(--t-fast), color var(--t-fast);
+}
+a:hover > .suggestTape { color: #8f2a64; transform: rotate(0deg); }

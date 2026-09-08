@@ -48,7 +48,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Architecture guardrails (do NOT)
 
-- Do NOT add a server / API layer — the backend is Postgres (RLS + views + RPCs) plus 2 Deno Edge Functions.
+- Do NOT add a server / API layer — the backend is Postgres (RLS + views + RPCs) plus 3 Deno Edge Functions.
 - Do NOT add a CSS framework or component library — UI is **CSS Modules** + global tokens in `src/index.css` (`[data-theme]` theming).
 - Do NOT import Tabler icons directly in a component — extend the `Icon` wrapper's name map instead.
 - Do NOT put domain logic in components. Scoring (`lib/compoGrids.js`), diffing (`lib/judgeDiff.js`), course/run models (`lib/competition/*`) and the voice pipeline (`voiceMatch.js`, `normalizeJib.js`, `whisperStt.js`) are React-free modules. **`compoGrids.js` must stay React-free** — it is imported by both `Compo` and `RunSaisie`, and a React import there re-creates the cycle it was extracted to break.
@@ -67,7 +67,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Schema is hand-managed, no migration tool**: apply in the Supabase SQL editor, then mirror into `scripts/wakeref_post_restore.sql` (executable: views/functions/RLS/grants/triggers/bucket) AND `scripts/wakeref_schema.sql` (reference dump of tables only). One-offs go in `scripts/migrations/`. Keep `src/data/categories.js` / `contexts.js` in sync.
 - Adding a `figures` column means adding it to `figures_full` (decomposition columns stay appended at the END for `create or replace` compatibility) and, if it belongs on cards, to `figures_card`. A **new table** needs `enable row level security` + explicit policies + grants; a **new RPC** needs an explicit `grant execute`.
 - **`competitions` / `competition_videos`** (agenda public, lot A) : pas de colonne statut (dérivée de la date), pas de discipline, aucune prose traduisible donc aucune colonne `_en` (les textes libres — `name`, `wakepark`, `tour_name` — sont des noms propres). `date_precision` (`day`|`year`) porte l'incertitude — pour une année seule, `date_start` = **31 décembre**, jamais affiché (dernier jour et non premier : la compet reste à venir tant que l'année court, et se range après les datées de la même année) (formatage dans `lib/competitionDates.js`, React-free, partagé avec le lot B). Le logo vit dans le bucket `videos` sous le préfixe `competitions/`. RLS : l'anon ne lit que `published = true`, et une vidéo n'est lisible que si sa compétition l'est. CHECK en base sur le schéma des URL (`^https?://`, le lot B les rend en `href`) et sur l'invariant 31 décembre — le formulaire n'est pas la frontière.
-- Size/abuse caps live in the DB: `compositions` 20 inserts/min + 50 KB JSON; `parcours.data` and `judge_runs.solution` 50 KB; `parcours.name` unique, 1-80 chars.
+- **`competition_submissions`** (lot C) : boîte publique à trois champs (`name`, `date_text` libre, `url` optionnelle). Ce n'est **pas** un brouillon de `competitions` — rien à l'écran ne distingue une saisie admin d'une soumission validée, donc tout ce qui s'affiche est réputé relu ; pas de chemin « on publie, on corrigera ». L'anon a `insert` seul, plafonné par trigger `security definer` à 10/minute, et la notification passe par le webhook Supabase → Edge Function `notify-competition-submission` (le webhook se configure au dashboard, rien dans le code).
+- Size/abuse caps live in the DB: `competition_submissions` 10 inserts/min; `compositions` 20 inserts/min + 50 KB JSON; `parcours.data` and `judge_runs.solution` 50 KB; `parcours.name` unique, 1-80 chars.
 
 ### Security (RLS is the only boundary)
 
@@ -77,12 +78,12 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`judge_runs`, `parcours` and `figure_views` grant `anon` nothing.** Public access goes exclusively through `security definer` RPCs. Keep it that way: `list_judge_runs()` deliberately omits the `solution` column so a trainee can judge a run before revealing the answer — never widen it, and never embed a solution in a listing payload.
 - Auth is a **single admin; never add a public sign-up flow** — `authenticated` gets full CRUD via RLS.
 - RLS hides unpublished figures / takedown videos from `anon` — verify visibility **as anon**.
-- Public-insert inboxes are abuse vectors: only `compositions` is rate-limited (20/min); `video_submissions` (fires a notification email) and `takedown_requests` are not. Anyone with a code can read a run via `get_composition(id)` or a course via `get_parcours(code)` — store nothing sensitive there.
+- Public-insert inboxes are abuse vectors: only `compositions` (20/min) and `competition_submissions` (10/min) are rate-limited; `video_submissions` (fires a notification email) and `takedown_requests` are not. Anyone with a code can read a run via `get_composition(id)` or a course via `get_parcours(code)` — store nothing sensitive there.
 - **Don't tighten `Permissions-Policy` back to `microphone=()`** in `vercel.json`. An empty allowlist bans the feature for the site itself, not just third parties, and silently kills both voice surfaces in production while dev keeps working (the header isn't applied there). `microphone=(self)` is required and grants nothing on its own — the browser still prompts the user. `camera` and `geolocation` stay closed.
 
 ### i18n & UI conventions
 
-- UI strings live in `src/i18n/translations.js` as `{ fr: {...}, en: {...} }` — add new strings to **both** languages; read them via `useT()`.
+- UI strings live in `src/i18n/translations.js` as `{ fr: {...}, en: {...} }` — add new strings to **both** languages (public surfaces only — the `/admin/*` back-office is French-only by design, single admin, and uses plain literals); read them via `useT()`.
 - DB content is bilingual via `field` / `field_en` columns, rendered through `useLocalizedField()` (FR fallback). New DB text fields come in `field` + `field_en` pairs.
 - **Exception — the judging surfaces are French-only by design**: `/entrainement-juge/voix`, `/grille-composition` and `/juge/*` ship inline FR strings. Judges are francophone and the vocabulary is the FFSNW's. Don't add an EN layer there.
 - **Import the context hooks from the `-context.js` modules**: `useLanguage` / `useLocalizedField` from `src/contexts/language-context.js`, `useTheme` from `src/contexts/theme-context.js`. The matching `.jsx` files export ONLY their Provider (fast-refresh clean) — don't move hooks back.

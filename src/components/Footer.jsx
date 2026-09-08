@@ -34,6 +34,7 @@ export default function Footer() {
           <h2 className={styles.colTitle}>{tr.footerAbout}</h2>
           <Link to="/contact">{tr.contact}</Link>
           <Link to="/submit">{tr.ctaButton}</Link>
+          <Link to="/competitions/proposer">{tr.submitComp.title}</Link>
           <Link to="/legal">{tr.footerLegal}</Link>
           <Link to="/terms">{tr.footerTerms}</Link>
           <Link to="/privacy">{tr.footerPrivacy}</Link>

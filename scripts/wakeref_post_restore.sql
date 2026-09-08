@@ -291,6 +291,31 @@ begin
 end;
 $$;
 
+-- Anti-spam : même plafond pour les propositions de compétitions. La boîte est
+-- publique, sans compte ni captcha, et chaque ligne déclenche un e-mail.
+create or replace function public.competition_submissions_rate_limit()
+returns trigger
+language plpgsql security definer
+set search_path = public as $$
+declare
+  last_minute integer;
+  last_day    integer;
+begin
+  select count(*) filter (where created_at > now() - interval '1 minute'),
+         count(*) filter (where created_at > now() - interval '1 day')
+    into last_minute, last_day
+  from competition_submissions;
+
+  if last_minute > 10 or last_day > 60 then
+    raise exception 'Trop de propositions envoyées récemment. Réessaie plus tard.'
+      using errcode = 'PT429';
+  end if;
+
+  return null;
+end;
+$$;
+
+
 -- Stats publiques de la home : total de figures + nb de figures ayant
 -- au moins une vidéo (hors retraits). Évite de transférer toutes les lignes.
 create or replace function public.home_stats()
@@ -510,6 +535,24 @@ create table if not exists public.competition_videos (
 create index if not exists competitions_date_start_idx on competitions (date_start desc);
 create index if not exists competition_videos_competition_idx on competition_videos (competition_id, sort_order);
 
+-- Boîte de soumission publique : un visiteur signale une compétition absente.
+-- Rien n'est publié automatiquement — à l'écran, une compétition soumise ne se
+-- distingue pas d'une compétition saisie, donc tout ce qui s'affiche engage
+-- l'éditeur. `date_text` est du texte libre : celui qui signale ne connaît pas
+-- toujours les dates (« en juin », « été 2027 »).
+create table if not exists public.competition_submissions (
+  id          bigint      generated always as identity primary key,
+  name        text        not null check (char_length(name) between 2 and 160),
+  date_text   text        not null check (char_length(date_text) between 2 and 80),
+  url         text        check (url is null or (char_length(url) <= 500 and url ~* '^https?://')),
+  status      text        not null default 'pending'
+                            check (status in ('pending', 'handled', 'rejected')),
+  created_at  timestamptz not null default now()
+);
+
+create index if not exists competition_submissions_created_idx
+  on competition_submissions (created_at desc);
+
 -- ────────────────────────────────────────────────────────────
 -- 4. TRIGGER
 -- ────────────────────────────────────────────────────────────
@@ -528,6 +571,13 @@ drop trigger if exists compositions_rate_limit on compositions;
 create trigger compositions_rate_limit
   before insert on compositions
   for each row execute function compositions_rate_limit();
+
+-- AFTER ... FOR EACH STATEMENT : un trigger ligne ne voit pas les lignes
+-- insérées par la même commande, donc un insert en lot passait sans plafond.
+drop trigger if exists competition_submissions_rate_limit on competition_submissions;
+create trigger competition_submissions_rate_limit
+  after insert on competition_submissions
+  for each statement execute function competition_submissions_rate_limit();
 
 drop trigger if exists parcours_touch on parcours;
 create trigger parcours_touch
@@ -564,6 +614,7 @@ alter table judge_runs        enable row level security;
 alter table parcours          enable row level security;
 alter table competitions        enable row level security;
 alter table competition_videos  enable row level security;
+alter table competition_submissions enable row level security;
 
 -- Supprime les policies existantes avant de les recréer
 drop policy if exists "Lecture publique categories"    on categories;
@@ -630,6 +681,14 @@ create policy "Lecture publique competition_videos" on competition_videos for se
   using (exists (select 1 from competitions c where c.id = competition_videos.competition_id and c.published = true));
 create policy "Ecriture admin competition_videos" on competition_videos for all
   using ((select auth.role()) = 'authenticated') with check ((select auth.role()) = 'authenticated');
+-- competition_submissions : l'anon écrit et ne lit rien — une boîte publique
+-- lisible deviendrait un mur d'affichage pour le premier spammeur venu.
+drop policy if exists "Soumission publique competitions"      on competition_submissions;
+drop policy if exists "Lecture admin competition_submissions" on competition_submissions;
+drop policy if exists "Maj admin competition_submissions"     on competition_submissions;
+create policy "Soumission publique competitions"      on competition_submissions for insert with check (true);
+create policy "Lecture admin competition_submissions" on competition_submissions for select using ((select auth.role()) = 'authenticated');
+create policy "Maj admin competition_submissions"     on competition_submissions for update using ((select auth.role()) = 'authenticated');
 
 
 -- ────────────────────────────────────────────────────────────
@@ -691,6 +750,11 @@ grant select on public.figure_views to authenticated;
 grant select on public.competitions, public.competition_videos to anon, authenticated;
 grant insert, update, delete on public.competitions       to authenticated;
 grant insert, update, delete on public.competition_videos to authenticated;
+-- Grant par COLONNE : sinon l'anon pose lui-même `created_at` (la ligne échappe
+-- à la fenêtre du plafond) ou `status` (elle naît classée, invisible dans la file).
+grant insert (name, date_text, url) on public.competition_submissions to anon;
+grant insert on public.competition_submissions to authenticated;
+grant select, update on public.competition_submissions to authenticated;
 grant execute on function public.track_figure_view(integer)            to anon, authenticated;
 grant execute on function public.most_viewed_figures(integer, integer)  to anon, authenticated;
 grant execute on function public.recent_video_figures(integer)          to anon, authenticated;

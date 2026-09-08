@@ -1,0 +1,66 @@
+.page { max-width: 800px; margin: 0 auto; }
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 12px;
+  border-bottom: 1px dotted var(--c-rule);
+}
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.sub { font-size: 13.5px; color: var(--c-muted); margin-top: 6px; }
+.empty {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 3rem 1rem; color: var(--c-muted); font-size: 14px; text-align: center;
+}
+
+.table { display: flex; flex-direction: column; }
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: none;
+  border: 0;
+  border-bottom: 1px dotted var(--c-rule);
+  border-left: 3px solid var(--c-rule);
+  border-radius: 0;
+  padding: 12px 0 12px 12px;
+}
+
+.rowName {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  font-family: var(--font-title);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+
+/* Brouillon : la seule étiquette qui garde une couleur — c'est un état. */
+.rowActions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sub2 { display: flex; flex-wrap: wrap; gap: 0 7px; font-size: 12.5px; color: var(--c-muted); }
+.status { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 10.5px; }
+.link { font-size: 12.5px; color: var(--c-muted); word-break: break-all; }
+.link:hover { color: var(--c-accent); }
+/* Traitée ou écartée : la ligne s'efface sans disparaître — l'historique reste
+   consultable, il n'appelle simplement plus à l'action. */
+.done { opacity: .55; }

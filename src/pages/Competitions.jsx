@@ -103,6 +103,14 @@ export default function Competitions() {
         <p className={styles.subtitle}>{tr.competitions.subtitle}</p>
       </header>
 
+      {/* En tête de fil : on vient signaler une compétition à VENIR, et le futur
+          est en haut. Placé sous le titre, il se voit sans couper la lecture. */}
+      <p className={styles.suggest}>
+        <Link to="/competitions/proposer">
+          <span className={styles.suggestTape}>{tr.competitions.suggest}</span>
+        </Link>
+      </p>
+
       {loading && <span className="spinner" />}
       {failed && <p className={styles.empty}>{tr.competitions.loadError}</p>}
       {!loading && !failed && rows.length === 0 && (

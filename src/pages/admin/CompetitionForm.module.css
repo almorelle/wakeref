@@ -86,3 +86,14 @@
 
 /* Cases à gauche, bouton d'enregistrement à droite. */
 .actions .publishLabel:first-of-type { margin-right: auto; }
+
+/* Bandeau d'une proposition reprise depuis la file : porte ce que la fiche n'a
+   pas de champ pour recevoir — la date en texte libre et le lien d'origine. */
+.fromSubmission {
+  border-left: 2px solid var(--c-accent);
+  padding: 8px 0 8px 12px;
+  margin-bottom: 1.25rem;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+.fromSubmission a { color: var(--c-accent); word-break: break-all; }

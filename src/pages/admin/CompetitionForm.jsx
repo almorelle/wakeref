@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
+import { externalUrl } from '../../lib/url'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
@@ -38,10 +39,16 @@ export default function CompetitionForm() {
   const isEdit = !!id
   const navigate = useNavigate()
   const { toasts, toast } = useToast()
+  // Une proposition reçue ouvre le formulaire avec le nom exact employé par
+  // l'organisateur. `quand` et `lien` n'ont pas de champ où atterrir — la date
+  // est libre, le lien n'est pas typé — donc ils s'affichent en bandeau plutôt
+  // que de forcer un aller-retour vers la file.
+  const [search] = useSearchParams()
+  const fromSubmission = !isEdit && (search.get('quand') || search.get('lien'))
 
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving]   = useState(false)
-  const [form, setForm]       = useState(EMPTY)
+  const [form, setForm]       = useState(() => (isEdit ? EMPTY : { ...EMPTY, name: [...(search.get('nom') || '')].slice(0, 160).join('') || EMPTY.name }))
   // Deux images de nature différente : l'affiche (sur la fiche) et le logo
   // (repère dans le fil public). Même mécanique, même préfixe Storage. Aucun
   // ratio n'est imposé — le rendu les contient sans recadrer ni déformer.
@@ -193,6 +200,17 @@ export default function CompetitionForm() {
         </button>
         <h1 className={styles.title}>{isEdit ? 'Modifier la compétition' : 'Nouvelle compétition'}</h1>
       </div>
+
+      {fromSubmission && (
+        <p className={styles.fromSubmission}>
+          Proposition reçue — <strong>{search.get('quand')}</strong>
+          {search.get('lien') && (
+            <>{' · '}<a href={externalUrl(search.get('lien'))} target="_blank" rel="noopener noreferrer">
+              {search.get('lien')}
+            </a></>
+          )}
+        </p>
+      )}
 
       <form onSubmit={save} className={styles.form}>
         <div className="field">

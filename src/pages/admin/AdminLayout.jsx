@@ -44,6 +44,7 @@ export default function AdminLayout() {
     { to: '/admin/runs-entrainement-juge', icon: 'star',       label: 'Runs juge'             },
     { to: '/admin/parcours',      icon: 'arrow-zig-zag',     label: 'Parcours'              },
     { to: '/admin/competitions',  icon: 'calendar-event',    label: 'Compétitions'          },
+    { to: '/admin/competition-submissions', icon: 'inbox',   label: 'Propositions'          },
     { to: '/admin/no-videos',     icon: 'video-off',         label: 'À compléter'           },
   ]
 
