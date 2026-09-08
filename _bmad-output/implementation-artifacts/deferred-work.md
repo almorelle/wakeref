@@ -37,3 +37,19 @@ Design is frozen in `_bmad-output/brainstorming/brainstorming-session-2026-09-06
 - **Tour logos are locked to `.png`.** A `.svg` or `.jpg` upload silently never appears. Consider trying a small extension list, or storing the extension.
 - **`generate-sitemap.js` fetches competitions with no `.limit()`**, while the ribbon query carries an explicit ceiling with a comment about PostgREST's silent truncation. Same hazard, unguarded.
 - **The in-page "← Compétitions" link is a PUSH**, so it re-triggers the ribbon anchor and discards the scroll position, while the browser's Back correctly preserves it. Two behaviours for what reads as one action.
+
+## Boîtes publiques sans plafond (antérieur au lot C)
+
+`video_submissions` et `takedown_requests` acceptent des insertions anonymes sans
+limitation de débit, et la première déclenche un e-mail à chaque ligne. Le
+plafond existe sur `compositions` (20/min) et, depuis le lot C, sur
+`competition_submissions` (10/min) — ces deux-là suivent le même patron de
+trigger `security definer`, transposable tel quel.
+
+Le plafond est **global**, pas par soumetteur : Postgres ne voit pas l'IP. Il
+protège la boîte de réception, pas la disponibilité du formulaire — dix
+insertions par minute suffisent à en fermer l'accès à tout le monde. Le corriger
+demanderait de faire passer l'insertion par une Edge Function (qui, elle, voit
+l'en-tête) ou d'ajouter un captcha : les deux sortent du cadre « aucune brique
+d'infrastructure nouvelle ».
+
