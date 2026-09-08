@@ -1,0 +1,303 @@
+.page {
+  max-width: var(--page-max);
+  width: 100%;
+  margin: 0 auto 4rem;
+  padding: 0 1.25rem;
+}
+.back { padding: 1rem 0 .25rem; }
+
+/* ══════════════ En-tête ══════════════
+   La fiche est atteinte par lien direct (WhatsApp, story Instagram) : tout ce
+   qu'il faut pour se situer tient ici, sans être passé par le fil. */
+.masthead { padding: .5rem 0 1.5rem; border-bottom: 1px dotted var(--c-rule); }
+.when {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  /* Pas de `gap` : les segments de date portent déjà leurs espaces, une
+     gouttière s'y serait ajoutée et la date s'affichait « 12–14   juin   2026 ».
+     L'écart avant « dates à venir » est porté par la marge du seul `.fuzzy`. */
+}
+.fuzzy { margin-left: 8px; }
+.fuzzy {
+  font-weight: 400;
+  letter-spacing: .04em;
+  text-transform: none;
+  color: var(--c-faint);
+  font-size: 11.5px;
+}
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(34px, 7.5vw, 64px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  margin-top: 8px;
+}
+.struck { text-decoration: line-through; color: var(--c-muted); }
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 7px;
+  font-size: 14px;
+  color: var(--c-muted);
+  margin-top: 10px;
+}
+.meta > span + span::before { content: "\00b7"; margin-right: 7px; color: var(--c-faint); }
+.liveTag {
+  color: var(--c-accent);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  margin-right: 6px;
+}
+.cancelledTag {
+  color: var(--c-danger);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+.tour { font-size: 13.5px; color: var(--c-muted); margin-top: 10px; }
+.tour a { border-bottom: 1px solid var(--c-rule); }
+
+/* ══════════════ Sections ══════════════ */
+.section { padding: 1.75rem 0; border-bottom: 1px dotted var(--c-rule); }
+.section:last-child { border-bottom: 0; }
+.h2 {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  margin-bottom: 1rem;
+}
+
+/* ══════════════ Liens sortants ══════════════
+   WakeRef pointe, il n'héberge pas. Un lien manquant reste affiché avec « à
+   venir » : c'est une information, et elle donne rendez-vous. */
+.links, .videos, .siblings { list-style: none; display: flex; flex-direction: column; }
+.links li, .videos li, .siblings li { border-bottom: 1px dotted var(--c-rule); }
+.links li:last-child, .videos li:last-child, .siblings li:last-child { border-bottom: 0; }
+.links a, .links > li > span, .videos a {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: .7rem 0;
+  font-size: 14.5px;
+}
+.linkOn a { color: var(--c-text); }
+.linkOn a:hover { color: var(--c-accent); }
+.linkOff > span { color: var(--c-faint); }
+.tbd {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-faint);
+}
+.ext { margin-left: auto; color: var(--c-faint); flex-shrink: 0; }
+
+/* ══════════════ Autres compétitions ══════════════ */
+.siblings a {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: .7rem 0;
+  font-size: 14.5px;
+}
+.siblings a:hover { color: var(--c-accent); }
+.sibWhen {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  flex-shrink: 0;
+  min-width: 9.5rem;
+}
+
+@media (max-width: 560px) {
+  .siblings a { flex-direction: column; gap: 2px; }
+  .sibWhen { min-width: 0; }
+}
+
+/* Message d'état d'une section (vide annoncé, indisponibilité). */
+.note { font-size: 13.5px; color: var(--c-muted); }
+.loadError {
+  max-width: var(--page-max);
+  margin: 3rem auto;
+  padding: 0 1.25rem;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+
+
+/* ══════════════ L'affiche ══════════════
+   Dans son format d'origine : on ne connaît pas le ratio de ce que produit un
+   organisateur, donc `contain` et une hauteur plafonnée — jamais de recadrage
+   qui couperait un titre ou un logo. */
+.posterWrap {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 1.5rem;
+}
+.poster {
+  /* Boîte réservée avant décodage : l'affiche est le plus grand élément de la
+     page et se trouve au-dessus du titre — sans hauteur minimale, tout le
+     contenu sautait à son arrivée. */
+  min-height: 260px;
+  max-width: min(100%, 340px);
+  max-height: 460px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border: 1px solid var(--c-rule);
+}
+
+/* Le mois prend l'accent, comme dans le fil. */
+.month { color: var(--c-accent); }
+.when > span { white-space: pre; }
+
+/* ══════════════ Liens d'action ══════════════
+   Ce qui se fait pendant la compétition — suivre le live, s'inscrire — passe
+   devant. Trois tuiles au lieu de six lignes identiques : la hiérarchie se voit
+   avant d'être lue. */
+.primary {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+  margin-bottom: 1.75rem;
+}
+.primary li { border: 0; }
+.primary a, .primary > li > span {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 1rem;
+  border: 1px solid var(--c-rule);
+  font-size: 15px;
+  height: 100%;
+}
+.onNow a { color: var(--c-text); border-color: var(--c-text); }
+.onNow a:hover { color: var(--c-accent); border-color: var(--c-accent); }
+.offNow > span { color: var(--c-faint); border-style: dotted; }
+
+/* ══════════════ Vidéos ══════════════ */
+.videos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.videos li { border-bottom: 0; }
+
+@media (max-width: 560px) {
+  .poster { max-width: 100%; max-height: 380px; }
+}
+
+/* ══════════════ Appartenance ══════════════
+   Dite une fois, avec son logo. Remplace la répétition « wakepark · fédérale »
+   sous le titre : le logo porte l'information plus vite qu'un mot. */
+.affil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin-top: 14px;
+}
+.affilItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--c-muted);
+}
+a.affilItem:hover { color: var(--c-accent); }
+
+/* Étiquettes collées, reprises telles quelles de la couverture : mêmes angles,
+   mêmes découpes, même redressement au survol. Le blanc et les couleurs sont en
+   dur comme là-bas — ces valeurs ne suivent pas le thème, le ruban reste blanc
+   en édition nuit.
+
+   L'inclinaison porte sur tout l'élément, fond compris ; à moins de 1° elle
+   passait inaperçue sur le papier clair, là où la couverture la rend lisible
+   grâce à la photo sombre. */
+.tapeSmall {
+  display: inline-block;
+  background: #fff;
+  color: #2a1e30;
+  padding: 4px 9px 3px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-align: center;
+  transform: rotate(1.3deg);
+  clip-path: var(--tape-clip);
+  filter: var(--tape-shadow);
+  transition: transform var(--t-fast), color var(--t-fast);
+}
+a:hover > .tapeSmall { transform: rotate(0deg); }
+
+/* Le nom du parc prend l'accent, comme le crédit d'auteur·ice sur la couverture. */
+.tape {
+  display: inline-block;
+  background: #fff;
+  color: #c43d8c;
+  padding: 4px 9px 3px;
+  margin-left: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-align: center;
+  transform: rotate(-1.8deg);
+  clip-path: var(--tape-clip-alt);
+  filter: var(--tape-shadow);
+  transition: transform var(--t-fast), color var(--t-fast);
+}
+a:hover > .tape { color: #8f2a64; transform: rotate(0deg); }
+
+
+/* Sur écran étroit, le libellé et le ruban ne tiennent plus côte à côte. Plutôt
+   que de repousser l'icône vers le bas — ce qui étirait la ligne et donnait un
+   pictogramme flottant loin de son libellé — le ruban sort du flux : il est
+   POSÉ sur la ligne, comme un autocollant, et déborde sur ses voisines. La
+   hauteur de la rangée ne bouge donc plus.
+
+   Il reste opaque et au-dessus : c'est ce qui fait lire l'objet comme collé, et
+   non comme un bloc inséré. */
+@media (max-width: 620px) {
+  .links li { position: relative; }
+  .tape {
+    position: absolute;
+    right: 30px;              /* la place de l'icône « lien externe » */
+    top: 50%;
+    margin: 0;
+    /* Assez étroit pour ne pas recouvrir le libellé du lien : le ruban déborde
+       verticalement, sur les rangées voisines, mais laisse lire ce qu'il
+       accompagne. */
+    max-width: 47%;
+    z-index: 2;
+    transform: translateY(-50%) rotate(-1.8deg);
+  }
+  a:hover > .tape { transform: translateY(-50%) rotate(0deg); }
+}

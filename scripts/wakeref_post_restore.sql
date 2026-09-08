@@ -470,7 +470,8 @@ create table if not exists public.competitions (
   live_scoring_url         text        check (char_length(live_scoring_url) <= 500),
   organiser_instagram_url  text        check (char_length(organiser_instagram_url) <= 500),
   wakepark_url             text        check (char_length(wakepark_url) <= 500),
-  logo_path                text        check (char_length(logo_path) <= 500),  -- bucket `videos`, préfixe competitions/
+  poster_path              text        check (char_length(poster_path) <= 500), -- affiche, sur la fiche (ratio libre)
+  logo_path                text        check (char_length(logo_path) <= 500),    -- logo, repère dans le fil (ratio libre)
   published                boolean     not null default true,
   created_at               timestamptz not null default now(),
   updated_at               timestamptz not null default now(),

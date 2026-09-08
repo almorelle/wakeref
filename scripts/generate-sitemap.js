@@ -1,5 +1,8 @@
 import dotenv from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
+// Une seule implémentation de la forme d'URL, partagée avec les pages : deux
+// copies divergentes produiraient des URLs de sitemap différentes des canonical.
+import { competitionPath } from '../src/lib/competitionDates.js'
 import { writeFileSync, mkdirSync, existsSync } from 'fs'
 
 dotenv.config({ path: '.env.local' })
@@ -13,6 +16,7 @@ const staticRoutes = [
   { url: '/figures', priority: 0.6, changefreq: 'weekly' },
   { url: '/quiz',    priority: 0.6, changefreq: 'weekly' },
   { url: '/contact', priority: 0.6, changefreq: 'weekly' },
+  { url: '/competitions', priority: 0.7, changefreq: 'weekly' },
 ]
 
 // Récupère les routes dynamiques depuis Supabase. Lève en cas de variables
@@ -39,7 +43,21 @@ async function fetchDynamicRoutes() {
     .filter(f => f.slug)
     .map(f => ({ url: `/figures/${f.slug}`, priority: 0.8, changefreq: 'weekly' }))
 
-  return figureRoutes
+  // Compétitions publiées. Le slug de l'URL est décoratif (seul l'id est lu au
+  // routage) mais il doit figurer ici : c'est la forme que les gens partagent.
+  const { data: comps, error: compErr } = await supabase
+    .from('competitions')
+    .select('id, name')
+    .eq('published', true)
+  if (compErr) throw compErr
+
+  const competitionRoutes = (comps || []).map(c => ({
+    url: competitionPath(c),
+    priority: 0.6,
+    changefreq: 'weekly',
+  }))
+
+  return [...figureRoutes, ...competitionRoutes]
 }
 
 function renderSitemap(routes) {

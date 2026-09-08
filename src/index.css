@@ -84,6 +84,35 @@
 
   /* Grain du papier, appliqué au body */
   --grain: radial-gradient(rgba(42, 30, 48, .05) 1px, transparent 1px);
+
+  /* ── Découpes des rubans ──
+     Les étiquettes collées de la couverture et des compétitions. Deux variantes
+     pour que deux rubans voisins ne soient pas jumeaux, chacune inclinée dans un
+     sens. Les bords haut et bas sont coupés en biais ; les bords gauche et droit
+     portent de légers décrochements — la déchirure du ruban arraché.
+
+     Les crans latéraux sont en PIXELS et non en pourcentage : en %, une étiquette
+     large aurait des dents énormes et une étiquette courte des dents invisibles.
+     Déclarés ici plutôt que dans chaque module : l'effet se règle en un seul
+     endroit pour toute l'application. */
+  --tape-clip: polygon(
+    3px 5%,   40% 0,    calc(100% - 1px) 6%,
+    100% 24%, calc(100% - 4px) 47%, 100% 70%, calc(100% - 2px) 96%,
+    58% 100%, 4px 94%,
+    0 71%,    2px 49%,  0 26%
+  );
+  --tape-clip-alt: polygon(
+    1px 7%,   55% 0,    calc(100% - 3px) 4%,
+    100% 27%, calc(100% - 1px) 51%, 100% 73%, calc(100% - 4px) 97%,
+    38% 100%, 2px 93%,
+    0 69%,    4px 46%,  0 23%
+  );
+
+  /* Relief de la déchirure. `filter: drop-shadow` et non `box-shadow` : ce
+     dernier dessine l'ombre du RECTANGLE de la boîte, puis le clip-path la
+     découpe avec le reste — on ne verrait rien. `drop-shadow` épouse la forme
+     réellement rendue, crans compris. */
+  --tape-shadow: drop-shadow(0 3px 4px rgba(42, 30, 48, .42));
 }
 
 /* ── Encre (thème sombre) : l'édition nuit, mêmes règles inversées ── */
@@ -116,6 +145,11 @@
   --c-success:   #7db98c;
 
   --grain:  radial-gradient(rgba(232, 222, 233, .035) 1px, transparent 1px);
+
+  /* Les rubans restent blancs en édition nuit : une ombre d'encre y serait
+     invisible sur le fond sombre. On la noircit franchement pour qu'elle
+     porte encore. */
+  --tape-shadow: drop-shadow(0 3px 5px rgba(0, 0, 0, .55));
 }
 
 html { font-size: 16px; -webkit-font-smoothing: antialiased; }

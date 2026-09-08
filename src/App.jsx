@@ -20,6 +20,8 @@ const Quiz = lazy(() => import('./pages/Quiz'))
 const Compo = lazy(() => import('./pages/Compo'))
 const CompositionSimple = lazy(() => import('./pages/CompositionSimple'))
 const France2026 = lazy(() => import('./pages/France2026'))
+const Competitions = lazy(() => import('./pages/Competitions'))
+const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'))
 const JudgeTraining = lazy(() => import('./pages/JudgeTraining'))
 // Saisie de run à la voix (outil juge) : route NON listée dans la Navbar,
 // chunk isolé → un visiteur lambda ne charge jamais ce code.
@@ -60,6 +62,8 @@ export default function App() {
             <Route path="/composition" element={<Compo />} />
             <Route path="/composition/:id" element={<Compo />} />
             <Route path="/grille-composition-old" element={<CompositionSimple />} />
+            <Route path="/competitions" element={<Competitions />} />
+            <Route path="/competitions/:idSlug" element={<CompetitionDetail />} />
             <Route path="/entrainement-juge" element={<JudgeTraining />} />
             <Route path="/entrainement-juge/voix" element={<JudgeVoice />} />
             <Route path="/contact" element={<Contact />} />

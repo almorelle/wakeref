@@ -42,12 +42,15 @@ export default function CompetitionForm() {
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving]   = useState(false)
   const [form, setForm]       = useState(EMPTY)
-  const [logoPath, setLogoPath] = useState(null)
+  // Deux images de nature différente : l'affiche (sur la fiche) et le logo
+  // (repère dans le fil public). Même mécanique, même préfixe Storage. Aucun
+  // ratio n'est imposé — le rendu les contient sans recadrer ni déformer.
+  const [images, setImages] = useState({ poster_path: null, logo_path: null })
+  const [files, setFiles] = useState({ poster_path: null, logo_path: null })
   // L'année vit dans son propre état : la faire transiter par `date_start` à
   // chaque frappe la repassait par padStart(4,'0'), et taper « 2 » affichait « 0002 ».
   const [year, setYear] = useState('')
   const [loadFailed, setLoadFailed] = useState(false)
-  const [logoFile, setLogoFile] = useState(null)
   const [videos, setVideos]   = useState([])
 
   const set = (key) => (e) => {
@@ -65,7 +68,7 @@ export default function CompetitionForm() {
       // l'enregistrer écraserait la ligne réelle avec des valeurs par défaut.
       if (error || !data) { toast('Compétition introuvable', 'error'); setLoadFailed(true); setLoading(false); return }
       setForm({ ...EMPTY, ...Object.fromEntries(Object.keys(EMPTY).map(k => [k, data[k] ?? EMPTY[k]])) })
-      setLogoPath(data.logo_path || null)
+      setImages({ poster_path: data.poster_path || null, logo_path: data.logo_path || null })
       setYear(yearOf(data.date_start))
       const { data: vids, error: vErr } = await supabase.from('competition_videos')
         .select('id, url, title, sort_order').eq('competition_id', id).order('sort_order')
@@ -99,16 +102,24 @@ export default function CompetitionForm() {
     if (bad) { toast('Lien vidéo invalide (http(s) attendu, 500 caractères max).', 'error'); return }
     setSaving(true)
 
-    let logo_path = logoPath
-    let uploadedPath = null
-    if (logoFile) {
-      const ext = (logoFile.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin'
-      const path = `competitions/${Date.now()}.${ext}`
+    // Upload des images changées. Les nouveaux objets sont retenus pour être
+    // retirés si l'écriture de la ligne échoue ensuite.
+    const paths = { ...images }
+    const uploaded = []
+    for (const key of ['poster_path', 'logo_path']) {
+      const file = files[key]
+      if (!file) continue
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin'
+      const path = `competitions/${Date.now()}-${key === 'logo_path' ? 'logo' : 'affiche'}.${ext}`
       const { error: upErr } = await supabase.storage.from('videos')
-        .upload(path, logoFile, { contentType: logoFile.type || undefined, upsert: false })
-      if (upErr) { toast('Erreur upload : ' + upErr.message, 'error'); setSaving(false); return }
-      uploadedPath = path
-      logo_path = path
+        .upload(path, file, { contentType: file.type || undefined, upsert: false })
+      if (upErr) {
+        toast('Erreur upload : ' + upErr.message, 'error')
+        if (uploaded.length) await supabase.storage.from('videos').remove(uploaded)
+        setSaving(false); return
+      }
+      uploaded.push(path)
+      paths[key] = path
     }
 
     // `date_start` est normalisé ici et pas seulement dans le champ année : basculer
@@ -120,23 +131,24 @@ export default function CompetitionForm() {
       name: form.name.trim(),
       date_start: isYearPrec ? decLast(year) : form.date_start,
       date_end: isYearPrec ? null : (form.date_end || null),
-      logo_path,
+      ...paths,
     }
 
     const { data: saved, error } = isEdit
       ? await supabase.from('competitions').update(payload).eq('id', id).select('id').single()
       : await supabase.from('competitions').insert(payload).select('id').single()
     if (error) {
-      // L'objet uploadé n'est référencé par rien : on le retire plutôt que de le
-      // laisser grossir un bucket qu'aucun écran ne liste.
-      if (uploadedPath) await supabase.storage.from('videos').remove([uploadedPath])
+      // Les objets uploadés ne sont référencés par rien : on les retire plutôt
+      // que de les laisser grossir un bucket qu'aucun écran ne liste.
+      if (uploaded.length) await supabase.storage.from('videos').remove(uploaded)
       toast(error.message, 'error'); setSaving(false); return
     }
-    // L'ancien logo n'est supprimé qu'une fois la ligne écrite : l'inverse
-    // détruisait l'objet même quand l'enregistrement échouait.
-    if (uploadedPath && logoPath && logoPath !== uploadedPath) {
-      await supabase.storage.from('videos').remove([logoPath])
-    }
+    // Les anciennes images ne sont supprimées qu'une fois la ligne écrite :
+    // l'inverse détruisait l'objet même quand l'enregistrement échouait.
+    const orphans = ['poster_path', 'logo_path']
+      .filter(k => files[k] && images[k] && images[k] !== paths[k])
+      .map(k => images[k])
+    if (orphans.length) await supabase.storage.from('videos').remove(orphans)
 
     // Les vidéos sont peu nombreuses : on remplace le jeu complet plutôt que de
     // differ ligne à ligne.
@@ -282,20 +294,29 @@ export default function CompetitionForm() {
           <Icon name="plus" /> Ajouter un lien vidéo
         </button>
 
-        <p className={styles.groupTitle}>Logo</p>
-        <div className="field">
-          <label htmlFor="c-logo">Image (optionnel)</label>
-          <input id="c-logo" className="input" type="file" accept="image/*"
-            onChange={e => setLogoFile(e.target.files?.[0] || null)} />
-          {logoPath && !logoFile && (
-            <p className={styles.fileInfo}>
-              Actuel : {logoPath.split('/').pop()}{' '}
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setLogoPath(null)}>
-                Retirer
-              </button>
-            </p>
-          )}
-          {logoFile && <p className={styles.fileInfo}>Remplacera le logo actuel à l’enregistrement.</p>}
+        <p className={styles.groupTitle}>Images</p>
+        <div className={styles.row}>
+          {[
+            { key: 'poster_path', label: 'Affiche', hint: 'Affichée sur la fiche publique, dans son format d’origine.' },
+            { key: 'logo_path',   label: 'Logo',    hint: 'Repère visuel dans le fil. Tenu dans un cadre sans être recadré ni déformé.' },
+          ].map(img => (
+            <div className="field" key={img.key}>
+              <label htmlFor={`c-${img.key}`}>{img.label}</label>
+              <input id={`c-${img.key}`} className="input" type="file" accept="image/*"
+                onChange={e => setFiles(prev => ({ ...prev, [img.key]: e.target.files?.[0] || null }))} />
+              <p className={styles.fileInfo}>{img.hint}</p>
+              {images[img.key] && !files[img.key] && (
+                <p className={styles.fileInfo}>
+                  Actuel : {images[img.key].split('/').pop()}{' '}
+                  <button type="button" className="btn btn-ghost btn-sm"
+                    onClick={() => setImages(prev => ({ ...prev, [img.key]: null }))}>
+                    Retirer
+                  </button>
+                </p>
+              )}
+              {files[img.key] && <p className={styles.fileInfo}>Remplacera l’image actuelle à l’enregistrement.</p>}
+            </div>
+          ))}
         </div>
 
         <div className={styles.actions}>

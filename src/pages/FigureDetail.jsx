@@ -53,7 +53,7 @@ function InstagramCard({ v, label }) {
   )
 }
 
-// Monte le contenu lourd (iframe / metadata vidéo / thumbnail) seulement quand
+// Monte le contenu lourd (metadata vidéo / miniature) seulement quand
 // la carte approche du viewport — perf sur les figures à galerie longue.
 function useInView(rootMargin = '300px') {
   const ref = useRef(null)
@@ -72,34 +72,24 @@ function useInView(rootMargin = '300px') {
   return [ref, inView]
 }
 
-// Façade YouTube : miniature + bouton play ; l'iframe (lourd) n'est monté qu'au
-// clic → page bien plus légère, et style unifié avec la carte Instagram.
-function YouTubeFacade({ videoId, vertical, title }) {
+// Carte YouTube : miniature, et lecture chez YouTube dans un nouvel onglet.
+//
+// Pas de lecteur intégré. Le lecteur embarqué impose ses propres contrôles, son
+// bouton plein écran est difficilement atteignable au clavier, et il retient
+// chez nous un trafic qui revient à l'auteur·ice de la vidéo. La miniature reste
+// — c'est elle qui donne envie et qui distingue deux vidéos d'une même figure.
+function YouTubeCard({ videoId, vertical, title, url }) {
   const [ref, inView] = useInView()
-  const [playing, setPlaying] = useState(false)
-  const [hiRes, setHiRes] = useState(true) // maxres → fallback hq si 404
-
-  if (playing) {
-    return (
-      <iframe
-        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1`}
-        className={`${styles.video} ${vertical ? styles.mediaVerticalEl : ''}`}
-        title={title || 'YouTube'}
-        allowFullScreen
-        allow="autoplay; fullscreen"
-        style={{ border: 'none', width: '100%', aspectRatio: vertical ? '9/16' : '16/9', height: 'auto' }}
-      />
-    )
-  }
+  const [hiRes, setHiRes] = useState(true) // maxres → repli hq si 404
 
   const thumb = `https://i.ytimg.com/vi/${videoId}/${hiRes ? 'maxresdefault' : 'hqdefault'}.jpg`
   return (
-    <button
+    <a
       ref={ref}
-      type="button"
+      href={externalUrl(url, { ref: true })}
+      target="_blank"
+      rel="noopener noreferrer"
       className={`${styles.mediaWrap} ${vertical ? styles.mediaVertical : ''}`}
-      onClick={() => setPlaying(true)}
-      aria-label="Lire la vidéo YouTube"
     >
       {inView && (
         <img
@@ -113,7 +103,7 @@ function YouTubeFacade({ videoId, vertical, title }) {
       <span className={styles.mediaScrim}>
         <span className={styles.instaPlay}><Icon name="player-play" /></span>
       </span>
-    </button>
+    </a>
   )
 }
 
@@ -269,12 +259,12 @@ export default function FigureDetail() {
       return <InstagramCard v={v} label={tr.viewOnInstagram} />
     }
 
-    // YouTube : façade (miniature + play), iframe montée au clic seulement.
+    // YouTube : miniature cliquable, lecture chez YouTube dans un nouvel onglet.
     if (v.source_type === 'youtube' && v.source_url) {
       const videoId = v.source_url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?\s]+)/)?.[1]
       const isShort = v.source_url.includes('/shorts/')
       if (videoId) {
-        return <YouTubeFacade videoId={videoId} vertical={isShort} title={v.title} />
+        return <YouTubeCard videoId={videoId} vertical={isShort} title={v.title} url={v.source_url} />
       }
     }
 

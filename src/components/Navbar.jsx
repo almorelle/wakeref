@@ -115,6 +115,7 @@ export default function Navbar() {
     { to: '/',        label: tr.home       },
     { to: '/figures', label: tr.figures    },
     { to: '/quiz',    label: tr.quiz       },
+    { to: '/competitions',      label: tr.competitions.title },
     { to: '/composition',       label: tr.compo      },
     { to: '/entrainement-juge', label: tr.judge.nav  },
     { to: '/contact', label: tr.contact    },

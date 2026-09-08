@@ -153,6 +153,7 @@ CREATE TABLE public.competitions (
                                      live_scoring_url text CHECK (char_length(live_scoring_url) <= 500),
                                      organiser_instagram_url text CHECK (char_length(organiser_instagram_url) <= 500),
                                      wakepark_url text CHECK (char_length(wakepark_url) <= 500),
+                                     poster_path text CHECK (char_length(poster_path) <= 500),
                                      logo_path text CHECK (char_length(logo_path) <= 500),
                                      published boolean NOT NULL DEFAULT true,
                                      created_at timestamp with time zone NOT NULL DEFAULT now(),
