@@ -36,6 +36,7 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
 - `categories` — 14 fixed trick categories (spin, railey, s-bend, …) with color and sort order; mirrored in `src/data/categories.js` (which adds icon + color)
 - `prerequisites` — many-to-many self-join on figures
 - `videos` — references to video files stored in Supabase Storage
+  - **No embedded player anywhere.** YouTube and Instagram videos render as a clickable thumbnail that opens the host in a new tab; only `source_type='upload'` (files WakeRef hosts itself) plays in place. An embed keeps traffic that belongs to the video's author, its controls can't be styled, and its fullscreen button is poorly reachable by keyboard.
 - `takedown_requests` — copyright removal requests from video authors
 - `compositions` — saved runs from the Compo page (no auth); short text `id` used in the share URL, minimal JSONB snapshot in `data` (incl. `gridKey`), denormalized `score` (normalized to /20). Public can insert + load one by id via the `get_composition(cid)` function; only admin can list/delete (RLS)
 - `figure_views` — per-figure/day counter; written by the `track_figure_view` RPC, read back through `most_viewed_figures`

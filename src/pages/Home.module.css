@@ -221,7 +221,8 @@
      raison que le magenta figé de `.creditBy` juste en dessous. */
   color: #2a1e30;                /* 15.8:1 sur blanc */
   transform: rotate(1.3deg);
-  clip-path: polygon(0 0, 100% 6%, 100% 100%, 0 94%);
+  clip-path: var(--tape-clip);
+  filter: var(--tape-shadow);
 }
 a.creditTrick { transition: color var(--t-fast), transform var(--t-fast); }
 a.creditTrick:hover { color: #8f2a64; transform: rotate(0deg); }
@@ -239,7 +240,8 @@ a.creditTrick:hover { color: #8f2a64; transform: rotate(0deg); }
 .creditBy {
   color: #c43d8c;
   transform: rotate(-1.8deg);
-  clip-path: polygon(0 7%, 100% 0, 100% 93%, 0 100%);
+  clip-path: var(--tape-clip-alt);
+  filter: var(--tape-shadow);
 }
 a.creditBy {
   transition: color var(--t-fast), transform var(--t-fast);

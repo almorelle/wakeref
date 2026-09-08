@@ -356,6 +356,7 @@ export default function Home() {
   const modules = [
     { to: '/figures', img: 'Catalogue', title: tr.tileCatalogTitle, sub: tr.tileCatalogSub },
     { to: '/quiz',    img: 'Quiz',      title: tr.tileQuizTitle,    sub: tr.tileQuizSub    },
+    { to: '/competitions',      img: 'Competitions', title: tr.tileCompetitionsTitle, sub: tr.tileCompetitionsSub },
     { to: '/composition',       img: 'Compo',     title: tr.tileCompoTitle,   sub: tr.tileCompoSub   },
     { to: '/entrainement-juge', img: 'Juge',      title: tr.tileJudgeTitle,   sub: tr.tileJudgeSub   },
   ]
@@ -489,7 +490,7 @@ export default function Home() {
 
         {!hasQuery && (
           <>
-            {/* ── Les quatre modules, en blocs empilés qui alternent ── */}
+            {/* ── Les modules, en blocs empilés qui alternent ── */}
             <nav ref={modulesRef} className={styles.modules} aria-label={tr.summary}>
               {modules.map((m, i) => (
                 <button key={m.to} className={styles.mod} onClick={() => navigate(m.to)}>

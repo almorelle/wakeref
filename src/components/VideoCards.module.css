@@ -1,0 +1,70 @@
+/* ══════════════ Cartes vidéo ══════════════
+   Une vignette cliquable qui mène chez l'hébergeur : WakeRef pointe, il
+   n'héberge pas. La miniature n'est là que pour donner envie et pour distinguer
+   deux vidéos d'une même compétition. */
+.card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--c-rule);
+  background: var(--c-bg);
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Repli quand aucune miniature n'a été déposée : un aplat sobre plutôt qu'une
+   image cassée. */
+.fallback {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #2a1e30 0%, #4a2a44 100%);
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  background: linear-gradient(to top, rgba(20, 12, 24, .82) 0%, rgba(20, 12, 24, .12) 55%, transparent 100%);
+}
+.play {
+  align-self: flex-start;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, .85);
+  color: #fff;
+  transition: background var(--t-fast), color var(--t-fast);
+}
+.card:hover .play { background: #fff; color: #2a1e30; }
+.card:focus-visible .play { background: #fff; color: #2a1e30; }
+
+.info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.title {
+  font-family: var(--font-title);
+  font-size: 17px;
+  line-height: 1.1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: #fff;
+}
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, .82);
+}
+
+

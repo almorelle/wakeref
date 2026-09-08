@@ -24,7 +24,7 @@ export default function AdminCompetitions() {
     ;(async () => {
       const { data, error } = await supabase
         .from('competitions')
-        .select('id, name, date_start, date_end, date_precision, wakepark, affiliation, cancelled, published, logo_path')
+        .select('id, name, date_start, date_end, date_precision, wakepark, affiliation, cancelled, published, logo_path, poster_path')
         .order('date_start', { ascending: false })
         .order('id', { ascending: false })
       if (cancelled) return
@@ -56,7 +56,8 @@ export default function AdminCompetitions() {
     // échouait, laissant une fiche listée avec une image morte.
     const { error } = await supabase.from('competitions').delete().eq('id', c.id)
     if (error) { toast('Échec de la suppression.', 'error'); return }
-    if (c.logo_path) await supabase.storage.from('videos').remove([c.logo_path])
+    const images = [c.poster_path, c.logo_path].filter(Boolean)
+    if (images.length) await supabase.storage.from('videos').remove(images)
     setRows(prev => prev.filter(x => x.id !== c.id))
     toast('Compétition supprimée.', 'success')
   }
