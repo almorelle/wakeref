@@ -50,6 +50,18 @@ export default function AdminCompetitions() {
     toast(next ? 'Compétition marquée annulée.' : 'Annulation levée.', 'success')
   }
 
+  // Publication réversible, même mécanique que l'annulation — et même précaution
+  // avec `.select()`. Dépublier ne détruit rien : la fiche sort du fil public et
+  // du sitemap, elle reste entière ici.
+  const togglePublished = async (c) => {
+    const next = !c.published
+    const { data, error } = await supabase.from('competitions')
+      .update({ published: next }).eq('id', c.id).select('id')
+    if (error || !data?.length) { toast('Échec de la mise à jour.', 'error'); return }
+    setRows(prev => prev.map(x => (x.id === c.id ? { ...x, published: next } : x)))
+    toast(next ? 'Compétition publiée.' : 'Compétition dépubliée.', 'success')
+  }
+
   const remove = async (c) => {
     if (!confirm(`Supprimer "${c.name}" ? Cette action est irréversible.`)) return
     // La ligne d'abord : l'inverse détruisait le logo même quand la suppression
@@ -100,6 +112,20 @@ export default function AdminCompetitions() {
               <button className="btn btn-ghost btn-sm btn-icon" title="Modifier" aria-label={`Modifier ${c.name}`}
                 onClick={() => navigate(`/admin/competitions/${c.id}/edit`)}>
                 <Icon name="pencil" />
+              </button>
+              {/* Ici l'icône dit l'ÉTAT, pas l'action : œil ouvert et accentué
+                  = en ligne, œil barré = hors ligne. C'est un choix délibéré
+                  d'Alexis, et donc une divergence assumée avec le bouton
+                  d'annulation juste à côté, dont l'icône dit l'action — ne pas
+                  « harmoniser » les deux sans le lui redemander. L'action reste
+                  portée par l'infobulle et l'`aria-label`, que le lecteur
+                  d'écran annonce. */}
+              <button className="btn btn-ghost btn-sm btn-icon"
+                title={c.published ? 'Dépublier' : 'Publier'}
+                aria-label={`${c.published ? 'Dépublier' : 'Publier'} ${c.name}`}
+                style={c.published ? { color: 'var(--c-accent)' } : undefined}
+                onClick={() => togglePublished(c)}>
+                <Icon name={c.published ? 'eye' : 'eye-off'} />
               </button>
               <button className="btn btn-ghost btn-sm btn-icon"
                 title={c.cancelled ? 'Lever l’annulation' : 'Marquer annulée'}

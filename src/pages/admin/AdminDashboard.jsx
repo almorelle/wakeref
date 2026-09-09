@@ -6,7 +6,7 @@ import Icon from '../../components/Icon'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ figures: 0, videos: 0, submissions: 0, takedowns: 0, videoPct: 0, instaNoThumb: 0, runs: 0, noVideo: 0, noUpload: 0 })
+  const [stats, setStats] = useState({ figures: 0, videos: 0, submissions: 0, takedowns: 0, videoPct: 0, instaNoThumb: 0, runs: 0, noVideo: 0, noUpload: 0, competitions: 0, compSubmissions: 0 })
 
   useEffect(() => {
     Promise.all([
@@ -20,7 +20,9 @@ export default function AdminDashboard() {
       supabase.from('compositions').select('id', { count: 'exact', head: true }),
       supabase.rpc('figures_without_videos'),
       supabase.rpc('figures_without_uploaded_videos'),
-    ]).then(([f, v, sub, t, hs, insta, thumbs, runs, nv, nu]) => {
+      supabase.from('competitions').select('id', { count: 'exact', head: true }).eq('published', true),
+      supabase.from('competition_submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
+    ]).then(([f, v, sub, t, hs, insta, thumbs, runs, nv, nu, comp, compSub]) => {
       const row = hs.data?.[0]
       const videoPct = row && row.total_figures > 0
         ? Math.round((row.figures_with_video / row.total_figures) * 100)
@@ -45,6 +47,8 @@ export default function AdminDashboard() {
         runs: runs.count || 0,
         noVideo: noVideoIds.size,
         noUpload,
+        competitions: comp.count || 0,
+        compSubmissions: compSub.count || 0,
       })
     })
   }, [])
@@ -54,6 +58,7 @@ export default function AdminDashboard() {
     { label: 'Figures', value: stats.figures, icon: 'list', action: () => navigate('/admin/figures') },
     { label: 'Vidéos', value: stats.videos, icon: 'video', action: () => navigate('/admin/videos') },
     { label: 'Figures avec vidéo', value: `${stats.videoPct}%`, icon: 'video', action: () => navigate('/admin/no-videos') },
+    { label: 'Compétitions publiées', value: stats.competitions, icon: 'calendar-event', action: () => navigate('/admin/competitions') },
     { label: 'Runs sauvegardés', value: stats.runs, icon: 'list', action: () => navigate('/admin/compositions') },
   ]
   // À traiter : compteurs d'action. >0 = rouge (à faire), 0 = vert (rien à faire).
@@ -62,7 +67,8 @@ export default function AdminDashboard() {
     { label: 'Avec vidéo sans upload', value: stats.noUpload, icon: 'cloud-upload', action: () => navigate('/admin/no-videos?open=onlyExternal') },
     { label: 'Instagram sans miniature', value: stats.instaNoThumb, icon: 'brand-instagram', action: () => navigate('/admin/no-videos?open=noThumb') },
     { label: 'Retraits en attente', value: stats.takedowns, icon: 'flag', action: () => navigate('/admin/takedowns') },
-    { label: 'Soumissions à traiter', value: stats.submissions, icon: 'inbox', action: () => navigate('/admin/submissions') },
+    { label: 'Soumissions vidéo', value: stats.submissions, icon: 'inbox', action: () => navigate('/admin/submissions') },
+    { label: 'Soumissions compétition', value: stats.compSubmissions, icon: 'calendar-event', action: () => navigate('/admin/competition-submissions') },
   ]
 
   const renderTile = (t, tone) => (
