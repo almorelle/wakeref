@@ -49,9 +49,18 @@ execFileSync(
     '-v', 'error', '-y',
     '-i', src,
     '-frames:v', '1',
-    // 720 px : la résolution native des clips de couverture. Au-delà on
+    // Deux passes de `scale`, et la première n'est pas décorative : un clip peut
+    // être codé avec des pixels NON CARRÉS (SAR). Celui d'ouverture est codé
+    // 720×720 avec un SAR de 3:4, donc affiché 720×960 par le navigateur.
+    // Extraire la trame codée telle quelle donnait un JPEG carré — et le JPEG
+    // n'a aucun moyen de porter le SAR, si bien que le poster arrivait écrasé,
+    // puis ne raccordait pas avec la vidéo qui prenait le relais.
+    //   `scale=iw*sar:ih` remet les pixels au carré (720×720 → 540×720)
+    //   `scale=720:-2`    ramène à la largeur voulue (→ 720×960)
+    //   `setsar=1`        évite de réintroduire un SAR dans la sortie
+    // 720 px de large : la résolution native des clips de couverture. Au-delà on
     // n'ajoute que du poids, la vidéo qui prend le relais n'est pas plus fine.
-    '-vf', 'scale=720:-2:flags=lanczos',
+    '-vf', 'scale=iw*sar:ih,scale=720:-2:flags=lanczos,setsar=1',
     '-q:v', '6',
     dest,
   ],

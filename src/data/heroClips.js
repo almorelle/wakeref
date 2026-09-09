@@ -9,6 +9,12 @@
 //
 // L'ordre ci-dessous est celui de la rotation. Le premier clip est celui qui
 // s'affiche à l'ouverture : y mettre le plus démonstratif, et le plus léger.
+// Après tout changement du PREMIER clip : `node scripts/hero-poster.mjs`.
+//
+// Les dimensions annotées sont celles de la trame CODÉE, qui ne dit pas toujours
+// le format à l'écran : le clip 175 est codé 720×720 mais porte un SAR de 3:4 et
+// s'affiche donc en 720×960. Le script de poster s'en charge, ne pas déduire le
+// cadrage de ces chiffres.
 //
 // Pour changer la sélection : éditer ce tableau. Si ça devient fréquent, l'étape
 // suivante est une colonne `hero_order` sur `videos` pilotée depuis l'admin.

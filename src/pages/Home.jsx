@@ -146,6 +146,36 @@ export default function Home() {
   // elles auront du contenu (cf. SkeletonCard).
   const [rowsLoading, setRowsLoading] = useState(true)
   const heroRefs = useRef([])
+  // Garde-fou de dev : le poster doit avoir EXACTEMENT le format d'affichage du
+  // clip qu'il précède, sinon `object-fit: cover` les recadre différemment et la
+  // vidéo « saute » en prenant le relais. Le piège est qu'un clip peut être codé
+  // avec des pixels non carrés (SAR) — celui d'ouverture est codé 720×720 mais
+  // s'affiche en 720×960 —, donc la trame codée ne dit pas le format à l'œil.
+  // Le contrôle porte sur le rendu, pas sur les fichiers.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const el = heroRefs.current[0]
+    if (!el) return
+    const verifier = () => {
+      if (!el.videoWidth) return
+      const img = new Image()
+      img.onload = () => {
+        const clip = el.videoWidth / el.videoHeight
+        const poster = img.naturalWidth / img.naturalHeight
+        if (Math.abs(clip - poster) > 0.01) {
+          console.warn(
+            `[Home] Le poster (${img.naturalWidth}×${img.naturalHeight}, ${poster.toFixed(3)}) ` +
+            `n'a pas le format du clip d'ouverture (${el.videoWidth}×${el.videoHeight}, ${clip.toFixed(3)}). ` +
+            'Relancer `node scripts/hero-poster.mjs`.',
+          )
+        }
+      }
+      img.src = HERO_FIRST.poster
+    }
+    el.addEventListener('loadedmetadata', verifier)
+    verifier()
+    return () => el.removeEventListener('loadedmetadata', verifier)
+  }, [])
   // Dernier clip effectivement lancé, pour ne rembobiner que sur un vrai
   // changement — l'effet de lecture se rejoue aussi quand la liste s'allonge.
   const dernierIdx = useRef(-1)
