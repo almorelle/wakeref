@@ -63,15 +63,15 @@ context: []
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `scripts/migrations/0019-competition-submissions.sql` -- `competition_submissions` (name, date_text, url, status, created_at), CHECKs incl. the URL scheme, RLS, grants, rate-limit trigger -- the whole foundation, runnable in one go
-- [ ] `scripts/wakeref_post_restore.sql` + `scripts/wakeref_schema.sql` -- mirror it -- a restore must rebuild the same security state
-- [ ] `supabase/functions/notify-competition-submission/index.ts` -- alert e-mail, modelled on the video one -- Alexis deploys it and wires the webhook
-- [ ] `src/pages/SubmitCompetition.jsx` + `.module.css` -- three fields, client validation, confirmation, error on flood -- the form itself
-- [ ] `src/pages/admin/AdminCompetitionSubmissions.jsx` + `.module.css` -- list pending first, mark handled, link to create the competition -- where a submission becomes a listing
-- [ ] `src/App.jsx`, `src/pages/admin/AdminLayout.jsx` -- routes + sidebar entry -- reachable
-- [ ] `src/pages/Competitions.jsx`, `src/components/Footer.jsx` -- both entry points -- discoverable at the moment of intent and from the footer
-- [ ] `src/i18n/translations.js` -- all strings in `fr` + `en` -- no untranslated label ships
-- [ ] `CLAUDE.md` + `_bmad-output/project-context.md` -- document the table and its rate limit -- the next agent must not re-derive them
+- [x] `scripts/migrations/0019-competition-submissions.sql` -- `competition_submissions` (name, date_text, url, status, created_at), CHECKs incl. the URL scheme, RLS, grants, rate-limit trigger -- the whole foundation, runnable in one go
+- [x] `scripts/wakeref_post_restore.sql` + `scripts/wakeref_schema.sql` -- mirror it -- a restore must rebuild the same security state
+- [x] `supabase/functions/notify-competition-submission/index.ts` -- alert e-mail, modelled on the video one -- Alexis deploys it and wires the webhook
+- [x] `src/pages/SubmitCompetition.jsx` + `.module.css` -- three fields, client validation, confirmation, error on flood -- the form itself
+- [x] `src/pages/admin/AdminCompetitionSubmissions.jsx` + `.module.css` -- list pending first, mark handled, link to create the competition -- where a submission becomes a listing
+- [x] `src/App.jsx`, `src/pages/admin/AdminLayout.jsx` -- routes + sidebar entry -- reachable
+- [x] `src/pages/Competitions.jsx`, `src/components/Footer.jsx` -- both entry points -- discoverable at the moment of intent and from the footer
+- [x] `src/i18n/translations.js` -- all strings in `fr` + `en` -- no untranslated label ships
+- [x] `CLAUDE.md` + `_bmad-output/project-context.md` -- document the table and its rate limit -- the next agent must not re-derive them
 
 **Acceptance Criteria:**
 - Given a submission with only a name and a date, when it is sent, then it is accepted and appears as `pending` in the admin queue.

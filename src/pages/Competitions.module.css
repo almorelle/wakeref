@@ -175,6 +175,30 @@
 }
 .card:hover .name { color: var(--c-accent); }
 
+/* ══════════════ L'appel à contribution ══════════════
+   Une entrée du fil comme les autres, à ceci près qu'elle n'a pas de date : le
+   carré pointillé est celui d'une compétition sans logo, et le point
+   d'interrogation y remplace les initiales. Le libellé garde EXACTEMENT
+   l'échelle des autres entrées : une taille à part se lit comme un défaut de
+   rendu, pas comme une intention. Ce qui distingue la ligne, c'est la pastille
+   — accentuée — et l'absence de date. */
+.suggestMark {
+  font-family: var(--font-title);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--c-accent);
+}
+/* Le cadre reprend l'encre du point d'interrogation : les deux forment un seul
+   objet, là où le pointillé gris du repli textuel n'est qu'un contenant. */
+.suggestNode { border-color: var(--c-accent); }
+
+/* Le lien couvre la grille, mais seules la pastille et la carte le reçoivent —
+   sans quoi la colonne vide en ferait une bande cliquable d'un bord à l'autre. */
+.suggestRow { pointer-events: none; }
+.suggestRow > * { pointer-events: auto; }
+/* Survoler le carré éclaire le libellé, et inversement : c'est une seule cible. */
+.suggestRow:hover .name { color: var(--c-accent); }
+
 /* Le passé (et l'annulé, qui n'aura pas lieu) : même échelle, encre retirée. */
 .past .name { color: var(--c-muted); }
 .past .node { opacity: .62; }
@@ -310,28 +334,4 @@
 .compact .logo, .compact .logoFallback { max-height: 26px; }
 .compact .logoFallback { font-size: 13px; }
 
-/* Appel à contribution, en tête de fil. En ruban plutôt qu'en lien souligné :
-   un lien discret sur une page qui s'ouvre déjà scrollée à « aujourd'hui »
-   n'était vu par personne. L'autocollant, lui, se lit comme posé sur la page —
-   il n'appartient pas au fil, donc il ne se confond pas avec une entrée. */
-.suggest {
-  max-width: var(--page-max);
-  width: 100%;
-  margin: 0 auto .75rem;
-  padding: 0 1.25rem;
-}
-.suggestTape {
-  display: inline-block;
-  background: #fff;
-  color: #c43d8c;
-  padding: 6px 12px 5px;
-  font-size: 12.5px;
-  font-weight: 700;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  transform: rotate(-1.6deg);
-  clip-path: var(--tape-clip-alt);
-  filter: var(--tape-shadow);
-  transition: transform var(--t-fast), color var(--t-fast);
-}
-a:hover > .suggestTape { color: #8f2a64; transform: rotate(0deg); }
+

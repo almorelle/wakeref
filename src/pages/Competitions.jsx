@@ -103,14 +103,6 @@ export default function Competitions() {
         <p className={styles.subtitle}>{tr.competitions.subtitle}</p>
       </header>
 
-      {/* En tête de fil : on vient signaler une compétition à VENIR, et le futur
-          est en haut. Placé sous le titre, il se voit sans couper la lecture. */}
-      <p className={styles.suggest}>
-        <Link to="/competitions/proposer">
-          <span className={styles.suggestTape}>{tr.competitions.suggest}</span>
-        </Link>
-      </p>
-
       {loading && <span className="spinner" />}
       {failed && <p className={styles.empty}>{tr.competitions.loadError}</p>}
       {!loading && !failed && rows.length === 0 && (
@@ -119,8 +111,30 @@ export default function Competitions() {
 
       {/* `role="list"` : sous `list-style: none`, Safari/VoiceOver retire la
           sémantique de liste et n'annonce plus le nombre d'entrées. */}
-      {!loading && !failed && rows.length > 0 && (
+      {!loading && !failed && (
       <ol className={styles.ribbon} role="list" aria-label={tr.competitions.title}>
+        {/* Première entrée du fil, au-dessus du premier millésime : on vient
+            signaler une compétition à VENIR, et le futur est en haut. Même
+            gabarit qu'une compétition — pastille au centre, carte sur le côté —
+            pour qu'elle se lise comme une ligne du calendrier et non comme un
+            encart. `right` : la première vraie entrée est à gauche, le zigzag
+            continue. Ni date ni méta, seul le libellé. */}
+        <li className={[styles.item, styles.right, styles.suggestItem].join(' ')}>
+          {/* Un SEUL lien pour la ligne entière : le carré et le libellé sont
+              deux poignées de la même destination, et deux <a> vers la même
+              cible s'annoncent en double au lecteur d'écran. C'est donc le lien
+              qui porte la grille — et il ne reçoit les clics que sur ses deux
+              cellules pleines, jamais sur la colonne vide qui court sur toute
+              la largeur de la page. */}
+          <Link to="/competitions/proposer" className={`${styles.row} ${styles.suggestRow}`}>
+            <span className={`${styles.node} ${styles.nodeEmpty} ${styles.suggestNode}`}>
+              <span className={styles.suggestMark} aria-hidden="true">?</span>
+            </span>
+            <span className={styles.card}>
+              <span className={styles.name}>{tr.competitions.suggest}</span>
+            </span>
+          </Link>
+        </li>
         {rows.map((c, i) => {
           const state = states[i]
           const isYear = c.date_precision === 'year'
