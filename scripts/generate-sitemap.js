@@ -8,6 +8,14 @@ import { writeFileSync, mkdirSync, existsSync } from 'fs'
 dotenv.config({ path: '.env.local' })
 
 const hostname = 'https://wakeref.app'
+// Plafond explicite sur les requêtes, même convention que le ruban des
+// compétitions (`Competitions.jsx`). Sans lui, PostgREST tronque au-delà de son
+// seuil par défaut SANS RIEN SIGNALER : le script sortirait en code 0, le build
+// passerait, et le sitemap serait simplement amputé — Google cesserait d'être
+// informé des pages manquantes sans que rien ne l'indique. Franc et lointain :
+// à 221 figures publiées, on a de la marge, et l'avertissement ci-dessous
+// préviendra bien avant qu'il ne morde.
+const MAX_ROWS = 5000
 const date = new Date().toISOString()
 
 // Routes statiques : toujours présentes, indépendantes de la base.
@@ -18,6 +26,17 @@ const staticRoutes = [
   { url: '/contact', priority: 0.6, changefreq: 'weekly' },
   { url: '/competitions', priority: 0.7, changefreq: 'weekly' },
 ]
+
+// Un plafond atteint est indiscernable d'un jeu complet : on le dit, sinon la
+// troncature resterait aussi muette qu'avant, juste déplacée.
+function avertirSiPlafondAtteint(rows, table) {
+  if ((rows || []).length >= MAX_ROWS) {
+    console.warn(
+      `⚠ Sitemap : ${table} a atteint le plafond de ${MAX_ROWS} lignes — ` +
+      'le sitemap est probablement incomplet. Relever MAX_ROWS ou paginer.',
+    )
+  }
+}
 
 // Récupère les routes dynamiques depuis Supabase. Lève en cas de variables
 // d'env manquantes ou d'erreur de requête — l'appelant gère le repli.
@@ -33,7 +52,9 @@ async function fetchDynamicRoutes() {
     .from('figures')
     .select('slug')
     .eq('published', true)
+    .limit(MAX_ROWS)
   if (figErr) throw figErr
+  avertirSiPlafondAtteint(figures, 'figures')
 
   // NB : on n'ajoute PAS les vues filtrées /figures?cat=… au sitemap. Le filtre
   // est appliqué côté client : au crawl, /figures?cat=spin sert le même HTML que
@@ -49,7 +70,9 @@ async function fetchDynamicRoutes() {
     .from('competitions')
     .select('id, name')
     .eq('published', true)
+    .limit(MAX_ROWS)
   if (compErr) throw compErr
+  avertirSiPlafondAtteint(comps, 'competitions')
 
   const competitionRoutes = (comps || []).map(c => ({
     url: competitionPath(c),
