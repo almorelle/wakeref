@@ -5,6 +5,7 @@ import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import styles from './AdminVideos.module.css'
 import Icon from '../../components/Icon'
+import { MAX_VIDEO_MB, refusSiTropLourd } from '../../lib/uploadLimits'
 
 const SPORT_LABELS = { wakeboard: 'Wakeboard', wakeskate: 'Wakeskate', seated: 'Wakeboard assis' }
 const GENDER_LABELS = { woman: 'Femme', man: 'Homme', other: 'Autre' }
@@ -148,6 +149,8 @@ export default function AdminVideos() {
 
     let file_path = null
     if (file) {
+      const refus = refusSiTropLourd(file, MAX_VIDEO_MB)
+      if (refus) { toast(refus, 'error'); setUploading(false); return }
       const ext = file.name.split('.').pop()
       const path = `${form.figure_id}/${Date.now()}.${ext}`
       const { error: upErr } = await supabase.storage.from('videos').upload(path, file, {

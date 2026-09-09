@@ -694,9 +694,17 @@ create policy "Maj admin competition_submissions"     on competition_submissions
 -- ────────────────────────────────────────────────────────────
 -- 7. STORAGE BUCKET
 -- ────────────────────────────────────────────────────────────
-insert into storage.buckets (id, name, public)
-values ('videos', 'videos', true)
+-- `file_size_limit` : la borne réelle des dépôts. Les formulaires d'admin
+-- refusent déjà un fichier trop lourd (`src/lib/uploadLimits.js`), mais ce
+-- contrôle vit dans le navigateur et se contourne. 25 Mo = le plus large des
+-- deux plafonds applicatifs, le bucket ne distinguant pas une affiche d'un clip.
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('videos', 'videos', true, 25 * 1024 * 1024)
 on conflict do nothing;
+-- `on conflict do nothing` laisserait un bucket préexistant sans plafond :
+-- on le repose explicitement, pour que le script vaille aussi sur une base déjà
+-- en place et pas seulement à blanc.
+update storage.buckets set file_size_limit = 25 * 1024 * 1024 where id = 'videos';
 
 drop policy if exists "Videos publiques"      on storage.objects;
 drop policy if exists "Upload admin seulement" on storage.objects;

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { externalUrl } from '../../lib/url'
+import { MAX_IMAGE_MB, refusSiTropLourd } from '../../lib/uploadLimits'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
@@ -108,6 +109,14 @@ export default function CompetitionForm() {
     const bad = videos.find(v => v.url.trim() && (v.url.trim().length > 500 || !/^https?:\/\//i.test(v.url.trim())))
     if (bad) { toast('Lien vidéo invalide (http(s) attendu, 500 caractères max).', 'error'); return }
     setSaving(true)
+
+    // Les deux images sont pesées AVANT le premier dépôt : sinon une affiche
+    // acceptée serait déjà dans le bucket quand le logo est refusé, et il
+    // faudrait la rattraper.
+    for (const key of ['poster_path', 'logo_path']) {
+      const refus = refusSiTropLourd(files[key], MAX_IMAGE_MB)
+      if (refus) { toast(refus, 'error'); setSaving(false); return }
+    }
 
     // Upload des images changées. Les nouveaux objets sont retenus pour être
     // retirés si l'écriture de la ligne échoue ensuite.

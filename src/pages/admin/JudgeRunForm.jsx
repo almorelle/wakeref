@@ -6,12 +6,11 @@ import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
 import RunSaisie from '../../components/RunSaisie'
 import { GRIDS, GRID_OPTIONS, serializeEntry } from '../../lib/compoGrids'
+import { MAX_VIDEO_MB, formatMB, refusSiTropLourd } from '../../lib/uploadLimits'
 import styles from './JudgeRunForm.module.css'
 
 const EMPTY_RUN = { entries: [], jibPasses: [], otherEntries: [] }
 
-// Taille lisible : octets → Mo avec 1 décimale.
-const formatMB = (bytes) => (bytes / (1024 * 1024)).toFixed(1) + ' Mo'
 // Dernier segment du chemin de stockage (ex. "runs/123.mp4" → "123.mp4").
 const fileNameOf = (path) => path?.split('/').pop() || path
 
@@ -100,6 +99,8 @@ export default function JudgeRunForm() {
     let video_url = null
     if (sourceType === 'upload') {
       if (file) {
+        const refus = refusSiTropLourd(file, MAX_VIDEO_MB)
+        if (refus) { toast(refus, 'error'); setSaving(false); return }
         const ext = file.name.split('.').pop()
         const path = `runs/${Date.now()}.${ext}`
         const { error: upErr } = await supabase.storage.from('videos').upload(path, file, {
