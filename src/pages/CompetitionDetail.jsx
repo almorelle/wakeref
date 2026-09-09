@@ -249,6 +249,7 @@ function CompetitionDetail({ idSlug }) {
               {videos.map(v => (
                 <li key={v.id}>
                   <VideoCard
+                    variant="competition"
                     url={v.url}
                     title={v.title}
                     labels={{

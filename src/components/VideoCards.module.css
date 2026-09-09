@@ -68,3 +68,164 @@
 }
 
 
+/* ══════════════════════════════════════════════════════════════════════════
+   Habillage « figure »
+   ══════════════════════════════════════════════════════════════════════════
+   Déplacé depuis `FigureDetail.module.css` : la peau voyage avec le composant.
+   Le cadre (`mediaWrap`, `mediaScrim`) et le bouton (`instaPlay`) servent aussi
+   au lecteur de fichier hébergé, resté dans la page — elle importe donc ce
+   module en plus du sien plutôt que de recopier ces trois règles. */
+
+/* Rien à montrer : ni fichier, ni lien exploitable. Un bloc inerte, et surtout
+   PAS un lien — pointer vers une page qui ne contient aucune vidéo est pire que
+   ne rien proposer. Vient de la page, qui n'a plus à en décider. */
+.videoPlaceholder {
+  width: 100%;
+  aspect-ratio: 9/16;
+  max-height: 280px;
+  background: var(--c-surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.videoPlaceholder i { font-size: 32px; color: var(--c-muted); }
+
+/* ── Média unifié : façade (upload + YouTube) + overlay play ── */
+.mediaWrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: var(--c-surface2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+}
+/* Miniature YouTube : ratio fixe, recadrée (cover) pour remplir le cadre. */
+.ytThumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+  background: var(--c-surface2);
+}
+.ytThumbVertical { aspect-ratio: 9 / 16; }
+/* Formats verticaux (Shorts/reels) : largeur plafonnée + centrés pour éviter
+   le « mur » vidéo sur desktop. */
+.mediaVertical { max-width: 320px; margin-left: auto; margin-right: auto; }
+
+/* Overlay cliquable : voile léger + bouton play centré (style commun avec la
+   carte Instagram). */
+.mediaScrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(to top, rgba(26, 20, 32, .45), rgba(26, 20, 32, .05) 45%, rgba(26, 20, 32, .25));
+  transition: background var(--t-fast);
+}
+.mediaWrap:hover .mediaScrim,
+.mediaScrim:hover { background: linear-gradient(to top, rgba(26, 20, 32, .5), rgba(26, 20, 32, .1) 45%, rgba(26, 20, 32, .3)); }
+.mediaWrap:hover .instaPlay,
+.mediaScrim:hover .instaPlay { transform: scale(1.06); }
+
+/* ══════════════ Carte Instagram ══════════════ */
+.instaCard {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-decoration: none;
+  overflow: hidden;
+}
+.instaCard:hover .instaPlay { transform: scale(1.06); }
+
+/* Variante avec thumbnail */
+.instaImg {
+  width: 100%;
+  height: auto;
+  max-height: 460px;
+  object-fit: cover;
+  display: block;
+}
+.instaScrim {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: linear-gradient(to top, rgba(26, 20, 32, .78), rgba(26, 20, 32, .3) 50%, rgba(26, 20, 32, .5));
+}
+
+/* Variante sans thumbnail : le dégradé de marque Instagram jurerait avec le
+   papier — on retombe sur un aplat d'encre, l'icône suffit à identifier la
+   plateforme. */
+.instaFallback {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  max-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #2a1e30;
+}
+.instaPlay {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-round);
+  background: none;
+  border: 2px solid #f2eedf;
+  color: #f2eedf;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform var(--t-fast);
+}
+.instaPlay svg {
+  width: 24px;
+  height: 24px;
+  margin-left: 3px;
+}
+.instaInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+  padding: 0 12px;
+  max-width: 100%;
+}
+.instaAuthor {
+  font-family: var(--font-title);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: #f2eedf;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.instaCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #f2eedf;
+}
+.instaCta i { font-size: 14px; }
+

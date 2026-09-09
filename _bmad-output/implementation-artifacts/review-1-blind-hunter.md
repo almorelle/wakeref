@@ -1,202 +1,128 @@
 # Review 1 — Blind Hunter (adversarial, diff-only)
 
-Scope: `_bmad-output/implementation-artifacts/review-diff.patch` (competition submissions box, lot C).
-Method: the change is judged on its own terms — no other project file was opened. Findings marked *(verify)* are ones a repo read would settle.
-
----
-
-## BLOCKER
-
-### B1 — `wakeref_post_restore.sql`: the trigger is created ~220 lines before the table exists → from-scratch restore aborts
-`scripts/wakeref_post_restore.sql`, added block at `@@ -291,6 +291,33 @@` (function + trigger) vs. the table added at `@@ -510,6 +537,24 @@`.
-
-The new hunk lands in the *functions* section (right before `home_stats`, i.e. around line 318 of the new file) and ends with:
-
-```sql
-drop trigger if exists competition_submissions_rate_limit on competition_submissions;
-create trigger competition_submissions_rate_limit
-  before insert on competition_submissions ...
-```
-
-`create table if not exists public.competition_submissions (...)` is only added later, around line 540, in the tables section.
-
-Failure scenario: the documented "From scratch: run `scripts/wakeref_post_restore.sql`" path (CLAUDE.md § Database setup) dies at that `drop trigger`. `IF EXISTS` on `DROP TRIGGER` guards the *trigger*, not the *table* — Postgres raises `relation "competition_submissions" does not exist` (42P01). Even if it survived, the following `create trigger` would fail for the same reason. Since the whole script is normally run as one batch, everything after that point (home_stats, the remaining tables, all RLS, all grants) never executes. The restore procedure is broken by this diff, and nobody notices until the day it's needed.
-
-Fix: move the `create table` + partial index into the tables section *above* the function/trigger block, or move the function+trigger block down to just after the `create table`. Then actually run the file against an empty database once — this class of bug is only ever caught by executing it.
+Scope: `_bmad-output/implementation-artifacts/review-diff.patch` only. No other project file read.
+Claim under test: one `VideoCard` serves both surfaces, `variant` picks the skin, **zero visual change on either surface**.
+Line references are to the patch; `pN` = patch line number.
 
 ---
 
 ## HIGH
 
-### H2 — Edge Function has no caller authentication and no payload validation: an unauthenticated flood of arbitrary e-mail to the admin
-`supabase/functions/notify-competition-submission/index.ts:1-30`
+### H1 — `src.vertical` is almost certainly undefined: YouTube Shorts lose their vertical layout on figure pages
+`src/components/VideoCards.jsx`, `const vertical = src.vertical` (p158).
 
-```ts
-serve(async (req) => {
-  const payload = await req.json()
-  const sub = payload.record
-  ...
-```
+The old `FigureDetail` computed verticality itself: `const isShort = v.source_url.includes('/shorts/')` (p536), and passed it as `vertical` to `YouTubeCard`. The new code reads `src.vertical` off `videoSourceFromUrl()`. That function was written for the competition card, which **never consumed a `vertical` field** — nothing in the old `VideoCard` (p67–107) touches it. If the field doesn't exist, `vertical` is `undefined` for every video, `styles.mediaVertical` and `styles.ytThumbVertical` are never applied, and every Short renders 16/9, cropped, full page width — exactly the "mur vidéo sur desktop" the retained CSS comment (p251-252) says it exists to prevent.
 
-Three separate holes in six lines:
+Failure scenario: a figure with a `/shorts/` video. Before: 9/16 thumbnail capped at 320px, centered. After: a full-width 16/9 box with the middle band of a portrait thumbnail.
 
-1. **No shared secret / no signature check.** The function trusts anything that reaches it. Supabase's default `verify_jwt` is satisfied by the **anon key, which ships inside the public JS bundle** (`VITE_SUPABASE_ANON_KEY`). So anyone who has loaded wakeref.app can `POST` to the function URL directly, bypass the table entirely — and therefore bypass the rate-limit trigger that is the *only* stated defence — and send unlimited e-mail to `NOTIFY_EMAIL` with fully attacker-controlled subject-body content. The DB cap of 10/min is irrelevant to an attacker who never touches the DB.
-2. **Attacker-controlled `href`.** `esc()` neutralises attribute breakout but not scheme: the `^https?://` CHECK lives in Postgres, and this path never goes through Postgres. `url: "javascript:…"` or a look-alike phishing URL is rendered as `<a href="…">` in the admin's mailbox, with a WakeRef `from:` and WakeRef branding. That is a phishing primitive aimed at the one account that can write to the site.
-3. **No `try/catch` and no shape check.** `await req.json()` throws on a non-JSON body; `sub.url` throws `TypeError: Cannot read properties of undefined` when `payload.record` is absent (malformed body, or a webhook fired on `DELETE`, where Supabase sends `old_record`). Unhandled throw → the runtime returns a 500 with a Deno stack, and the webhook retries it.
+Fix: verify `videoSourceFromUrl` actually returns `vertical` for `/shorts/`. If it doesn't, either add it there (and cover Instagram reels consistently) or keep the derivation in the component: `const vertical = type === 'youtube' && /\/shorts\//.test(url)`. This is not optional — it is the single most likely silent visual regression in the change.
 
-Fix: require a shared secret header (`Deno.env.get('WEBHOOK_SECRET')`, compared in constant time) and reject otherwise; wrap the whole handler in `try/catch` returning 400 on bad input; validate `payload.record` is an object and that `sub.url` matches `^https?://` before emitting the `<a>` (otherwise render it as escaped text, not a link); cap field lengths server-side too. If the pre-existing `notify-video-submission` shares these holes, that is a reason to fix both, not a reason to copy them.
+### H2 — Competition cards are now lazy-mounted; nothing reserves their height, so the deferral degenerates and shifts layout
+`src/components/VideoCards.jsx`, competition branch `{inView && (thumb ? <img…> : <span className={styles.fallback}/>)}` (p192–205); previously `<Thumb …>` rendered unconditionally (p190).
 
-### H3 — The rate limit is **global**, so 10 inserts lock the box for everyone — and it never self-heals
-`scripts/migrations/0019-competition-submissions.sql:38-56` and the same function in `wakeref_post_restore.sql`
+The competition surface had **no** `useInView` before. Now, before intersection, the `<a className={styles.card}>` contains only `styles.scrim` — which, given `.mediaScrim`/`.instaScrim` are all `position:absolute; inset:0` in this codebase, is out-of-flow. The anchor therefore has **zero height** until `inView` flips. Consequences, all new:
+- Every card in the list collapses to the same y-position, so all of them are inside the 300px root margin simultaneously → they all mount at once → the deferral buys nothing and only adds N IntersectionObservers.
+- The list then expands from 0 to full height in one frame → cumulative layout shift on `/competitions/:idSlug`, on a page that previously had none.
+This directly contradicts "zero visual change on either surface".
 
-```sql
-select count(*) into recent_count from competition_submissions
-where created_at > now() - interval '1 minute';
-if recent_count >= 10 then raise exception ...
-```
+Fix: either don't gate the competition variant on `inView` (restore the old unconditional render — the img already has `loading="lazy"`), or give `.card`/`.fallback` a reserved `aspect-ratio` that applies while the tile is empty, the way the figure branch deliberately does with `ytThumb` (see its own comment at p155-157, which identifies precisely this hazard and then doesn't apply the lesson to the competition skin).
 
-No IP, no session, no per-submitter dimension. A script looping one insert every 5 s keeps `recent_count >= 10` permanently, at zero cost, using the public anon key. Every real organiser then hits "Trop de propositions envoyées récemment" forever, and — because the front maps that to a friendly "réessaie dans une minute" — nobody reports a bug; the feature just silently stops receiving anything.
+### H3 — `.mediaVerticalEl` was deleted and never recreated
+`src/pages/FigureDetail.module.css` (p594-595) removed `.mediaVertical, .mediaVerticalEl { max-width: 320px; margin-inline: auto; }`. `VideoCards.module.css` (p253) re-declares **only** `.mediaVertical`.
 
-Secondary effect on the intended path: 10 rows/min that each fire a webhook is **14 400 e-mails/day** to `NOTIFY_EMAIL`. The cap does not make the e-mail fan-out survivable; it only makes it 14 400 instead of unbounded. And nothing ages out: rows are never deleted (see H4), so the table grows unbounded with spam that the admin cannot remove.
+`mediaVerticalEl` (`El` = the `<video>` element) was in the same rule as `mediaVertical` and belongs to `UploadVideo`, which stays in `FigureDetail`. The diff shows `UploadVideo` only partially (p497–516) — the `<video>` element's `className` line is inside an unshown context region. If it still says `styles.mediaVerticalEl`, that class now resolves to a CSS-Modules identifier with **no rule behind it**: a vertical uploaded clip loses its 320px cap and centering and renders full-bleed.
 
-Fix: at minimum, add a per-payload dimension (hash of `name`+`date_text` — refuse an identical proposal within an hour) and a honeypot field the front leaves empty; better, capture a coarse client fingerprint and cap per-fingerprint. Debounce the e-mail (one digest per N minutes) rather than one per row. And give the admin a delete path so the table can be purged.
+Failure scenario: a portrait file hosted by WakeRef on a figure page — full-width portrait video on desktop.
 
-### H4 — `grant delete` is issued but no DELETE policy exists: deletion silently does nothing
-`scripts/migrations/0019-competition-submissions.sql:76` and `wakeref_post_restore.sql:118` of the patch
+Fix: grep `mediaVerticalEl` in `FigureDetail.jsx`. If used, re-add the rule to `FigureDetail.module.css`; if genuinely dead, say so in the commit rather than deleting it as collateral of an unrelated move.
 
-```sql
-grant select, update, delete on public.competition_submissions to authenticated;
-```
+### H4 — Very likely ESLint failure: imports orphaned by the deletions in `FigureDetail.jsx`
+`src/pages/FigureDetail.jsx` — the removed `InstagramCard` (p399–438), local `useInView` (p442–457) and `YouTubeCard` (p465–492) were the consumers of `externalUrl` (p415, p473) and, together with the Instagram thumbnail lookup (p403), of `supabase`. Both are imported above the first hunk (which starts at line 6), so the diff can't show whether they're still referenced. `useEffect` is in the same position: the only `useEffect` visible in the removed code was inside the local `useInView`.
 
-Policies created: `for insert`, `for select`, `for update`. **No `for delete`.** With RLS enabled and no permissive DELETE policy, every `delete` matches zero rows — no error, `count: 0`, HTTP 204. The admin (or a future cleanup script) issues a delete, gets a success response, and the row is still there. Combined with H3 (unbounded spam accumulation) there is no way to empty this table from the app at all.
+ESLint is the only automated check in this repo; `no-unused-vars` on these would fail it.
 
-Fix: either add `create policy "Suppression admin competition_submissions" on competition_submissions for delete using ((select auth.role()) = 'authenticated');`, or drop `delete` from the grant so the intent is unambiguous. Do not leave grant and policy disagreeing.
-
-### H5 — `errcode = 'check_violation'` collides with the table's own CHECK constraints → a validation error is shown as "too many submissions"
-`src/pages/SubmitCompetition.jsx:32` + trigger `raise ... using errcode = 'check_violation'`
-
-```js
-setStatus(error.code === '23514' || /réessaie/i.test(error.message) ? 'flood' : 'error')
-```
-
-`23514` is *the generic CHECK-violation code*, which the table itself raises for `char_length(name) between 2 and 160`, `char_length(date_text) between 2 and 80`, and the `url ~* '^https?://'` check. Concrete reachable case: the user types `"  a  "` — 5 characters, so the browser's `minLength={2}` passes — and the client submits `form.name.trim()` = `"a"`, 1 character. Postgres rejects it with 23514, and the visitor is told "Trop de propositions envoyées à l'instant. Réessaie dans une minute." They wait, retry the same input, get the same message, and give up. The one submission channel for organisers reports a data problem as a server problem.
-
-Fix: give the trigger a distinct code (`raise ... using errcode = 'P0001'` with a stable marker, or a reserved class such as `'53400'`) and branch on that; treat plain `23514` as a field-validation error with a specific message. Also mirror the `.trim()` in the client-side length check so the DB is never asked to validate what the form claims it already validated.
+Fix: run `npm run lint` and drop whatever is now unused from the import block (do not blanket-remove — `supabase` may still back `getVideoUrl`, `useRef`/`useState` still back `UploadVideo`).
 
 ---
 
 ## MEDIUM
 
-### M6 — Admin row layout is broken: `styles.name` and `styles.actions` do not exist
-`src/pages/admin/AdminCompetitionSubmissions.jsx:72` (`<span className={styles.name}>`) and `:86` (`<div className={styles.actions}>`) vs. `AdminCompetitionSubmissions.module.css`, which defines `.rowName` and `.rowActions`.
+### M1 — A non-YouTube/non-Instagram video on a figure page went from an inert placeholder to an anonymous outbound link with no accessible name
+`src/pages/FigureDetail.jsx`, `if (v.source_url) return <VideoCard variant="figure" …>` (p543–553), replacing three type-guarded branches that all fell through to `<div className={styles.videoPlaceholder}>` (p558).
 
-CSS Modules resolves the missing keys to `undefined`, React emits the element with no class, and both rules are dead. Result on screen: the competition name renders at body size instead of the intended 20px uppercase title face, and the three action buttons lose `display:flex; gap:8px; flex-shrink:0` — they fall back to inline layout and, on a narrow admin viewport, wrap and squeeze the `.meta` column. Nothing errors, ESLint says nothing, and it ships looking merely "a bit off".
+Old behaviour for a Vimeo/other row: a static placeholder tile, not clickable. New behaviour: the figure variant's non-Instagram branch renders `<a>` → empty `aria-hidden` span + a play `<span>` containing an icon. `labels` from `FigureDetail` is `{ instagram: … }` only, and the figure branch never reads `labels.generic` anyway — so there is **no text anywhere inside the link**. Screen readers announce a link whose only name candidate is the icon (and if `Icon` renders `<i>`, nothing at all). Sighted users get an unlabelled black frame that navigates off-site.
 
-Fix: rename the CSS selectors to `.name` / `.actions`, or the JSX to `styles.rowName` / `styles.rowActions`.
+Fix: keep the placeholder for `type === 'link'` in the figure variant, or render a visible + accessible label there (`labels.generic`, and pass it from `FigureDetail`). At minimum add `aria-label` to the `<a>` in every figure branch.
 
-### M7 — "Créer la fiche" leaves the submission `pending` and carries only the name
-`src/pages/admin/AdminCompetitionSubmissions.jsx:87-90`
+### M2 — `thumbFailed` / `ytHiRes` never reset when `url` changes
+`src/components/VideoCards.jsx` (p78–80).
 
-```jsx
-onClick={() => navigate(`/admin/competitions/new?nom=${encodeURIComponent(r.name)}`)}
-```
+Both states are initialised once and only ever move in the "worse" direction. Nothing keys them to `url`. If React reuses a `VideoCard` instance across a prop change — figure→figure navigation while `FigureDetail` stays mounted, a video list re-ordered, an admin edit changing a row's URL — a card that failed for video A stays permanently degraded for video B: `thumbFailed=true` suppresses a perfectly good thumbnail forever, and `ytHiRes=false` pins B to `hqdefault`. The refactor makes this worse than before: previously the failure state was split across three short-lived components (`InstagramCard.errored`, `YouTubeCard.hiRes`, `VideoCard.thumbFailed`); now one instance carries all of it across both skins.
 
-The stated purpose of the feature is a queue the admin drains. The button that performs the actual draining action does not mark the row handled — the admin creates the competition, navigates away, and the row is still "À traiter". Next session they process it again and create a **duplicate competition**, which is exactly the thing the agenda cannot tolerate. Worse, `date_text` and `url` are dropped: the admin lands on the form with only the name and must navigate back to read the date and the link — defeating the `?nom=` prefill's own justification ("plutôt que de le faire recopier à la main", `CompetitionForm.jsx:44-46`).
+Fix: `key={url}` on `<VideoCard>` at both call sites (cheapest and unambiguous), or derive from a `useEffect`/`useState` reset on `url`. Note `CompetitionDetail` keys the `<li>` (p373) by `v.id`, not by url — an admin editing a video's URL in place keeps the same id and the same component instance.
 
-Fix: `await setStatus(row, 'handled')` before navigating (or on return), and pass `?nom=&url=` — plus surface `date_text` somewhere in the target form, since it cannot be auto-parsed. If auto-marking is judged too eager, at least render a visual "fiche créée" marker.
+### M3 — An `upload` row whose storage URL doesn't resolve now emits an outbound link
+`src/pages/FigureDetail.jsx` (p524 vs p543).
 
-### M8 — No status is reversible, and there is no undo or delete
-`src/pages/admin/AdminCompetitionSubmissions.jsx:81-91`
+Old: `if (v.source_type === 'upload' && url)` → falls through both remaining `source_type` guards → placeholder. New: the upload guard still requires `url`, but the next branch is `if (v.source_url)` with **no type guard at all**. An upload row that also carries a `source_url` (a staging path, an internal reference, an empty-ish string) now renders a card whose `href` is `externalUrl(that_value)` — a link to something that was never meant to be a public destination.
 
-The `Traitée` / `Écarter` buttons render only `{r.status === 'pending' && …}`. One misclick on "Écarter" and the submission is unrecoverable from the UI: no way back to `pending`, no delete (H4 blocks it at the RLS layer anyway). The only recovery is the Supabase dashboard.
+Fix: `if (v.source_type !== 'upload' && v.source_url)`, or gate on `type !== 'link'` before rendering the outbound card.
 
-Fix: keep a "Rouvrir" action on non-pending rows (the UPDATE policy already allows it), or make the two actions a toggle.
+### M4 — Second-level YouTube thumbnail failure changed shape (visual change on the figure page)
+Old `YouTubeCard`: `onError={() => hiRes && setHiRes(false)}` (p484) — after falling back to `hqdefault`, a further 404 did nothing; the `<img>` stayed in the DOM with its `alt`. New: the shared `onThumbError` (p110–114) sets `thumbFailed` → `thumb = null` → the `aria-hidden` empty span renders instead.
 
-### M9 — Webhook creation is nowhere in the migration; the feature ships silently e-mail-less
-`scripts/migrations/0019-competition-submissions.sql` (whole file) vs. CLAUDE.md:9 ("a Supabase webhook calls the `notify-competition-submission` Edge Function")
+That is a deliberate improvement, but it *is* a rendering difference on the figure surface, and it is not called out anywhere. It also means the `alt` text (the only accessible name that branch ever had) disappears exactly when the image fails — see M1.
 
-The migration creates the table, index, trigger, policies and grants — but never the `supabase_functions.http_request` trigger that invokes the function, and the header comment ("À relire, puis appliquer dans l'éditeur SQL Supabase") lists no manual follow-up. Nor is there a `supabase/config.toml` / `deno.json` entry for the new function in the diff *(verify)*. Deploy exactly what is in this patch and submissions land in the table with no notification at all; since the admin has no reason to open a page that says "0 à traiter", proposals rot for weeks.
+Fix: acknowledge it in the change description, and pair it with an accessible name that survives the fallback.
 
-Fix: add the webhook trigger to the migration (or an explicit, numbered manual-steps block at the top listing: deploy the function, set `RESEND_API_KEY`/`NOTIFY_EMAIL`/the new webhook secret, create the webhook).
+### M5 — The Instagram figure branch ignores `inView`; the observer runs for nothing
+`src/components/VideoCards.jsx` (p136–151). The other two branches gate their media on `inView`; this one renders `<img>` immediately. `useInView` is still called and still attaches an IntersectionObserver via the spread `ref`, so every Instagram card on a long figure page pays for an observer that changes no output.
 
-### M10 — `useEffect(..., [toast])` will loop forever if `toast` is not memoised
-`src/pages/admin/AdminCompetitionSubmissions.jsx:23-39`
+This matches the old `InstagramCard` (which had no deferral), so it's not a regression — but the docstring sells "différer le montage" as one of the four things now shared, and for a third of the cases it isn't. Either gate it (with a reserved-ratio placeholder, cf. H2) or stop pretending it's unified.
 
-The fetch effect depends on `toast` from `useToast()`. If `useToast` returns a fresh function identity per render *(verify — the hook is outside the diff)*, every `setRows`/`setLoading` re-render produces a new `toast`, re-runs the effect, re-queries Supabase, and the page hammers the API in a tight loop. This is exactly the shape that ESLint's exhaustive-deps rule pushes people into and then does not protect them from.
+### M6 — The change silently swaps two hand-written regexes for `videoSourceFromUrl`, and the diff proves nothing about the substitution
+Removed: `instagram\.com\/(?:p|reels?|tv)\/([^/?#]+)` (p401) and `(?:v=|youtu\.be\/|shorts\/)([^&?\s]+)` (p535). Both are now replaced by `src.shortcode` / `src.id` from an **unmodified** `lib/videoSource.js`.
 
-Fix: confirm `toast` is wrapped in `useCallback` inside `useToast`; if it is not, either memoise it there or drop it from the deps with a targeted disable and a comment.
+If that module's Instagram pattern doesn't cover `/tv/` or singular `/reel/`, or its YouTube pattern misses `youtu.be/` or `/embed/`, the corresponding figure-page thumbnails silently vanish (the new `&& src.shortcode` / `&& src.id` guards turn a miss into "no thumbnail", not into an error). The whole correctness of the refactor rests on a file the diff doesn't touch and doesn't quote.
 
-### M11 — Success state unmounts the form without moving focus or announcing itself
-`src/pages/SubmitCompetition.jsx:50-56`
+Fix: diff the two regex sets against `videoSourceFromUrl` explicitly and record the comparison; add the missing cases there before this lands.
 
-The diff reasons carefully about a11y for the *error* path ("l'échec arrive après un aller-retour réseau, hors du champ de vision de qui utilise un lecteur d'écran", `:70-71`) and then drops the same concern on the success path. On submit, the entire `<form>` — including the focused submit button — is removed from the DOM and replaced by `.success`, which is not a live region. Focus falls back to `<body>`; a screen-reader or keyboard user hears nothing, has no idea whether the submission worked, and has to re-navigate the page from the top to find out.
+### M7 — `data-source` now reports the `sourceType` fallback instead of the parsed URL
+`src/components/VideoCards.jsx` (p200): `data-source={type}`, previously `data-source={src.type}` (p190).
 
-Fix: give the success block `role="status"` (or reuse the same always-mounted live region) and move focus to it with a `ref` + `tabIndex={-1}` on mount.
+`data-source` exists to be styled — the untouched top half of `VideoCards.module.css` presumably keys `.img[data-source="instagram"]` / `="youtube"` on it. For a row whose URL doesn't parse but whose `source_type` column says `youtube`/`instagram`, the attribute now flips from `link` to the platform value, changing which rule applies. `CompetitionDetail` doesn't pass `sourceType` today so the competition surface is unaffected *right now* — meaning this is a landmine that detonates the first time someone passes `sourceType` there (which the new prop invites).
 
-### M12 — `type="url"` contradicts the field's own hint, and makes the custom `badUrl` branch nearly dead code
-`src/pages/SubmitCompetition.jsx:63-65` and the hint at `translations.js` `urlHint`
-
-The hint invites "Page de l'événement, Instagram de l'orga, n'importe quoi qui permette d'en savoir plus" — i.e. exactly the `instagram.com/xyz` a submitter will paste. `type="url"` then blocks submission with an opaque native browser tooltip ("Enter a URL") that no message in `submitComp` explains, and the carefully-worded `badUrl` string never gets a chance to render because native validation fires first. The most likely real input is rejected by a rule the copy told the user to ignore.
-
-Fix: pick one. Either drop `type="url"` and rely on the JS check (whose message you wrote), or keep `type="url"` and change the hint to say a full `https://…` address is required. Best: normalise a schemeless host to `https://` before validating.
+Fix: decide which one drives styling and state it. If the CSS is about the *thumbnail's* provenance, keep `src.type`; the fallback `type` is about the *destination*, not the image — and when the fallback fires there is no image at all.
 
 ---
 
 ## LOW
 
-### L13 — `src/pages/Competitions.module.css`: unexplained deletion of `.compact .card::after { display: none; }`
-`Competitions.module.css` `@@ -286,7 +286,6 @@`
+### L1 — `variant = 'competition'` and `labels = {}` defaults hide caller mistakes
+p74-75. A caller that forgets `variant` silently gets the competition skin instead of failing; a caller that forgets a label renders `<Icon/> undefined` → icon followed by nothing, no warning. Given there are exactly two call sites, make `variant` required (no default) and let a missing label be visible in dev.
 
-Nothing else in this diff touches compact cards. Deleting this line re-enables whatever `::after` decoration the non-compact `.card` carries, inside the compact variant where it was deliberately suppressed — a visual regression on the competitions feed, in a change whose subject is a submission form. Either it is an accidental revert that slipped in, or it is an intentional design change with no note. Both are wrong in this patch.
+### L2 — `.platformThumb` deleted with no evidence it was dead
+`src/pages/FigureDetail.module.css` (p716–732). Nothing in the *shown* code referenced it, but the diff never demonstrates that, and it's removed in a commit about moving the Instagram/YouTube skins. If some other branch of `FigureDetail` still uses `styles.platformThumb`, that element loses its ratio, background and centering. Verify, or split the dead-CSS removal out.
 
-Fix: restore the line, or split the change out with its own justification.
+### L3 — Class naming: `instaPlay` now dresses the YouTube frame and the uploaded-file player
+p173 (`play(styles.instaPlay)` in the YouTube branch) and p513 (`videoStyles.instaPlay` in `UploadVideo`). Carried over from the old code, but the move to a shared module was the moment to rename it `playButton` — as it stands, `FigureDetail` imports a module and reaches for an Instagram-named class to skin a hosted MP4.
 
-### L14 — Two stylesheets are copy-paste residue, one with a duplicated `.error`
-`src/pages/SubmitCompetition.module.css` and `src/pages/admin/AdminCompetitionSubmissions.module.css`
+### L4 — `ref` passed through an object spread
+p116–121, `const link = { ref, href, target, rel }` then `<a {...link}>`. It works, but it hides a ref inside what reads as a bag of attributes; a future contributor adding a fourth branch that spreads `link` into a non-element context, or one who spreads `link` twice, gets a silent breakage. Spell `ref={ref}` out at each of the three anchors.
 
-- `SubmitCompetition.module.css` defines `.error` **twice** (`:594` and `:640`). The second wins for the shared properties and, critically, does *not* re-declare `background: none; border: 0; border-radius: 0` — so the first block's resets against a global `.error` style are silently dropped. It also ships dead `.textarea`, `.submitBtn`, `.consent`, `.consent a`, `.row` + its media query, none of which appear in the JSX; the comment "/* Erreur : filet en marge */" sits above `.consent`, which is not an error style — evidence the file was pasted from another page and not read.
-- `AdminCompetitionSubmissions.module.css` ships dead `.rowName`, `.badges`, `.badge`, `.badge + .badge::before`, `.unpub` (whose comment talks about a "Brouillon" state this table does not have, and which declares `color` and `font-weight` twice), and defines `.empty` twice (`:782` and `:787`).
+### L5 — `FigureDetail` now imports two CSS modules whose source order is bundler-determined
+p389/p393. Fine today because the class sets are disjoint, but nothing enforces that. If either module later styles the same element via a shared global/element selector, which one wins depends on import order, not intent. Worth a note in the file comment (which currently only justifies *why* there are two).
 
-Fix: delete every unused rule, collapse the duplicates, and fix the mis-parented comments. Nothing here is caught by ESLint, which is precisely why it needs a human pass.
+### L6 — Doc/naming drift
+`CLAUDE.md` (p9) says "`components/VideoCards.jsx` **is the single card**" — plural filename, singular default export `VideoCard`, and the same doc line then explains that `FigureDetail` still owns a second renderer. If this is now the one card, rename the file to `VideoCard.jsx`/`VideoCard.module.css` while the call sites are already being touched.
 
-### L15 — The rate-limit trigger seq-scans on every insert
-`0019-competition-submissions.sql:31-33` vs `:46-48`
+### L7 — Trailing whitespace/blank-line noise at the end of `VideoCards.module.css`
+p366 leaves a trailing blank after `.instaCta i`, on top of the two blank lines already at p218-219. Cosmetic, but it's the kind of thing that makes the next diff on this file noisier than it needs to be.
 
-The only index is `on (created_at desc) where status = 'pending'`. The trigger's `where created_at > now() - interval '1 minute'` carries no `status` predicate, so the planner cannot use the partial index and falls back to a sequential scan of the whole table for every single insert. Trivial today; with H3 (unbounded spam) and H4 (no delete path) the table has no ceiling, and the anti-spam mechanism becomes the thing that makes inserts slow.
+---
 
-Fix: add a plain `create index on competition_submissions (created_at desc)`, or add `and status = 'pending'` to the trigger's predicate if counting only pending rows is acceptable (it is not, for spam counting).
-
-### L16 — `Deno.env.get(...)!` at module scope hides a missing-config failure
-`supabase/functions/notify-competition-submission/index.ts:3-4`
-
-The `!` is a compile-time assertion with no runtime effect. If `RESEND_API_KEY` is unset the function boots fine and sends `Authorization: Bearer undefined` on every call; Resend 401s, the handler returns `{ ok: false }` with a 500, and the actual cause appears nowhere — `res` is never inspected, the response body is never read or logged. A misconfigured secret looks identical to a Resend outage.
-
-Fix: throw explicitly at boot if either var is missing, and log `await res.text()` when `!res.ok`.
-
-### L17 — Doc claims a `deferred-work.md` entry the diff does not create
-`CLAUDE.md:9` (new) and `CLAUDE.md:23` (rewritten)
-
-The new bullet asserts that the unlimited `video_submissions` / `takedown_requests` rate limits are "pre-existing, tracked in `deferred-work.md`", and the rewritten redirects bullet *removes* the pointer that reserved `/competitions` in that same file. Neither `deferred-work.md` nor any other tracking file appears in this diff *(verify)*. Either the entry already exists — in which case fine — or CLAUDE.md now vouches for a follow-up nobody wrote down, which is how the two unlimited spam surfaces get forgotten.
-
-Fix: confirm the `deferred-work.md` entry exists and, if not, add it in this change; remove the reserved-route line there now that both routes are claimed.
-
-### L18 — Sort order silently breaks after the first status change
-`src/pages/admin/AdminCompetitionSubmissions.jsx:14-17, 43`
-
-`sortPendingFirst` is applied once, at load. `setStatus` mutates the row in place, so a row marked "Traitée" stays wedged in the pending block, greyed but occupying a top slot, and the ordering the comment promises ("Non traitées en tête") only holds until the first click — then differs from what a refresh shows. After a busy session, the top of the list is a mix of done and pending rows.
-
-Fix: re-run `sortPendingFirst` in the `setRows` updater, or accept the in-place behaviour and delete the misleading comment.
-
-### L19 — Footer now offers two adjacent, near-identical contribution links
-`src/components/Footer.jsx:37`
-
-`{tr.ctaButton}` → `/submit` and "Proposer une compétition" → `/competitions/proposer` sit on consecutive lines under "À propos". Whatever `ctaButton` reads as (a submit/contribute CTA), a visitor with a competition to report now has two plausible doors and no cue which one takes them. Expect competition reports arriving through the video-submission box.
-
-Fix: label them by object ("Proposer une vidéo" / "Proposer une compétition") so the choice is decided by the noun, not by guessing.
-
-### L20 — The migration is not re-runnable, unlike its own index statement
-`0019-competition-submissions.sql:19-27`
-
-`create table public.competition_submissions (...)` has no `if not exists`, while the index three lines below does. Inside `begin; … commit;` a second run aborts at statement one and rolls back the whole thing — which is arguably the safe outcome, but the inconsistency reads as an oversight and will prompt someone to "fix" it by adding `if not exists`, at which point a partially-applied migration silently skips the table and proceeds to alter policies on whatever is already there.
-
-Fix: keep it non-idempotent deliberately and say so in the header comment, or make the whole file idempotent. Do not mix.
+## Verification checklist before this lands
+1. `videoSourceFromUrl` returns `vertical` (H1), and its Instagram/YouTube patterns cover everything the two deleted regexes did (M6).
+2. `grep -rn "mediaVerticalEl\|platformThumb" src/` (H3, L2).
+3. `npm run lint` (H4).
+4. Visual A/B on: a figure with a `/shorts/` video, a figure with an Instagram video whose bucket thumbnail is missing, a figure with a non-YT/non-IG link, a competition page with 6+ videos scrolled from the top (watch for the collapse-then-expand of H2), and a vertical uploaded file.

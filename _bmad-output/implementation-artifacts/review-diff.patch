@@ -1,1026 +1,762 @@
 diff --git a/CLAUDE.md b/CLAUDE.md
-index 2de8f8b..0159e5a 100644
+index 0159e5a..d3f79d7 100644
 --- a/CLAUDE.md
 +++ b/CLAUDE.md
-@@ -43,6 +43,7 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
- - `judge_runs` — reference runs for `/entrainement-juge` (video + `solution` JSONB + `published`). No `anon` policy: public access only via `list_judge_runs()` (metadata, **no solution**) and `get_judge_run_solution(id)`
- - `parcours` — competition courses; `id` = 8-char share code, `data` = course snapshot. No `anon` policy: public read only via `get_parcours(code)`
- - `competitions` — public agenda of cable competitions (unrelated to `/juge`). **No status column** (past/live/upcoming are derived from the date), no source, **no discipline** (the implicit default is "all disciplines" — recording one would propagate an exclusion), and **no translatable prose, so no `_en` columns** — the free-text fields it does have (`name`, `wakepark`, `tour_name`) are proper nouns, which don't translate; everything else is an outbound link. `date_precision` (`day`|`year`) carries the uncertainty — for a year-only comp, `date_start` holds **Dec 31st** — an artefact that must never reach the screen. The last day, not the first: the comp stays upcoming while the year runs, and sorts after that year's dated comps in the feed. `cancelled` is the single editorial flag; anon reads `published = true` only
-+- `competition_submissions` — public suggestions of a missing competition (three fields: `name`, free-text `date_text`, optional `url`). Deliberately **not** a draft `competitions` row: a submission is raw input, a competition is editorial content, and nothing on screen distinguishes an admin entry from a validated submission — so there is no "publish now, fix later" path. Anon may `insert` only; a `security definer` trigger caps the table at 10 inserts/minute (`video_submissions` and `takedown_requests` are still unlimited — pre-existing, tracked in `deferred-work.md`). The e-mail alert reuses the `video_submissions` pattern: a Supabase webhook calls the `notify-competition-submission` Edge Function
- - `competition_videos` — video links of a competition (FK `on delete cascade`, `sort_order`). A dedicated table, not JSONB: rows are ordered and individually editable in the form (saved by wholesale replace, so validate before writing). `videos` is not reusable — its `figure_id` is NOT NULL. Anon reads a row only if its parent comp is published (`exists(...)` in the policy)
+@@ -37,6 +37,7 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
+ - `prerequisites` — many-to-many self-join on figures
+ - `videos` — references to video files stored in Supabase Storage
+   - **No embedded player anywhere.** YouTube and Instagram videos render as a clickable thumbnail that opens the host in a new tab; only `source_type='upload'` (files WakeRef hosts itself) plays in place. An embed keeps traffic that belongs to the video's author, its controls can't be styled, and its fullscreen button is poorly reachable by keyboard.
++  - **`components/VideoCards.jsx` is the single card**, used by figure pages and competition pages alike. It owns platform detection (`lib/videoSource.js`, from the URL — never from a column), thumbnail resolution and its failures, deferred mounting (`hooks/useInView.js`) and the outbound link. `variant` picks the skin: `figure` (thumbnail alone, author over the Instagram one, title and credit live *below* in `videoMeta`) or `competition` (title + CTA over the thumbnail, since nothing surrounds it there). Both skins live in `VideoCards.module.css` — `FigureDetail` imports that module too, for the uploaded-file player it still owns. `sourceType` is a fallback consulted only when the URL won't parse.
+ - `takedown_requests` — copyright removal requests from video authors
+ - `compositions` — saved runs from the Compo page (no auth); short text `id` used in the share URL, minimal JSONB snapshot in `data` (incl. `gridKey`), denormalized `score` (normalized to /20). Public can insert + load one by id via the `get_composition(cid)` function; only admin can list/delete (RLS)
+ - `figure_views` — per-figure/day counter; written by the `track_figure_view` RPC, read back through `most_viewed_figures`
+diff --git a/src/components/VideoCards.jsx b/src/components/VideoCards.jsx
+index 9eac2e2..a1f414b 100644
+--- a/src/components/VideoCards.jsx
++++ b/src/components/VideoCards.jsx
+@@ -1,69 +1,157 @@
+ import { useState } from 'react'
+ import { supabase } from '../lib/supabase'
+ import { externalUrl } from '../lib/url'
+-import Icon from './Icon'
+ import { videoSourceFromUrl } from '../lib/videoSource'
++import { useInView } from '../hooks/useInView'
++import Icon from './Icon'
+ import styles from './VideoCards.module.css'
  
- Two read views: **`figures_full`** (detail — JSON aggregates for videos/prereqs/switch group/built-on tree) and **`figures_card`** (light list payload + `aliases`; also cached in `localStorage` as the offline catalogue of the voice matcher). Both are `security_invoker` — recreating one without it leaks unpublished rows.
-@@ -81,6 +82,7 @@ Two languages: `fr` (default) and `en`. Language is persisted to `localStorage`
- - All UI strings live in `src/i18n/translations.js` as a `{ fr: {…}, en: {…} }` object
- - `src/i18n/useT.js` — hook to get the current-language translation map
- - `src/contexts/LanguageContext.jsx` — exports the Provider only. Import the hooks from `src/contexts/language-context.js`: `useLanguage()` and `useLocalizedField()` (returns the `_en` variant of a DB field when available, falls back to FR). Same split for the theme: Provider in `ThemeContext.jsx`, `useTheme` in `theme-context.js` — keeping the `.jsx` files fast-refresh clean
-+- **The whole `/admin/*` back-office is French-only by design** — there is a single admin, and the language switch never reaches those screens. Admin labels are plain literals, not `useT()` keys. The rule below covers the public surfaces only
- - The judging surfaces (`/entrainement-juge/voix`, `/grille-composition`, `/juge/*`) are **French-only by design** — judges are francophone; don't add EN strings there
- - Bilingual DB fields follow the pattern: `field` (FR) and `field_en` (EN)
+-// Miniature d'une vidéo, selon sa plateforme.
+-//
+-// YouTube en sert une publiquement ; Instagram non, donc on lit celle déposée
+-// dans le bucket sous `thumbnails/<shortcode>.jpg` — le même dossier et le même
+-// geste que pour les figures. Sans miniature, une tuile de repli sobre plutôt
+-// qu'une image cassée.
+-function Thumb({ src, source, title, onError }) {
+-  if (!src) return <span className={styles.fallback} aria-hidden="true" />
+-  return (
+-    <img
+-      src={src}
+-      alt={title || ''}
+-      className={styles.img}
+-      loading="lazy"
+-      onError={onError}
+-      data-source={source}
+-    />
+-  )
+-}
++const cx = (...c) => c.filter(Boolean).join(' ')
  
-@@ -94,10 +96,10 @@ Admin-only auth via Supabase email/password. `useAuth` (`src/hooks/useAuth.js`)
+ /**
+  * Un lien vidéo, rendu comme une vignette cliquable.
+  *
+  * La lecture se fait TOUJOURS chez l'hébergeur, dans un nouvel onglet : WakeRef
+  * pointe, il ne diffuse pas. Un lecteur intégré retiendrait chez nous le trafic
+- * qui revient à l'organisateur — c'est la contrepartie qu'il accepte en échange
+- * d'être référencé.
++ * qui revient à l'auteur·ice — c'est la contrepartie qu'iel accepte en échange
++ * d'être référencé·e. Seul un fichier que WakeRef héberge lui-même se lit sur
++ * place, et ce cas-là n'est pas une vignette : il vit dans `FigureDetail`.
++ *
++ * Un seul composant sert les deux surfaces. `variant` choisit l'habillage —
++ * les deux pages ne montrent pas la même chose et c'est délibéré : une fiche
++ * compétition distingue ses vidéos par leur titre (« finales » vs « qualifs »),
++ * une page de figure les distingue par leur miniature et crédite l'auteur·ice.
++ * Ce qui est commun, et qui était jusqu'ici écrit deux fois, c'est tout le
++ * reste : reconnaître la plateforme, trouver la miniature, gérer son échec,
++ * différer le montage, ouvrir dehors.
+  */
+-export default function VideoCard({ url, title, labels }) {
+-  const src = videoSourceFromUrl(url)
++export default function VideoCard({
++  url,
++  title,
++  creatorName,
++  sourceType,
++  labels = {},
++  variant = 'competition',
++}) {
++  const [ref, inView] = useInView()
+   // maxres n'existe pas pour toutes les vidéos : on retombe sur hq au 404.
+   const [ytHiRes, setYtHiRes] = useState(true)
+   const [thumbFailed, setThumbFailed] = useState(false)
  
- Every route except `/` is lazy-loaded (`React.lazy` + `<Suspense>`). Three groups in `App.jsx`:
+-  let thumb = null
+-  let cta = labels.generic
+-  let icon = 'player-play'
++  const src = videoSourceFromUrl(url)
++  // L'URL décide. La colonne `source_type` ne parle que si l'URL ne se laisse
++  // pas lire : sans ce repli, une ligne Instagram pointant vers un profil —
++  // aujourd'hui rendue en tuile de marque — tomberait sur la carte générique.
++  const type = src.type !== 'link'
++    ? src.type
++    : (sourceType === 'youtube' || sourceType === 'instagram' ? sourceType : 'link')
  
--- **Public** (`PublicLayout` — `Navbar` + `<Outlet>` + `Footer`): `/`, `/figures`, `/figures/:slug`, `/quiz`, `/composition`, `/composition/:id`, `/grille-composition-old` (legacy `CompositionSimple`), `/entrainement-juge`, `/entrainement-juge/voix`, `/contact`, `/submit`, `/legal`, `/terms`, `/privacy`
--- **Admin** (`AdminLayout`, auth-guarded): `/admin` + `figures`, `figures/new`, `figures/:id/edit`, `videos`, `takedowns`, `no-videos`, `submissions`, `compositions`, `runs-entrainement-juge`, `runs-entrainement-juge/new`, `runs-entrainement-juge/:id/edit`, `parcours`, `parcours/new`, `parcours/:id/edit` — plus `/admin/login` outside the guard
-+- **Public** (`PublicLayout` — `Navbar` + `<Outlet>` + `Footer`): `/`, `/figures`, `/figures/:slug`, `/quiz`, `/competitions`, `/competitions/proposer`, `/competitions/:idSlug`, `/composition`, `/composition/:id`, `/grille-composition-old` (legacy `CompositionSimple`), `/entrainement-juge`, `/entrainement-juge/voix`, `/contact`, `/submit`, `/legal`, `/terms`, `/privacy`
-+- **Admin** (`AdminLayout`, auth-guarded): `/admin` + `figures`, `figures/new`, `figures/:id/edit`, `videos`, `takedowns`, `no-videos`, `submissions`, `competitions`, `competitions/new`, `competitions/:id/edit`, `competition-submissions`, `compositions`, `runs-entrainement-juge`, `runs-entrainement-juge/new`, `runs-entrainement-juge/:id/edit`, `parcours`, `parcours/new`, `parcours/:id/edit` — plus `/admin/login` outside the guard
- - **Chromeless public** (no `Navbar`/`Footer`, full-screen judging surfaces): `/grille-composition` (`France2026` — feuille de note grilles France 2026), `/juge` and `/juge/:code` (`CompetitionView` — le juge charge un parcours par son code)
--- **Legacy redirects** (renamed 2026-09-07): `/compo*` → `/composition*`, `/judge*` → `/entrainement-juge*`, `/competition*` → `/juge*`. They exist in **two layers, both needed** — `vercel.json` `redirects` (308, so crawlers consolidate and link-unfurl bots that don't run JS follow through) and matching routes in `App.jsx` (for in-SPA navigation, and for returning PWA users whose service worker serves the shell from cache without ever hitting the edge). Don't delete one as a duplicate of the other. Both declare the **closed set of legacy suffixes one at a time** — never a splat or `:path*` — so an unknown deep path like `/compo/a/b/c` stays a 404 at its real URL instead of being rewritten to a path that never existed. In `App.jsx` the target is rebuilt from the route param, never by `String.replace` on the pathname: the router matches case-insensitively, so `/Compo/x` must redirect like `/compo/x`. `/compo-old` and `/composition-simple` were deliberately NOT redirected. **`/competitions` and `/admin/competitions` are reserved** for the upcoming public competitions agenda — do not claim them for anything else (see `_bmad-output/implementation-artifacts/deferred-work.md`)
-+- **Legacy redirects** (renamed 2026-09-07): `/compo*` → `/composition*`, `/judge*` → `/entrainement-juge*`, `/competition*` → `/juge*`. They exist in **two layers, both needed** — `vercel.json` `redirects` (308, so crawlers consolidate and link-unfurl bots that don't run JS follow through) and matching routes in `App.jsx` (for in-SPA navigation, and for returning PWA users whose service worker serves the shell from cache without ever hitting the edge). Don't delete one as a duplicate of the other. Both declare the **closed set of legacy suffixes one at a time** — never a splat or `:path*` — so an unknown deep path like `/compo/a/b/c` stays a 404 at its real URL instead of being rewritten to a path that never existed. In `App.jsx` the target is rebuilt from the route param, never by `String.replace` on the pathname: the router matches case-insensitively, so `/Compo/x` must redirect like `/compo/x`. `/compo-old` and `/composition-simple` were deliberately NOT redirected. Note the near-collision: `/competitions` (public agenda) and `/competition*` (legacy alias of the judge tool) are **different features** — the redirect list must keep enumerating `/competition` and `/competition/:code` one at a time, never `/competition*` as a prefix, or it would swallow the agenda. Likewise `/competitions/proposer` is declared **before** `/competitions/:idSlug`, otherwise "proposer" would be read as a competition id
+-  if (src.type === 'youtube') {
++  let thumb = null
++  if (type === 'youtube' && src.id) {
+     thumb = `https://i.ytimg.com/vi/${src.id}/${ytHiRes ? 'maxresdefault' : 'hqdefault'}.jpg`
+-    cta = labels.youtube
+-    icon = 'brand-youtube'
+-  } else if (src.type === 'instagram') {
++  } else if (type === 'instagram' && src.shortcode) {
++    // YouTube sert une miniature publiquement ; Instagram non, donc on lit celle
++    // déposée dans le bucket — même dossier et même geste que pour les figures.
+     thumb = supabase.storage.from('videos')
+       .getPublicUrl(`thumbnails/${src.shortcode}.jpg`).data.publicUrl
+-    cta = labels.instagram
+-    icon = 'brand-instagram'
+   }
++  if (thumbFailed) thumb = null
  
- ### Database setup
+   const onThumbError = () => {
+-    if (src.type === 'youtube' && ytHiRes) { setYtHiRes(false); return }
++    if (type === 'youtube' && ytHiRes) { setYtHiRes(false); return }
+     setThumbFailed(true)
+   }
  
-diff --git a/scripts/wakeref_post_restore.sql b/scripts/wakeref_post_restore.sql
-index 2005f95..3b6f96f 100644
---- a/scripts/wakeref_post_restore.sql
-+++ b/scripts/wakeref_post_restore.sql
-@@ -291,6 +291,31 @@ begin
- end;
- $$;
- 
-+-- Anti-spam : même plafond pour les propositions de compétitions. La boîte est
-+-- publique, sans compte ni captcha, et chaque ligne déclenche un e-mail.
-+create or replace function public.competition_submissions_rate_limit()
-+returns trigger
-+language plpgsql security definer
-+set search_path = public as $$
-+declare
-+  last_minute integer;
-+  last_day    integer;
-+begin
-+  select count(*) filter (where created_at > now() - interval '1 minute'),
-+         count(*) filter (where created_at > now() - interval '1 day')
-+    into last_minute, last_day
-+  from competition_submissions;
++  const link = {
++    ref,
++    href: externalUrl(url, { ref: true }),
++    target: '_blank',
++    rel: 'noopener noreferrer',
++  }
++  const play = (cls) => <span className={cls}><Icon name="player-play" /></span>
 +
-+  if last_minute > 10 or last_day > 60 then
-+    raise exception 'Trop de propositions envoyées récemment. Réessaie plus tard.'
-+      using errcode = 'PT429';
-+  end if;
-+
-+  return null;
-+end;
-+$$;
-+
-+
- -- Stats publiques de la home : total de figures + nb de figures ayant
- -- au moins une vidéo (hors retraits). Évite de transférer toutes les lignes.
- create or replace function public.home_stats()
-@@ -510,6 +535,24 @@ create table if not exists public.competition_videos (
- create index if not exists competitions_date_start_idx on competitions (date_start desc);
- create index if not exists competition_videos_competition_idx on competition_videos (competition_id, sort_order);
- 
-+-- Boîte de soumission publique : un visiteur signale une compétition absente.
-+-- Rien n'est publié automatiquement — à l'écran, une compétition soumise ne se
-+-- distingue pas d'une compétition saisie, donc tout ce qui s'affiche engage
-+-- l'éditeur. `date_text` est du texte libre : celui qui signale ne connaît pas
-+-- toujours les dates (« en juin », « été 2027 »).
-+create table if not exists public.competition_submissions (
-+  id          bigint      generated always as identity primary key,
-+  name        text        not null check (char_length(name) between 2 and 160),
-+  date_text   text        not null check (char_length(date_text) between 2 and 80),
-+  url         text        check (url is null or (char_length(url) <= 500 and url ~* '^https?://')),
-+  status      text        not null default 'pending'
-+                            check (status in ('pending', 'handled', 'rejected')),
-+  created_at  timestamptz not null default now()
-+);
-+
-+create index if not exists competition_submissions_created_idx
-+  on competition_submissions (created_at desc);
-+
- -- ────────────────────────────────────────────────────────────
- -- 4. TRIGGER
- -- ────────────────────────────────────────────────────────────
-@@ -529,6 +572,13 @@ create trigger compositions_rate_limit
-   before insert on compositions
-   for each row execute function compositions_rate_limit();
- 
-+-- AFTER ... FOR EACH STATEMENT : un trigger ligne ne voit pas les lignes
-+-- insérées par la même commande, donc un insert en lot passait sans plafond.
-+drop trigger if exists competition_submissions_rate_limit on competition_submissions;
-+create trigger competition_submissions_rate_limit
-+  after insert on competition_submissions
-+  for each statement execute function competition_submissions_rate_limit();
-+
- drop trigger if exists parcours_touch on parcours;
- create trigger parcours_touch
-   before update on parcours
-@@ -564,6 +614,7 @@ alter table judge_runs        enable row level security;
- alter table parcours          enable row level security;
- alter table competitions        enable row level security;
- alter table competition_videos  enable row level security;
-+alter table competition_submissions enable row level security;
- 
- -- Supprime les policies existantes avant de les recréer
- drop policy if exists "Lecture publique categories"    on categories;
-@@ -630,6 +681,14 @@ create policy "Lecture publique competition_videos" on competition_videos for se
-   using (exists (select 1 from competitions c where c.id = competition_videos.competition_id and c.published = true));
- create policy "Ecriture admin competition_videos" on competition_videos for all
-   using ((select auth.role()) = 'authenticated') with check ((select auth.role()) = 'authenticated');
-+-- competition_submissions : l'anon écrit et ne lit rien — une boîte publique
-+-- lisible deviendrait un mur d'affichage pour le premier spammeur venu.
-+drop policy if exists "Soumission publique competitions"      on competition_submissions;
-+drop policy if exists "Lecture admin competition_submissions" on competition_submissions;
-+drop policy if exists "Maj admin competition_submissions"     on competition_submissions;
-+create policy "Soumission publique competitions"      on competition_submissions for insert with check (true);
-+create policy "Lecture admin competition_submissions" on competition_submissions for select using ((select auth.role()) = 'authenticated');
-+create policy "Maj admin competition_submissions"     on competition_submissions for update using ((select auth.role()) = 'authenticated');
- 
- 
- -- ────────────────────────────────────────────────────────────
-@@ -691,6 +750,11 @@ grant select on public.figure_views to authenticated;
- grant select on public.competitions, public.competition_videos to anon, authenticated;
- grant insert, update, delete on public.competitions       to authenticated;
- grant insert, update, delete on public.competition_videos to authenticated;
-+-- Grant par COLONNE : sinon l'anon pose lui-même `created_at` (la ligne échappe
-+-- à la fenêtre du plafond) ou `status` (elle naît classée, invisible dans la file).
-+grant insert (name, date_text, url) on public.competition_submissions to anon;
-+grant insert on public.competition_submissions to authenticated;
-+grant select, update on public.competition_submissions to authenticated;
- grant execute on function public.track_figure_view(integer)            to anon, authenticated;
- grant execute on function public.most_viewed_figures(integer, integer)  to anon, authenticated;
- grant execute on function public.recent_video_figures(integer)          to anon, authenticated;
-\ No newline at end of file
-diff --git a/scripts/wakeref_schema.sql b/scripts/wakeref_schema.sql
-index be8a485..24d42a5 100644
---- a/scripts/wakeref_schema.sql
-+++ b/scripts/wakeref_schema.sql
-@@ -173,3 +173,12 @@ CREATE TABLE public.competition_videos (
-                                      CONSTRAINT competition_videos_pkey PRIMARY KEY (id),
-                                      CONSTRAINT competition_videos_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE
- );
-+CREATE TABLE public.competition_submissions (
-+                                     id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-+                                     name text NOT NULL CHECK (char_length(name) >= 2 AND char_length(name) <= 160),
-+                                     date_text text NOT NULL CHECK (char_length(date_text) >= 2 AND char_length(date_text) <= 80),
-+                                     url text CHECK (url IS NULL OR (char_length(url) <= 500 AND url ~* '^https?://')),
-+                                     status text NOT NULL DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'handled'::text, 'rejected'::text])),
-+                                     created_at timestamp with time zone NOT NULL DEFAULT now(),
-+                                     CONSTRAINT competition_submissions_pkey PRIMARY KEY (id)
-+);
-diff --git a/src/App.jsx b/src/App.jsx
-index fecbcfb..2d09b74 100644
---- a/src/App.jsx
-+++ b/src/App.jsx
-@@ -22,6 +22,7 @@ const CompositionSimple = lazy(() => import('./pages/CompositionSimple'))
- const France2026 = lazy(() => import('./pages/France2026'))
- const Competitions = lazy(() => import('./pages/Competitions'))
- const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'))
-+const SubmitCompetition = lazy(() => import('./pages/SubmitCompetition'))
- const JudgeTraining = lazy(() => import('./pages/JudgeTraining'))
- // Saisie de run à la voix (outil juge) : route NON listée dans la Navbar,
- // chunk isolé → un visiteur lambda ne charge jamais ce code.
-@@ -41,6 +42,7 @@ const AdminCompositions = lazy(() => import('./pages/admin/AdminCompositions'))
- const AdminJudgeRuns = lazy(() => import('./pages/admin/AdminJudgeRuns'))
- const JudgeRunForm = lazy(() => import('./pages/admin/JudgeRunForm'))
- const AdminCompetitions = lazy(() => import('./pages/admin/AdminCompetitions'))
-+const AdminCompetitionSubmissions = lazy(() => import('./pages/admin/AdminCompetitionSubmissions'))
- const CompetitionForm = lazy(() => import('./pages/admin/CompetitionForm'))
- const AdminParcours = lazy(() => import('./pages/admin/AdminParcours'))
- const ParcoursSetup = lazy(() => import('./pages/admin/ParcoursSetup'))
-@@ -63,6 +65,9 @@ export default function App() {
-             <Route path="/composition/:id" element={<Compo />} />
-             <Route path="/grille-composition-old" element={<CompositionSimple />} />
-             <Route path="/competitions" element={<Competitions />} />
-+            {/* Avant `/competitions/:idSlug` : sans ça, « proposer » serait lu
-+                comme un identifiant de compétition. */}
-+            <Route path="/competitions/proposer" element={<SubmitCompetition />} />
-             <Route path="/competitions/:idSlug" element={<CompetitionDetail />} />
-             <Route path="/entrainement-juge" element={<JudgeTraining />} />
-             <Route path="/entrainement-juge/voix" element={<JudgeVoice />} />
-@@ -94,6 +99,7 @@ export default function App() {
-             <Route path="competitions" element={<AdminCompetitions />} />
-             <Route path="competitions/new" element={<CompetitionForm />} />
-             <Route path="competitions/:id/edit" element={<CompetitionForm />} />
-+            <Route path="competition-submissions" element={<AdminCompetitionSubmissions />} />
-           </Route>
- 
-           {/* Feuille de note (public, hors Navbar) : plein écran, grilles France 2026 */}
-diff --git a/src/components/Footer.jsx b/src/components/Footer.jsx
-index 21acc59..1fef2c9 100644
---- a/src/components/Footer.jsx
-+++ b/src/components/Footer.jsx
-@@ -34,6 +34,7 @@ export default function Footer() {
-           <h2 className={styles.colTitle}>{tr.footerAbout}</h2>
-           <Link to="/contact">{tr.contact}</Link>
-           <Link to="/submit">{tr.ctaButton}</Link>
-+          <Link to="/competitions/proposer">{tr.submitComp.title}</Link>
-           <Link to="/legal">{tr.footerLegal}</Link>
-           <Link to="/terms">{tr.footerTerms}</Link>
-           <Link to="/privacy">{tr.footerPrivacy}</Link>
-diff --git a/src/i18n/translations.js b/src/i18n/translations.js
-index 473099b..c289ccb 100644
---- a/src/i18n/translations.js
-+++ b/src/i18n/translations.js
-@@ -194,9 +194,29 @@ export const t = {
-     compoExitRot:    'Rotation de sortie',
-     compoExitTricks: 'Trick de sortie',
-     compoNone:       'Aucune',
-+    submitComp: {
-+      title:           'Proposer une compétition',
-+      sub:             'Une compétition cable manque au calendrier ? Trois champs suffisent — on complète le reste.',
-+      name:            'Nom de la compétition',
-+      namePlaceholder: 'ex. Back to School Jam #9',
-+      date:            'Quand',
-+      datePlaceholder: 'ex. 29–31 août 2027, ou « été 2027 »',
-+      dateHint:        'Une date approximative suffit si elle n’est pas encore fixée.',
-+      url:             'Un lien (optionnel)',
-+      urlHint:         'Page de l’événement, Instagram de l’orga, n’importe quoi qui permette d’en savoir plus.',
-+      send:            'Envoyer',
-+      sending:         'Envoi…',
-+      success:         'Merci ! La proposition est arrivée. Elle sera vérifiée avant d’apparaître dans le calendrier.',
-+      moderation:      'Rien n’est publié automatiquement : chaque proposition est relue.',
-+      tooShort:        'Il manque le nom ou la date.',
-+      another:         'Proposer une autre compétition',
-+      badUrl:          'Ce lien ne ressemble pas à une adresse web.',
-+      flood:           'Trop de propositions envoyées à l’instant. Réessaie dans une minute.',
-+      error:           'L’envoi a échoué. Réessaie dans un moment.',
-+    },
-     competitions: {
-       title:      'Compétitions',
--      subtitle:   'Le calendrier du cable en France : dates, lieux, live et vidéos. On référence, on ne diffuse pas.',
-+      subtitle:   'Le calendrier du cable en France : dates, lieux, live et vidéos.',
-       none:       "Aucune compétition référencée pour l'instant.",
-       loadError:  'Chargement impossible pour le moment.',
-       live:       'En live',
-@@ -205,6 +225,7 @@ export const t = {
-       independent:'Indépendante',
-       dateTbd:    'dates à venir',
-       todayMark:  'aujourd’hui',
-+      suggest:    'Une compétition manque ?',
-       partOf:       'Fait partie du circuit',
-       affiliatedTo: 'Affiliée à la FFSNW',
-       linksTitle: 'Liens',
-@@ -562,9 +583,29 @@ export const t = {
-     compoExitRot:    'Exit rotation',
-     compoExitTricks: 'Exit trick',
-     compoNone:       'None',
-+    submitComp: {
-+      title:           'Suggest a competition',
-+      sub:             'A cable competition missing from the calendar? Three fields is all it takes — we fill in the rest.',
-+      name:            'Competition name',
-+      namePlaceholder: 'e.g. Back to School Jam #9',
-+      date:            'When',
-+      datePlaceholder: 'e.g. 29–31 August 2027, or "summer 2027"',
-+      dateHint:        'A rough date is fine if it is not settled yet.',
-+      url:             'A link (optional)',
-+      urlHint:         'Event page, organiser’s Instagram, anything that tells us more.',
-+      send:            'Send',
-+      sending:         'Sending…',
-+      success:         'Thanks! We got it. It will be checked before it appears in the calendar.',
-+      moderation:      'Nothing is published automatically: every suggestion is reviewed.',
-+      tooShort:        'The name or the date is missing.',
-+      another:         'Suggest another competition',
-+      badUrl:          'That link does not look like a web address.',
-+      flood:           'Too many suggestions just now. Try again in a minute.',
-+      error:           'Sending failed. Please try again shortly.',
-+    },
-     competitions: {
-       title:      'Competitions',
--      subtitle:   'The French cable calendar: dates, venues, live streams and videos. We list them, we don\'t broadcast them.',
-+      subtitle:   'The French cable calendar: dates, venues, live streams and videos.',
-       none:       'No competitions listed yet.',
-       loadError:  'Could not load right now.',
-       live:       'Live',
-@@ -573,6 +614,7 @@ export const t = {
-       independent:'Independent',
-       dateTbd:    'dates to be announced',
-       todayMark:  'today',
-+      suggest:    'A competition missing?',
-       partOf:       'Part of',
-       affiliatedTo: 'Affiliated to the FFSNW',
-       linksTitle: 'Links',
-diff --git a/src/pages/Competitions.jsx b/src/pages/Competitions.jsx
-index a42bdd8..0cfa98f 100644
---- a/src/pages/Competitions.jsx
-+++ b/src/pages/Competitions.jsx
-@@ -103,6 +103,12 @@ export default function Competitions() {
-         <p className={styles.subtitle}>{tr.competitions.subtitle}</p>
-       </header>
- 
-+      {/* En tête de fil : on vient signaler une compétition à VENIR, et le futur
-+          est en haut. Placé sous le titre, il se voit sans couper la lecture. */}
-+      <p className={styles.suggest}>
-+        <Link to="/competitions/proposer">{tr.competitions.suggest}</Link>
-+      </p>
-+
-       {loading && <span className="spinner" />}
-       {failed && <p className={styles.empty}>{tr.competitions.loadError}</p>}
-       {!loading && !failed && rows.length === 0 && (
-diff --git a/src/pages/Competitions.module.css b/src/pages/Competitions.module.css
-index ef9467b..5e8076f 100644
---- a/src/pages/Competitions.module.css
-+++ b/src/pages/Competitions.module.css
-@@ -286,7 +286,6 @@
- .compact .card { gap: 0; }
- .compact .name { font-size: 15px; line-height: 1.25; }
- .compact .when { font-size: 10px; letter-spacing: .1em; }
--.compact .card::after { display: none; }
- .compact .meta { font-size: 10.5px; }
- 
- /* La colonne se resserre : les cartes compactes se rapprochent de la ligne. */
-@@ -310,3 +309,19 @@
- .compact .node { width: var(--node); }
- .compact .logo, .compact .logoFallback { max-height: 26px; }
- .compact .logoFallback { font-size: 13px; }
-+
-+/* Appel à contribution, en tête de fil. Discret : c'est une porte, pas une
-+   sollicitation — la page sert d'abord à consulter. */
-+.suggest {
-+  max-width: var(--page-max);
-+  width: 100%;
-+  margin: 0 auto .5rem;
-+  padding: 0 1.25rem;
-+  font-size: 13px;
-+}
-+.suggest a {
-+  color: var(--c-muted);
-+  border-bottom: 1px dotted var(--c-rule);
-+  padding-bottom: 1px;
-+}
-+.suggest a:hover { color: var(--c-accent); border-bottom-color: var(--c-accent); }
-diff --git a/src/pages/admin/AdminLayout.jsx b/src/pages/admin/AdminLayout.jsx
-index 532fbd4..60988ba 100644
---- a/src/pages/admin/AdminLayout.jsx
-+++ b/src/pages/admin/AdminLayout.jsx
-@@ -44,6 +44,7 @@ export default function AdminLayout() {
-     { to: '/admin/runs-entrainement-juge', icon: 'star',       label: 'Runs juge'             },
-     { to: '/admin/parcours',      icon: 'arrow-zig-zag',     label: 'Parcours'              },
-     { to: '/admin/competitions',  icon: 'calendar-event',    label: 'Compétitions'          },
-+    { to: '/admin/competition-submissions', icon: 'inbox',   label: 'Propositions'          },
-     { to: '/admin/no-videos',     icon: 'video-off',         label: 'À compléter'           },
-   ]
- 
-diff --git a/src/pages/admin/CompetitionForm.jsx b/src/pages/admin/CompetitionForm.jsx
-index bc18d0b..bc52a3b 100644
---- a/src/pages/admin/CompetitionForm.jsx
-+++ b/src/pages/admin/CompetitionForm.jsx
-@@ -1,6 +1,7 @@
- import { useState, useEffect } from 'react'
--import { useNavigate, useParams } from 'react-router-dom'
-+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
- import { supabase } from '../../lib/supabase'
-+import { externalUrl } from '../../lib/url'
- import { useToast } from '../../hooks/useToast'
- import ToastContainer from '../../components/Toast'
- import Icon from '../../components/Icon'
-@@ -38,10 +39,16 @@ export default function CompetitionForm() {
-   const isEdit = !!id
-   const navigate = useNavigate()
-   const { toasts, toast } = useToast()
-+  // Une proposition reçue ouvre le formulaire avec le nom exact employé par
-+  // l'organisateur. `quand` et `lien` n'ont pas de champ où atterrir — la date
-+  // est libre, le lien n'est pas typé — donc ils s'affichent en bandeau plutôt
-+  // que de forcer un aller-retour vers la file.
-+  const [search] = useSearchParams()
-+  const fromSubmission = !isEdit && (search.get('quand') || search.get('lien'))
- 
-   const [loading, setLoading] = useState(isEdit)
-   const [saving, setSaving]   = useState(false)
--  const [form, setForm]       = useState(EMPTY)
-+  const [form, setForm]       = useState(() => (isEdit ? EMPTY : { ...EMPTY, name: [...(search.get('nom') || '')].slice(0, 160).join('') || EMPTY.name }))
-   // Deux images de nature différente : l'affiche (sur la fiche) et le logo
-   // (repère dans le fil public). Même mécanique, même préfixe Storage. Aucun
-   // ratio n'est imposé — le rendu les contient sans recadrer ni déformer.
-@@ -194,6 +201,17 @@ export default function CompetitionForm() {
-         <h1 className={styles.title}>{isEdit ? 'Modifier la compétition' : 'Nouvelle compétition'}</h1>
-       </div>
- 
-+      {fromSubmission && (
-+        <p className={styles.fromSubmission}>
-+          Proposition reçue — <strong>{search.get('quand')}</strong>
-+          {search.get('lien') && (
-+            <>{' · '}<a href={externalUrl(search.get('lien'))} target="_blank" rel="noopener noreferrer">
-+              {search.get('lien')}
-+            </a></>
++  // ── Habillage « figure » : la miniature parle, le titre et le crédit vivent
++  // sous la carte (`videoMeta`), pas dessus. Seul Instagram porte un texte —
++  // c'est le nom de l'auteur·ice, et il tient lieu de signature.
++  if (variant === 'figure') {
++    if (type === 'instagram') {
++      const info = (
++        <div className={styles.instaInfo}>
++          {creatorName && <span className={styles.instaAuthor}>{creatorName}</span>}
++          <span className={styles.instaCta}><Icon name="brand-instagram" /> {labels.instagram}</span>
++        </div>
++      )
++      return (
++        <a {...link} className={styles.instaCard}>
++          {thumb ? (
++            <>
++              <img
++                src={thumb}
++                alt={title || creatorName || ''}
++                className={styles.instaImg}
++                loading="lazy"
++                onError={onThumbError}
++              />
++              <div className={styles.instaScrim}>{play(styles.instaPlay)}{info}</div>
++            </>
++          ) : (
++            <div className={styles.instaFallback}>{play(styles.instaPlay)}{info}</div>
 +          )}
-+        </p>
-+      )}
++        </a>
++      )
++    }
 +
-       <form onSubmit={save} className={styles.form}>
-         <div className="field">
-           <label htmlFor="c-name">Nom *</label>
-diff --git a/src/pages/admin/CompetitionForm.module.css b/src/pages/admin/CompetitionForm.module.css
-index d94c14d..4e58a3a 100644
---- a/src/pages/admin/CompetitionForm.module.css
-+++ b/src/pages/admin/CompetitionForm.module.css
-@@ -86,3 +86,14 @@
- 
- /* Cases à gauche, bouton d'enregistrement à droite. */
- .actions .publishLabel:first-of-type { margin-right: auto; }
-+
-+/* Bandeau d'une proposition reprise depuis la file : porte ce que la fiche n'a
-+   pas de champ pour recevoir — la date en texte libre et le lien d'origine. */
-+.fromSubmission {
-+  border-left: 2px solid var(--c-accent);
-+  padding: 8px 0 8px 12px;
-+  margin-bottom: 1.25rem;
-+  font-size: 13px;
-+  color: var(--c-muted);
-+}
-+.fromSubmission a { color: var(--c-accent); word-break: break-all; }
---- /dev/null
-+++ b/scripts/migrations/0019-competition-submissions.sql
-+-- WakeRef — compétitions : boîte de soumission publique (lot C)
-+-- Généré le 2026-09-08. À relire, puis appliquer dans l'éditeur SQL Supabase.
-+--
-+-- Permet à un visiteur — en pratique un organisateur — de signaler une
-+-- compétition absente. Rien n'est publié automatiquement : la ligne atterrit
-+-- dans une file que l'admin dépouille. Ce n'est pas de la prudence excessive,
-+-- c'est structurel : à l'écran, rien ne distingue une compétition soumise d'une
-+-- compétition saisie, donc tout ce qui s'affiche engage l'éditeur du site.
-+--
-+-- Trois champs et pas un de plus. La motivation de celui qui soumet est faible
-+-- (« ça ne me coûte rien de pousser l'info ») ; un formulaire plus long ne
-+-- serait jamais rempli. `date_text` est du TEXTE libre, volontairement : celui
-+-- qui signale une compétition ne connaît pas toujours les dates exactes, et lui
-+-- imposer un calendrier écarterait le cas le plus courant — « en juin », « été
-+-- 2027 ». C'est l'admin qui traduira en date lors de la création de la fiche.
-+
-+begin;
-+
-+create table public.competition_submissions (
-+  id          bigint      generated always as identity primary key,
-+  name        text        not null check (char_length(name) between 2 and 160),
-+  date_text   text        not null check (char_length(date_text) between 2 and 80),
-+  url         text        check (url is null or (char_length(url) <= 500 and url ~* '^https?://')),
-+  status      text        not null default 'pending'
-+                            check (status in ('pending', 'handled', 'rejected')),
-+  created_at  timestamptz not null default now()
-+);
-+
-+-- Non partiel : c'est le comptage du trigger, tous statuts confondus, qui a
-+-- besoin de l'index. Le tri « à traiter d'abord » se fait côté client.
-+create index if not exists competition_submissions_created_idx
-+  on public.competition_submissions (created_at desc);
-+
-+-- Anti-spam : plafond d'insertions, calqué sur celui des compositions.
-+-- Nécessaire ici plus qu'ailleurs — la boîte est publique, sans compte ni
-+-- captcha, et chaque ligne déclenche en plus un e-mail. Deux fenêtres : la
-+-- minute borne la rafale, le jour borne le volume — dix par minute tenues sans
-+-- interruption feraient 14 400 e-mails par jour sans jamais toucher le plafond.
-+-- security definer pour compter les lignes récentes malgré l'absence de policy
-+-- SELECT pour anon.
-+--
-+-- Le plafond est GLOBAL, pas par soumetteur : Postgres ne voit pas l'IP. Il
-+-- protège la boîte de réception, pas la disponibilité du formulaire — de quoi
-+-- fermer l'accès à tout le monde pour qui s'en donne la peine. Faire mieux
-+-- demanderait de passer l'insertion par une Edge Function ou un captcha, soit
-+-- la brique d'infrastructure que ce lot s'interdit (cf. deferred-work.md).
-+create or replace function public.competition_submissions_rate_limit()
-+returns trigger
-+language plpgsql security definer
-+set search_path = public as $$
-+declare
-+  last_minute integer;
-+  last_day    integer;
-+begin
-+  select count(*) filter (where created_at > now() - interval '1 minute'),
-+         count(*) filter (where created_at > now() - interval '1 day')
-+    into last_minute, last_day
-+  from competition_submissions;
-+
-+  -- SQLSTATE distinct des CHECK de la table (23514) : sans ça, un nom trop
-+  -- court et un envoi trop rapide arrivaient au client sous le même code, et
-+  -- une erreur de saisie s'affichait en « réessaie dans une minute ».
-+  -- PT429 : convention PostgREST — la réponse HTTP porte un 429.
-+  if last_minute > 10 or last_day > 60 then
-+    raise exception 'Trop de propositions envoyées récemment. Réessaie plus tard.'
-+      using errcode = 'PT429';
-+  end if;
-+
-+  return null;
-+end;
-+$$;
-+
-+-- AFTER ... FOR EACH STATEMENT, et non BEFORE ... FOR EACH ROW : un trigger
-+-- ligne ne voit pas les lignes insérées par la même commande (le compteur de
-+-- commande n'avance pas entre elles), si bien qu'un `insert` de mille lignes en
-+-- une requête — ce que PostgREST accepte — passait le plafond sans le déclencher.
-+-- En AFTER statement, le comptage voit le lot entier ; l'exception annule tout.
-+drop trigger if exists competition_submissions_rate_limit on public.competition_submissions;
-+create trigger competition_submissions_rate_limit
-+  after insert on public.competition_submissions
-+  for each statement execute function public.competition_submissions_rate_limit();
-+
-+-- ── RLS ──────────────────────────────────────────────────────────────────────
-+-- L'anon écrit et ne lit RIEN : une boîte publique qui serait aussi lisible
-+-- deviendrait un mur d'affichage pour le premier spammeur venu.
-+alter table public.competition_submissions enable row level security;
-+
-+drop policy if exists "Soumission publique competitions" on public.competition_submissions;
-+drop policy if exists "Lecture admin competition_submissions" on public.competition_submissions;
-+drop policy if exists "Maj admin competition_submissions" on public.competition_submissions;
-+
-+create policy "Soumission publique competitions"
-+  on public.competition_submissions for insert with check (true);
-+create policy "Lecture admin competition_submissions"
-+  on public.competition_submissions for select using ((select auth.role()) = 'authenticated');
-+create policy "Maj admin competition_submissions"
-+  on public.competition_submissions for update using ((select auth.role()) = 'authenticated');
-+
-+-- ── GRANTS ───────────────────────────────────────────────────────────────────
-+-- Grant par COLONNE : `grant insert on <table>` porte sur toutes les colonnes,
-+-- et `with check (true)` ne restreint rien. Un client pouvait donc poser lui-même
-+-- `created_at` dans le passé — la ligne échappait alors à la fenêtre du plafond —
-+-- ou `status = 'handled'`, ce qui la faisait naître déjà classée, invisible dans
-+-- la file. L'anon n'écrit que les trois champs du formulaire.
-+grant insert (name, date_text, url) on public.competition_submissions to anon;
-+grant insert on public.competition_submissions to authenticated;
-+grant select, update on public.competition_submissions to authenticated;
-+
-+commit;
---- /dev/null
-+++ b/src/pages/SubmitCompetition.jsx
-+import { useEffect, useRef, useState } from 'react'
-+import { Link } from 'react-router-dom'
-+import { supabase } from '../lib/supabase'
-+import { useT } from '../i18n/useT'
-+import { externalUrl } from '../lib/url'
-+import SEO from '../components/SEO'
-+import Icon from '../components/Icon'
-+import styles from './SubmitCompetition.module.css'
-+
-+const EMPTY = { name: '', date_text: '', url: '' }
-+
-+// Valide la saisie BRUTE avant toute normalisation : `externalUrl` préfixe
-+// `https://` à n'importe quoi, si bien que « pas de lien » devenait
-+// « https://pas de lien » — accepté par le test de schéma comme par le CHECK en
-+// base, et stocké en lien mort cliquable. Avec un schéma, il doit être http(s) ;
-+// sans schéma, il faut au moins quelque chose qui ressemble à un domaine.
-+const looksLikeUrl = (raw) =>
-+  /^https?:\/\/\S+$/i.test(raw) ||
-+  (!/^[a-z][a-z0-9+.-]*:/i.test(raw) && /^[^\s/]+\.[a-z]{2,}(\/\S*)?$/i.test(raw))
-+
-+export default function SubmitCompetition() {
-+  const tr = useT()
-+  const [form, setForm] = useState(EMPTY)
-+  const [status, setStatus] = useState('idle') // idle | sending | success | tooShort | badUrl | flood | error
-+  // L'accusé de réception remplace le formulaire : sans ce focus, le clavier
-+  // repart du haut du document et le lecteur d'écran n'annonce rien.
-+  const successRef = useRef(null)
-+  useEffect(() => { if (status === 'success') successRef.current?.focus() }, [status])
-+  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
-+
-+  const submit = async (e) => {
-+    e.preventDefault()
-+    const name = form.name.trim()
-+    const dateText = form.date_text.trim()
-+    // Les CHECK comptent les caractères APRÈS trim ; `minLength` compte avant.
-+    // Sans ce garde, « ␣␣a␣␣ » partait vers la base et revenait en erreur SQL.
-+    if (name.length < 2 || dateText.length < 2) { setStatus('tooShort'); return }
-+    // Le CHECK en base refuse tout ce qui n'est pas http(s) ; on le dit avant
-+    // l'aller-retour plutôt que de rendre une erreur Postgres brute.
-+    const rawUrl = form.url.trim()
-+    if (rawUrl && !looksLikeUrl(rawUrl)) { setStatus('badUrl'); return }
-+    const url = rawUrl ? externalUrl(rawUrl) : ''
-+    setStatus('sending')
-+    const { error, status: httpStatus } = await supabase.from('competition_submissions').insert({
-+      name, date_text: dateText, url: url || null,
-+    })
-+    if (!error) { setStatus('success'); setForm(EMPTY); return }
-+    // Le trigger de plafond lève un PT429, que PostgREST rend en HTTP 429 :
-+    // c'est un « réessaie », pas une panne, et le visiteur doit pouvoir faire
-+    // la différence. Volontairement distinct des CHECK de la table (23514).
-+    setStatus(httpStatus === 429 || error.code === 'PT429' ? 'flood' : 'error')
-+  }
-+
-+  return (
-+    <div className="page-container">
-+      <SEO
-+        titleFr="Proposer une compétition"
-+        titleEn="Suggest a competition"
-+        descriptionFr="Une compétition de wakeboard ou wakeskate cable manque au calendrier ? Signale-la en trois champs."
-+        descriptionEn="A cable wakeboard or wakeskate competition missing from the calendar? Tell us in three fields."
-+        path="/competitions/proposer"
-+      />
-+      <div className={styles.page}>
-+        <div className={styles.header}>
-+          <h1 className={styles.title}>{tr.submitComp.title}</h1>
-+          <p className={styles.sub}>{tr.submitComp.sub}</p>
-+        </div>
-+
-+        {status === 'success' ? (
-+          <div className={styles.success} role="status" tabIndex={-1} ref={successRef}>
-+            <Icon name="check" size={34} className={styles.successIcon} />
-+            <p>{tr.submitComp.success}</p>
-+            <div className={styles.successActions}>
-+              <button type="button" className="btn btn-ghost" onClick={() => setStatus('idle')}>
-+                {tr.submitComp.another}
-+              </button>
-+              <Link to="/competitions" className="btn btn-ghost">{tr.competitions.title}</Link>
-+            </div>
-+          </div>
-+        ) : (
-+          <form onSubmit={submit} className={styles.form}>
-+            <div className="field">
-+              <label htmlFor="sc-name">{tr.submitComp.name} *</label>
-+              <input id="sc-name" className="input" required minLength={2} maxLength={160}
-+                value={form.name} onChange={set('name')} placeholder={tr.submitComp.namePlaceholder} />
-+            </div>
-+
-+            <div className="field">
-+              <label htmlFor="sc-date">{tr.submitComp.date} *</label>
-+              <input id="sc-date" className="input" required minLength={2} maxLength={80}
-+                value={form.date_text} onChange={set('date_text')} placeholder={tr.submitComp.datePlaceholder} />
-+              {/* Champ libre, et c'est voulu : celui qui signale une compétition
-+                  ne connaît pas toujours les dates exactes. */}
-+              <p className={styles.hint}>{tr.submitComp.dateHint}</p>
-+            </div>
-+
-+            <div className="field">
-+              <label htmlFor="sc-url">{tr.submitComp.url}</label>
-+              <input id="sc-url" className="input" type="text" inputMode="url" maxLength={500}
-+                value={form.url} onChange={set('url')} placeholder="https://…" />
-+              <p className={styles.hint}>{tr.submitComp.urlHint}</p>
-+            </div>
-+
-+            {/* Une seule zone, annoncée : l'échec arrive après un aller-retour
-+                réseau, hors du champ de vision de qui utilise un lecteur d'écran. */}
-+            <div role="alert">
-+                {status === 'tooShort' && <p className={styles.error}>{tr.submitComp.tooShort}</p>}
-+              {status === 'badUrl' && <p className={styles.error}>{tr.submitComp.badUrl}</p>}
-+              {status === 'flood'  && <p className={styles.error}>{tr.submitComp.flood}</p>}
-+              {status === 'error'  && <p className={styles.error}>{tr.submitComp.error}</p>}
-+            </div>
-+
-+            <button className="btn btn-primary" type="submit" disabled={status === 'sending'}>
-+              {status === 'sending' ? tr.submitComp.sending : tr.submitComp.send}
-+            </button>
-+            <p className={styles.note}>{tr.submitComp.moderation}</p>
-+          </form>
++    // YouTube, et tout lien dont on ne sait rien : même cadre, bouton lecture
++    // seul. Sans miniature, un bloc vide au bon format plutôt qu'un cadre
++    // écrasé à zéro — `ytThumb` porte déjà le ratio et le fond.
++    const vertical = src.vertical
++    return (
++      <a {...link} className={cx(styles.mediaWrap, vertical && styles.mediaVertical)}>
++        {inView && (thumb
++          ? (
++            <img
++              src={thumb}
++              alt={title || ''}
++              className={cx(styles.ytThumb, vertical && styles.ytThumbVertical)}
++              loading="lazy"
++              onError={onThumbError}
++            />
++          )
++          : <span className={cx(styles.ytThumb, vertical && styles.ytThumbVertical)} aria-hidden="true" />
 +        )}
-+      </div>
-+    </div>
-+  )
-+}
---- /dev/null
-+++ b/src/pages/SubmitCompetition.module.css
-+.page {
-+  max-width: 620px;
-+  margin: 0 auto;
-+  padding-top: 2rem;
-+}
++        <span className={styles.mediaScrim}>{play(styles.instaPlay)}</span>
++      </a>
++    )
++  }
 +
-+/* Titre de rubrique, comme les autres pages du site */
-+.header {
-+  margin-bottom: 2.25rem;
-+  padding-bottom: 14px;
-+  border-bottom: 1px dotted var(--c-rule);
-+}
-+.title {
-+  font-family: var(--font-title);
-+  font-weight: 400;
-+  font-size: clamp(34px, 6.5vw, 54px);
-+  line-height: .9;
-+  letter-spacing: .01em;
-+  text-transform: uppercase;
-+  color: var(--c-text);
-+}
-+.sub {
-+  font-size: 15px;
-+  color: var(--c-muted);
-+  line-height: 1.6;
-+  max-width: 56ch;
-+  margin-top: 10px;
-+}
++  // ── Habillage « compétition » : le titre est porté par la carte elle-même.
++  // Rien ne l'entoure sur la fiche, donc « jour 1 » et « finales » ne se
++  // distinguent que là.
++  const cta = type === 'youtube' ? labels.youtube
++    : type === 'instagram' ? labels.instagram
++      : labels.generic
++  const icon = type === 'youtube' ? 'brand-youtube'
++    : type === 'instagram' ? 'brand-instagram'
++      : 'player-play'
 +
-+/* Les champs sont soulignés : il leur faut plus d'air qu'à des champs encadrés,
-+   sinon deux filets consécutifs se lisent comme les lignes d'un tableau. */
-+.form {
+   return (
+-    <a href={externalUrl(url, { ref: true })} target="_blank" rel="noopener noreferrer" className={styles.card}>
+-      <Thumb src={thumbFailed ? null : thumb} source={src.type} title={title} onError={onThumbError} />
++    <a {...link} className={styles.card}>
++      {inView && (thumb
++        ? (
++          <img
++            src={thumb}
++            alt={title || ''}
++            className={styles.img}
++            loading="lazy"
++            onError={onThumbError}
++            data-source={type}
++          />
++        )
++        // Aucune miniature déposée : un aplat sobre plutôt qu'une image cassée.
++        : <span className={styles.fallback} aria-hidden="true" />
++      )}
+       <span className={styles.scrim}>
+-        <span className={styles.play}><Icon name="player-play" /></span>
++        {play(styles.play)}
+         <span className={styles.info}>
+           {title && <span className={styles.title}>{title}</span>}
+           <span className={styles.cta}><Icon name={icon} size={15} /> {cta}</span>
+diff --git a/src/components/VideoCards.module.css b/src/components/VideoCards.module.css
+index a65c6c8..a5fa883 100644
+--- a/src/components/VideoCards.module.css
++++ b/src/components/VideoCards.module.css
+@@ -68,3 +68,150 @@
+ }
+ 
+ 
++/* ══════════════════════════════════════════════════════════════════════════
++   Habillage « figure »
++   ══════════════════════════════════════════════════════════════════════════
++   Déplacé depuis `FigureDetail.module.css` : la peau voyage avec le composant.
++   Le cadre (`mediaWrap`, `mediaScrim`) et le bouton (`instaPlay`) servent aussi
++   au lecteur de fichier hébergé, resté dans la page — elle importe donc ce
++   module en plus du sien plutôt que de recopier ces trois règles. */
++
++/* ── Média unifié : façade (upload + YouTube) + overlay play ── */
++.mediaWrap {
++  position: relative;
++  display: block;
++  width: 100%;
++  padding: 0;
++  border: none;
++  background: var(--c-surface2);
++  color: inherit;
++  font: inherit;
++  text-align: left;
++  cursor: pointer;
++  overflow: hidden;
++}
++/* Miniature YouTube : ratio fixe, recadrée (cover) pour remplir le cadre. */
++.ytThumb {
++  width: 100%;
++  aspect-ratio: 16 / 9;
++  object-fit: cover;
++  display: block;
++  background: var(--c-surface2);
++}
++.ytThumbVertical { aspect-ratio: 9 / 16; }
++/* Formats verticaux (Shorts/reels) : largeur plafonnée + centrés pour éviter
++   le « mur » vidéo sur desktop. */
++.mediaVertical { max-width: 320px; margin-left: auto; margin-right: auto; }
++
++/* Overlay cliquable : voile léger + bouton play centré (style commun avec la
++   carte Instagram). */
++.mediaScrim {
++  position: absolute;
++  inset: 0;
 +  display: flex;
-+  flex-direction: column;
-+  gap: 24px;
++  align-items: center;
++  justify-content: center;
++  border: none;
++  cursor: pointer;
++  background: linear-gradient(to top, rgba(26, 20, 32, .45), rgba(26, 20, 32, .05) 45%, rgba(26, 20, 32, .25));
++  transition: background var(--t-fast);
 +}
-+/* Erreur : filet en marge plutôt qu'un pavé teinté */
-+.error {
-+  font-size: 13.5px;
-+  color: var(--c-danger);
-+  background: none;
-+  border: 0;
-+  border-left: 3px solid var(--c-danger);
-+  border-radius: 0;
-+  padding: 6px 0 6px 12px;
-+  line-height: 1.5;
-+}
++.mediaWrap:hover .mediaScrim,
++.mediaScrim:hover { background: linear-gradient(to top, rgba(26, 20, 32, .5), rgba(26, 20, 32, .1) 45%, rgba(26, 20, 32, .3)); }
++.mediaWrap:hover .instaPlay,
++.mediaScrim:hover .instaPlay { transform: scale(1.06); }
 +
-+/* Confirmation : le message passe en annotation manuscrite — c'est le seul
-+   moment du parcours où le site s'adresse directement à la personne. */
-+.success {
++/* ══════════════ Carte Instagram ══════════════ */
++.instaCard {
++  position: relative;
++  display: block;
++  width: 100%;
++  text-decoration: none;
++  overflow: hidden;
++}
++.instaCard:hover .instaPlay { transform: scale(1.06); }
++
++/* Variante avec thumbnail */
++.instaImg {
++  width: 100%;
++  height: auto;
++  max-height: 460px;
++  object-fit: cover;
++  display: block;
++}
++.instaScrim {
++  position: absolute;
++  inset: 0;
 +  display: flex;
 +  flex-direction: column;
 +  align-items: center;
++  justify-content: center;
++  gap: 14px;
++  background: linear-gradient(to top, rgba(26, 20, 32, .78), rgba(26, 20, 32, .3) 50%, rgba(26, 20, 32, .5));
++}
++
++/* Variante sans thumbnail : le dégradé de marque Instagram jurerait avec le
++   papier — on retombe sur un aplat d'encre, l'icône suffit à identifier la
++   plateforme. */
++.instaFallback {
++  width: 100%;
++  aspect-ratio: 9 / 16;
++  max-height: 280px;
++  display: flex;
++  flex-direction: column;
++  align-items: center;
++  justify-content: center;
 +  gap: 16px;
-+  padding: 3rem 0;
-+  text-align: center;
++  background: #2a1e30;
 +}
-+.successIcon { color: var(--c-success); }
-+.success p {
-+  font-family: var(--font-hand);
-+  font-size: 17px;
-+  color: var(--c-accent-ink);
-+  line-height: 1.45;
-+  max-width: 34ch;
-+  transform: rotate(-1deg);
-+}
-+
-+/* Indication sous un champ : dit ce qu'on accepte, pour éviter qu'on renonce
-+   faute de connaître la réponse exacte. */
-+.hint { font-size: 12.5px; color: var(--c-muted); margin-top: 6px; }
-+/* Rappel de modération : la promesse compte autant que le formulaire. */
-+.note { font-size: 12.5px; color: var(--c-faint); margin-top: 4px; }
-+/* Deux sorties après l'envoi : en proposer une autre, ou aller voir le fil. */
-+.successActions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
---- /dev/null
-+++ b/src/pages/admin/AdminCompetitionSubmissions.jsx
-+import { useEffect, useState } from 'react'
-+import { useNavigate } from 'react-router-dom'
-+import { supabase } from '../../lib/supabase'
-+import { externalUrl } from '../../lib/url'
-+import { useToast } from '../../hooks/useToast'
-+import ToastContainer from '../../components/Toast'
-+import Icon from '../../components/Icon'
-+import styles from './AdminCompetitionSubmissions.module.css'
-+
-+const STATUS_LABELS = { pending: 'À traiter', handled: 'Traitée', rejected: 'Écartée' }
-+
-+// Non traitées en tête, chaque groupe restant du plus récent au plus ancien.
-+const sortPendingFirst = (rows) => [
-+  ...rows.filter(r => r.status === 'pending'),
-+  ...rows.filter(r => r.status !== 'pending'),
-+]
-+
-+export default function AdminCompetitionSubmissions() {
-+  const [rows, setRows] = useState([])
-+  const [loading, setLoading] = useState(true)
-+  const [failed, setFailed] = useState(false)
-+  const { toasts, toast } = useToast()
-+  const navigate = useNavigate()
-+
-+  useEffect(() => {
-+    let cancelled = false
-+    ;(async () => {
-+      const { data, error } = await supabase
-+        .from('competition_submissions')
-+        .select('id, name, date_text, url, status, created_at')
-+        .order('created_at', { ascending: false })
-+      if (cancelled) return
-+      if (error) { setFailed(true); setLoading(false); return }
-+      // À traiter d'abord : c'est la seule chose qu'on vient faire ici. Le tri se
-+      // fait ici et non en SQL — `order('status')` est alphabétique, et rangerait
-+      // « handled » avant « pending ».
-+      setRows(sortPendingFirst(data || []))
-+      setLoading(false)
-+    })()
-+    return () => { cancelled = true }
-+  }, [toast])
-+
-+  const setStatus = async (row, status) => {
-+    const { data, error } = await supabase.from('competition_submissions')
-+      .update({ status }).eq('id', row.id).select('id')
-+    if (error || !data?.length) { toast('Échec de la mise à jour.', 'error'); return }
-+    setRows(prev => prev.map(r => (r.id === row.id ? { ...r, status } : r)))
-+    toast({ handled: 'Proposition classée traitée.', rejected: 'Proposition écartée.',
-+            pending: 'Proposition remise à traiter.' }[status], 'success')
-+  }
-+
-+  // Classée AVANT la navigation : sinon la proposition reste « à traiter » et la
-+  // même compétition se recrée au passage suivant. Réversible par « Rouvrir ».
-+  const createListing = async (row) => {
-+    if (row.status === 'pending') await setStatus(row, 'handled')
-+    navigate('/admin/competitions/new?' + new URLSearchParams({
-+      nom: row.name, quand: row.date_text, ...(row.url ? { lien: row.url } : {}),
-+    }))
-+  }
-+
-+  const pending = rows.filter(r => r.status === 'pending').length
-+
-+  return (
-+    <div className={styles.page}>
-+      <ToastContainer toasts={toasts} />
-+      <div className={styles.header}>
-+        <div>
-+          <h1 className={styles.title}>Propositions</h1>
-+          <p className={styles.sub} aria-live="polite">
-+            {failed ? '—' : `${pending} à traiter · ${rows.length} au total`}
-+          </p>
-+        </div>
-+      </div>
-+
-+      {loading && <span className="spinner" role="status" aria-label="Chargement" />}
-+      {!loading && failed && (
-+        <p className={styles.empty}>Chargement impossible pour le moment.</p>
-+      )}
-+      {!loading && !failed && rows.length === 0 && (
-+        <p className={styles.empty}>Aucune proposition pour l&apos;instant.</p>
-+      )}
-+
-+      <div className={styles.table}>
-+        {rows.map(r => (
-+          <div key={r.id} className={`${styles.row} ${r.status !== 'pending' ? styles.done : ''}`}>
-+            <div className={styles.meta}>
-+              <span className={styles.rowName}>{r.name}</span>
-+              <span className={styles.sub2}>
-+                <span>{r.date_text}</span>
-+                <span>·</span>
-+                <span>{new Date(r.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
-+                <span>·</span>
-+                <span className={styles.status}>{STATUS_LABELS[r.status] || r.status}</span>
-+              </span>
-+              {r.url && (
-+                <a className={styles.link} href={externalUrl(r.url)} target="_blank" rel="noopener noreferrer">
-+                  {r.url} <Icon name="external-link" size={13} />
-+                </a>
-+              )}
-+            </div>
-+            <div className={styles.rowActions}>
-+              {/* Créer la fiche est l'action utile : la proposition n'est qu'un
-+                  signalement, elle ne devient jamais une compétition toute seule. */}
-+              <button className="btn btn-primary btn-sm"
-+                onClick={() => createListing(r)}>
-+                <Icon name="plus" /> Créer la fiche
-+              </button>
-+              {r.status === 'pending' ? (
-+                <>
-+                  <button className="btn btn-ghost btn-sm" onClick={() => setStatus(r, 'handled')}>
-+                    <Icon name="check" /> Traitée
-+                  </button>
-+                  <button className="btn btn-ghost btn-sm" style={{ color: 'var(--c-danger)' }}
-+                    onClick={() => setStatus(r, 'rejected')}>
-+                    <Icon name="x" /> Écarter
-+                  </button>
-+                </>
-+              ) : (
-+                <button className="btn btn-ghost btn-sm" onClick={() => setStatus(r, 'pending')}>
-+                  <Icon name="arrow-left" /> Rouvrir
-+                </button>
-+              )}
-+            </div>
-+          </div>
-+        ))}
-+      </div>
-+    </div>
-+  )
-+}
---- /dev/null
-+++ b/src/pages/admin/AdminCompetitionSubmissions.module.css
-+.page { max-width: 800px; margin: 0 auto; }
-+
-+.header {
-+  display: flex;
-+  align-items: flex-end;
-+  justify-content: space-between;
-+  gap: 1rem;
-+  margin-bottom: 1.75rem;
-+  padding-bottom: 12px;
-+  border-bottom: 1px dotted var(--c-rule);
-+}
-+.title {
-+  font-family: var(--font-title);
-+  font-weight: 400;
-+  font-size: clamp(30px, 5vw, 42px);
-+  line-height: .95;
-+  letter-spacing: .01em;
-+  text-transform: uppercase;
-+  color: var(--c-text);
-+}
-+.sub { font-size: 13.5px; color: var(--c-muted); margin-top: 6px; }
-+.empty {
-+  display: flex; flex-direction: column; align-items: center; gap: 10px;
-+  padding: 3rem 1rem; color: var(--c-muted); font-size: 14px; text-align: center;
-+}
-+
-+.table { display: flex; flex-direction: column; }
-+
-+.row {
++.instaPlay {
++  width: 56px;
++  height: 56px;
++  border-radius: var(--r-round);
++  background: none;
++  border: 2px solid #f2eedf;
++  color: #f2eedf;
 +  display: flex;
 +  align-items: center;
-+  justify-content: space-between;
-+  gap: 12px;
-+  background: none;
-+  border: 0;
-+  border-bottom: 1px dotted var(--c-rule);
-+  border-left: 3px solid var(--c-rule);
-+  border-radius: 0;
-+  padding: 12px 0 12px 12px;
++  justify-content: center;
++  transition: transform var(--t-fast);
 +}
-+
-+.rowName {
++.instaPlay svg {
++  width: 24px;
++  height: 24px;
++  margin-left: 3px;
++}
++.instaInfo {
 +  display: flex;
 +  flex-direction: column;
-+  gap: 7px;
-+  min-width: 0;
++  align-items: center;
++  gap: 5px;
++  text-align: center;
++  padding: 0 12px;
++  max-width: 100%;
++}
++.instaAuthor {
 +  font-family: var(--font-title);
-+  font-size: 20px;
++  font-size: 22px;
 +  font-weight: 400;
 +  line-height: 1;
-+  letter-spacing: .01em;
++  letter-spacing: .02em;
 +  text-transform: uppercase;
-+  color: var(--c-text);
++  color: #f2eedf;
++  overflow: hidden;
++  text-overflow: ellipsis;
++  white-space: nowrap;
++  max-width: 100%;
 +}
++.instaCta {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  font-size: 10px;
++  font-weight: 700;
++  letter-spacing: .12em;
++  text-transform: uppercase;
++  color: #f2eedf;
++}
++.instaCta i { font-size: 14px; }
 +
-+/* Brouillon : la seule étiquette qui garde une couleur — c'est un état. */
-+.rowActions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-+
-+.meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-+.sub2 { display: flex; flex-wrap: wrap; gap: 0 7px; font-size: 12.5px; color: var(--c-muted); }
-+.status { font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 10.5px; }
-+.link { font-size: 12.5px; color: var(--c-muted); word-break: break-all; }
-+.link:hover { color: var(--c-accent); }
-+/* Traitée ou écartée : la ligne s'efface sans disparaître — l'historique reste
-+   consultable, il n'appelle simplement plus à l'action. */
-+.done { opacity: .55; }
+diff --git a/src/pages/CompetitionDetail.jsx b/src/pages/CompetitionDetail.jsx
+index ab385d5..75e0601 100644
+--- a/src/pages/CompetitionDetail.jsx
++++ b/src/pages/CompetitionDetail.jsx
+@@ -249,6 +249,7 @@ function CompetitionDetail({ idSlug }) {
+               {videos.map(v => (
+                 <li key={v.id}>
+                   <VideoCard
++                    variant="competition"
+                     url={v.url}
+                     title={v.title}
+                     labels={{
+diff --git a/src/pages/FigureDetail.jsx b/src/pages/FigureDetail.jsx
+index 17d4ce0..f62ddca 100644
+--- a/src/pages/FigureDetail.jsx
++++ b/src/pages/FigureDetail.jsx
+@@ -6,107 +6,16 @@ import { SportBadge, CategoryBadge, ContextBadge } from '../components/Badges'
+ import { useT } from '../i18n/useT'
+ import { useLocalizedField } from '../contexts/language-context'
+ import SEO from '../components/SEO'
++import VideoCard from '../components/VideoCards'
++import { useInView } from '../hooks/useInView'
+ import styles from './FigureDetail.module.css'
++// Le lecteur de fichier hébergé partage son cadre et son bouton avec les cartes
++// sorties dans `VideoCards` : deux modules CSS ici valent mieux que d'y recopier
++// `mediaWrap`, `mediaScrim` et `instaPlay`.
++import videoStyles from '../components/VideoCards.module.css'
+ import Icon from '../components/Icon'
+ import { decomposeTrick, rotationIcon } from '../lib/trickDecomposition'
+ 
+-// Carte Instagram : affiche le thumbnail `thumbnails/<shortcode>.jpg` du bucket
+-// s'il existe, sinon retombe sur la tuile dégradée brandée.
+-function InstagramCard({ v, label }) {
+-  const [errored, setErrored] = useState(false)
+-  const shortcode = v.source_url?.match(/instagram\.com\/(?:p|reels?|tv)\/([^/?#]+)/)?.[1]
+-  const thumbUrl = shortcode
+-    ? supabase.storage.from('videos').getPublicUrl(`thumbnails/${shortcode}.jpg`).data.publicUrl
+-    : null
+-  const showImg = thumbUrl && !errored
+-
+-  const info = (
+-    <div className={styles.instaInfo}>
+-      {v.creator_name && <span className={styles.instaAuthor}>{v.creator_name}</span>}
+-      <span className={styles.instaCta}><Icon name="brand-instagram" /> {label}</span>
+-    </div>
+-  )
+-
+-  return (
+-    <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener noreferrer" className={styles.instaCard}>
+-      {showImg ? (
+-        <>
+-          <img
+-            src={thumbUrl}
+-            alt={v.title || v.creator_name || ''}
+-            className={styles.instaImg}
+-            loading="lazy"
+-            onError={() => setErrored(true)}
+-          />
+-          <div className={styles.instaScrim}>
+-            <div className={styles.instaPlay}><Icon name="player-play" /></div>
+-            {info}
+-          </div>
+-        </>
+-      ) : (
+-        <div className={styles.instaFallback}>
+-          <div className={styles.instaPlay}><Icon name="player-play" /></div>
+-          {info}
+-        </div>
+-      )}
+-    </a>
+-  )
+-}
+-
+-// Monte le contenu lourd (metadata vidéo / miniature) seulement quand
+-// la carte approche du viewport — perf sur les figures à galerie longue.
+-function useInView(rootMargin = '300px') {
+-  const ref = useRef(null)
+-  // Pas d'IntersectionObserver (vieux navigateur) → on monte tout de suite, décidé
+-  // à l'initialisation plutôt que par un setState dans l'effet.
+-  const [inView, setInView] = useState(() => typeof IntersectionObserver === 'undefined')
+-  useEffect(() => {
+-    const el = ref.current
+-    if (!el || inView) return
+-    const io = new IntersectionObserver(([e]) => {
+-      if (e.isIntersecting) { setInView(true); io.disconnect() }
+-    }, { rootMargin })
+-    io.observe(el)
+-    return () => io.disconnect()
+-  }, [inView, rootMargin])
+-  return [ref, inView]
+-}
+-
+-// Carte YouTube : miniature, et lecture chez YouTube dans un nouvel onglet.
+-//
+-// Pas de lecteur intégré. Le lecteur embarqué impose ses propres contrôles, son
+-// bouton plein écran est difficilement atteignable au clavier, et il retient
+-// chez nous un trafic qui revient à l'auteur·ice de la vidéo. La miniature reste
+-// — c'est elle qui donne envie et qui distingue deux vidéos d'une même figure.
+-function YouTubeCard({ videoId, vertical, title, url }) {
+-  const [ref, inView] = useInView()
+-  const [hiRes, setHiRes] = useState(true) // maxres → repli hq si 404
+-
+-  const thumb = `https://i.ytimg.com/vi/${videoId}/${hiRes ? 'maxresdefault' : 'hqdefault'}.jpg`
+-  return (
+-    <a
+-      ref={ref}
+-      href={externalUrl(url, { ref: true })}
+-      target="_blank"
+-      rel="noopener noreferrer"
+-      className={`${styles.mediaWrap} ${vertical ? styles.mediaVertical : ''}`}
+-    >
+-      {inView && (
+-        <img
+-          src={thumb}
+-          alt={title || ''}
+-          className={`${styles.ytThumb} ${vertical ? styles.ytThumbVertical : ''}`}
+-          loading="lazy"
+-          onError={() => hiRes && setHiRes(false)}
+-        />
+-      )}
+-      <span className={styles.mediaScrim}>
+-        <span className={styles.instaPlay}><Icon name="player-play" /></span>
+-      </span>
+-    </a>
+-  )
+-}
+-
+ // Vidéo uploadée : poster (1re frame), aperçu muet en boucle au survol, et
+ // lecture pleine (son + contrôles) au clic. Metadata chargée seulement en vue.
+ function UploadVideo({ url }) {
+@@ -125,7 +34,7 @@ function UploadVideo({ url }) {
+   return (
+     <div
+       ref={ref}
+-      className={styles.mediaWrap}
++      className={videoStyles.mediaWrap}
+       onMouseEnter={hoverPlay}
+       onMouseLeave={hoverStop}
+     >
+@@ -142,8 +51,8 @@ function UploadVideo({ url }) {
+         />
+       )}
+       {!active && (
+-        <button type="button" className={styles.mediaScrim} onClick={activate} aria-label="Lire la vidéo">
+-          <span className={styles.instaPlay}><Icon name="player-play" /></span>
++        <button type="button" className={videoStyles.mediaScrim} onClick={activate} aria-label="Lire la vidéo">
++          <span className={videoStyles.instaPlay}><Icon name="player-play" /></span>
+         </button>
+       )}
+     </div>
+@@ -249,26 +158,29 @@ export default function FigureDetail() {
+   const renderVideoMedia = (v) => {
+     const url = getVideoUrl(v)
+ 
+-    // Upload direct : poster + aperçu au survol + lecture pleine au clic.
++    // Upload direct : le seul cas qui se lit sur place — poster, aperçu au
++    // survol, lecture pleine au clic. Ce n'est pas une vignette, d'où sa place ici.
+     if (v.source_type === 'upload' && url) {
+       return <UploadVideo url={url} />
+     }
+ 
+-    // Instagram
+-    if (v.source_type === 'instagram' && v.source_url) {
+-      return <InstagramCard v={v} label={tr.viewOnInstagram} />
+-    }
+-
+-    // YouTube : miniature cliquable, lecture chez YouTube dans un nouvel onglet.
+-    if (v.source_type === 'youtube' && v.source_url) {
+-      const videoId = v.source_url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?\s]+)/)?.[1]
+-      const isShort = v.source_url.includes('/shorts/')
+-      if (videoId) {
+-        return <YouTubeCard videoId={videoId} vertical={isShort} title={v.title} url={v.source_url} />
+-      }
++    // Tout le reste part chez l'hébergeur. La plateforme est déduite de l'URL
++    // par `VideoCard` ; `sourceType` ne sert que de repli quand elle ne se
++    // laisse pas lire.
++    if (v.source_url) {
++      return (
++        <VideoCard
++          variant="figure"
++          url={v.source_url}
++          sourceType={v.source_type}
++          title={v.title}
++          creatorName={v.creator_name}
++          labels={{ instagram: tr.viewOnInstagram }}
++        />
++      )
+     }
+ 
+-    // Fallback
++    // Ni fichier ni lien : rien à montrer.
+     return <div className={styles.videoPlaceholder}><Icon name="player-play" /></div>
+   }
+ 
+diff --git a/src/pages/FigureDetail.module.css b/src/pages/FigureDetail.module.css
+index df9087e..df71bee 100644
+--- a/src/pages/FigureDetail.module.css
++++ b/src/pages/FigureDetail.module.css
+@@ -393,52 +393,6 @@ a.treeNode:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
+ }
+ .videoPlaceholder i { font-size: 32px; color: var(--c-muted); }
+ 
+-/* ── Média unifié : façade (upload + YouTube) + overlay play ── */
+-.mediaWrap {
+-  position: relative;
+-  display: block;
+-  width: 100%;
+-  padding: 0;
+-  border: none;
+-  background: var(--c-surface2);
+-  color: inherit;
+-  font: inherit;
+-  text-align: left;
+-  cursor: pointer;
+-  overflow: hidden;
+-}
+-/* Miniature YouTube : ratio fixe, recadrée (cover) pour remplir le cadre. */
+-.ytThumb {
+-  width: 100%;
+-  aspect-ratio: 16 / 9;
+-  object-fit: cover;
+-  display: block;
+-  background: var(--c-surface2);
+-}
+-.ytThumbVertical { aspect-ratio: 9 / 16; }
+-/* Formats verticaux (Shorts/reels) : largeur plafonnée + centrés pour éviter
+-   le « mur » vidéo sur desktop. */
+-.mediaVertical,
+-.mediaVerticalEl { max-width: 320px; margin-left: auto; margin-right: auto; }
+-
+-/* Overlay cliquable : voile léger + bouton play centré (style commun avec la
+-   carte Instagram). */
+-.mediaScrim {
+-  position: absolute;
+-  inset: 0;
+-  display: flex;
+-  align-items: center;
+-  justify-content: center;
+-  border: none;
+-  cursor: pointer;
+-  background: linear-gradient(to top, rgba(26, 20, 32, .45), rgba(26, 20, 32, .05) 45%, rgba(26, 20, 32, .25));
+-  transition: background var(--t-fast);
+-}
+-.mediaWrap:hover .mediaScrim,
+-.mediaScrim:hover { background: linear-gradient(to top, rgba(26, 20, 32, .5), rgba(26, 20, 32, .1) 45%, rgba(26, 20, 32, .3)); }
+-.mediaWrap:hover .instaPlay,
+-.mediaScrim:hover .instaPlay { transform: scale(1.06); }
+-
+ .videoMeta { padding: 10px 0 0; display: flex; flex-direction: column; gap: 6px; }
+ .creator {
+   display: inline-flex;
+@@ -556,118 +510,6 @@ a.treeNode:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
+   .videosGrid { columns: 1; }
+ }
+ 
+-/* ══════════════ Carte Instagram ══════════════ */
+-.instaCard {
+-  position: relative;
+-  display: block;
+-  width: 100%;
+-  text-decoration: none;
+-  overflow: hidden;
+-}
+-.instaCard:hover .instaPlay { transform: scale(1.06); }
+-
+-/* Variante avec thumbnail */
+-.instaImg {
+-  width: 100%;
+-  height: auto;
+-  max-height: 460px;
+-  object-fit: cover;
+-  display: block;
+-}
+-.instaScrim {
+-  position: absolute;
+-  inset: 0;
+-  display: flex;
+-  flex-direction: column;
+-  align-items: center;
+-  justify-content: center;
+-  gap: 14px;
+-  background: linear-gradient(to top, rgba(26, 20, 32, .78), rgba(26, 20, 32, .3) 50%, rgba(26, 20, 32, .5));
+-}
+-
+-/* Variante sans thumbnail : le dégradé de marque Instagram jurerait avec le
+-   papier — on retombe sur un aplat d'encre, l'icône suffit à identifier la
+-   plateforme. */
+-.instaFallback {
+-  width: 100%;
+-  aspect-ratio: 9 / 16;
+-  max-height: 280px;
+-  display: flex;
+-  flex-direction: column;
+-  align-items: center;
+-  justify-content: center;
+-  gap: 16px;
+-  background: #2a1e30;
+-}
+-.instaPlay {
+-  width: 56px;
+-  height: 56px;
+-  border-radius: var(--r-round);
+-  background: none;
+-  border: 2px solid #f2eedf;
+-  color: #f2eedf;
+-  display: flex;
+-  align-items: center;
+-  justify-content: center;
+-  transition: transform var(--t-fast);
+-}
+-.instaPlay svg {
+-  width: 24px;
+-  height: 24px;
+-  margin-left: 3px;
+-}
+-.instaInfo {
+-  display: flex;
+-  flex-direction: column;
+-  align-items: center;
+-  gap: 5px;
+-  text-align: center;
+-  padding: 0 12px;
+-  max-width: 100%;
+-}
+-.instaAuthor {
+-  font-family: var(--font-title);
+-  font-size: 22px;
+-  font-weight: 400;
+-  line-height: 1;
+-  letter-spacing: .02em;
+-  text-transform: uppercase;
+-  color: #f2eedf;
+-  overflow: hidden;
+-  text-overflow: ellipsis;
+-  white-space: nowrap;
+-  max-width: 100%;
+-}
+-.instaCta {
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 6px;
+-  font-size: 10px;
+-  font-weight: 700;
+-  letter-spacing: .12em;
+-  text-transform: uppercase;
+-  color: #f2eedf;
+-}
+-.instaCta i { font-size: 14px; }
+-
+-/* Thumbnail plateforme (fallback générique) */
+-.platformThumb {
+-  width: 100%;
+-  aspect-ratio: 9/16;
+-  max-height: 280px;
+-  background: var(--c-surface2);
+-  display: flex;
+-  flex-direction: column;
+-  align-items: center;
+-  justify-content: center;
+-  gap: 10px;
+-  text-decoration: none;
+-  transition: opacity var(--t-fast);
+-}
+-.platformThumb:hover { opacity: 0.75; }
+-.platformThumb i { font-size: 44px; }
+-.platformThumb span { font-size: 12px; color: var(--c-muted); }
+-
+ /* ══════════════ Fil d'Ariane ══════════════ */
+ .breadcrumb {
+   display: flex;
 --- /dev/null
-+++ b/supabase/functions/notify-competition-submission/index.ts
-+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
++++ b/src/hooks/useInView.js
++import { useState, useEffect, useRef } from 'react'
 +
-+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-+const NOTIFY_EMAIL   = Deno.env.get('NOTIFY_EMAIL')
-+// Secret partagé avec le webhook Supabase. `verify_jwt` ne protège rien ici :
-+// il est satisfait par la clé anon, qui est publique par construction. Sans ce
-+// contrôle, la fonction est un relais de mail ouvert — on poste directement le
-+// payload de son choix, sans passer par la table, donc sans les CHECK ni le
-+// plafond de débit. Le webhook doit envoyer l'en-tête `x-wakeref-hook`.
-+const HOOK_SECRET = Deno.env.get('WAKEREF_HOOK_SECRET')
-+
-+// Échappe le HTML : ces champs viennent d'un formulaire public, sans compte ni
-+// modération préalable. Sans ça, une proposition contenant du balisage
-+// arriverait interprétée dans la boîte mail de l'admin.
-+const esc = (v: unknown) =>
-+  String(v ?? '')
-+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-+
-+// La clé anon est publique : n'importe qui peut appeler cette fonction
-+// directement, sans passer par la table — donc sans le CHECK `^https?://` ni le
-+// plafond de débit. On re-valide ici plutôt que de faire confiance au payload.
-+const safeHref = (v: unknown) => {
-+  const s = String(v ?? '').trim()
-+  return /^https?:\/\//i.test(s) ? s : ''
++// Monte le contenu lourd (metadata vidéo / miniature) seulement quand l'élément
++// approche du viewport — perf sur les galeries longues.
++//
++// Extrait de `FigureDetail.jsx` : les cartes vidéo en ont besoin des deux côtés
++// du site, et un hook exporté depuis un fichier de page ne peut pas être importé
++// sans traîner la page entière avec lui.
++export function useInView(rootMargin = '300px') {
++  const ref = useRef(null)
++  // Pas d'IntersectionObserver (vieux navigateur) → on monte tout de suite, décidé
++  // à l'initialisation plutôt que par un setState dans l'effet.
++  const [inView, setInView] = useState(() => typeof IntersectionObserver === 'undefined')
++  useEffect(() => {
++    const el = ref.current
++    if (!el || inView) return
++    const io = new IntersectionObserver(([e]) => {
++      if (e.isIntersecting) { setInView(true); io.disconnect() }
++    }, { rootMargin })
++    io.observe(el)
++    return () => io.disconnect()
++  }, [inView, rootMargin])
++  return [ref, inView]
 +}
-+
-+serve(async (req) => {
-+  if (!RESEND_API_KEY || !NOTIFY_EMAIL || !HOOK_SECRET) {
-+    // Échec bruyant plutôt que silencieux : une clé absente ou tournée ferait
-+    // disparaître toutes les notifications sans laisser de trace.
-+    console.error('config manquante', {
-+      resend: !!RESEND_API_KEY, notify: !!NOTIFY_EMAIL, hook: !!HOOK_SECRET,
-+    })
-+    return new Response(JSON.stringify({ ok: false, reason: 'misconfigured' }), {
-+      status: 500, headers: { 'Content-Type': 'application/json' },
-+    })
-+  }
-+  if (req.headers.get('x-wakeref-hook') !== HOOK_SECRET) {
-+    return new Response(JSON.stringify({ ok: false, reason: 'forbidden' }), {
-+      status: 403, headers: { 'Content-Type': 'application/json' },
-+    })
-+  }
-+
-+  let sub: Record<string, unknown>
-+  try {
-+    const payload = await req.json()
-+    sub = payload?.record
-+    if (!sub || typeof sub !== 'object') throw new Error('no record')
-+  } catch {
-+    // Corps illisible, ou événement autre qu'un INSERT (un DELETE n'envoie
-+    // qu'`old_record`) : rien à notifier, et surtout rien à faire échouer.
-+    return new Response(JSON.stringify({ ok: false, reason: 'bad payload' }), {
-+      status: 400, headers: { 'Content-Type': 'application/json' },
-+    })
-+  }
-+
-+  const href = safeHref(sub.url)
-+
-+  const res = await fetch('https://api.resend.com/emails', {
-+    method: 'POST',
-+    headers: {
-+      Authorization: `Bearer ${RESEND_API_KEY}`,
-+      'Content-Type': 'application/json',
-+    },
-+    body: JSON.stringify({
-+      from: 'WakeRef <notifications@wakeref.app>',
-+      to: NOTIFY_EMAIL,
-+      subject: '🏁 Nouvelle compétition proposée sur WakeRef',
-+      html: `
-+        <h2>Nouvelle compétition proposée</h2>
-+        <table>
-+          <tr><td><strong>Nom</strong></td><td>${esc(sub.name)}</td></tr>
-+          <tr><td><strong>Dates</strong></td><td>${esc(sub.date_text)}</td></tr>
-+          ${href ? `<tr><td><strong>Lien</strong></td><td><a href="${esc(href)}">${esc(href)}</a></td></tr>` : ''}
-+        </table>
-+        <p><a href="https://wakeref.app/admin/competition-submissions">Voir dans l'admin →</a></p>
-+      `,
-+    }),
-+  })
-+
-+  // Sans ça, un rejet de Resend (domaine non vérifié, quota) ne laisse aucune
-+  // trace exploitable dans les logs de la fonction.
-+  if (!res.ok) console.error('resend', res.status, await res.text())
-+
-+  return new Response(JSON.stringify({ ok: res.ok }), {
-+    status: res.ok ? 200 : 500,
-+    headers: { 'Content-Type': 'application/json' },
-+  })
-+})

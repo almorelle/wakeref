@@ -6,106 +6,15 @@ import { SportBadge, CategoryBadge, ContextBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
 import { useLocalizedField } from '../contexts/language-context'
 import SEO from '../components/SEO'
+import VideoCard from '../components/VideoCards'
+import { useInView } from '../hooks/useInView'
 import styles from './FigureDetail.module.css'
+// Le lecteur de fichier hébergé partage son cadre et son bouton avec les cartes
+// sorties dans `VideoCards` : deux modules CSS ici valent mieux que d'y recopier
+// `mediaWrap`, `mediaScrim` et `instaPlay`.
+import videoStyles from '../components/VideoCards.module.css'
 import Icon from '../components/Icon'
 import { decomposeTrick, rotationIcon } from '../lib/trickDecomposition'
-
-// Carte Instagram : affiche le thumbnail `thumbnails/<shortcode>.jpg` du bucket
-// s'il existe, sinon retombe sur la tuile dégradée brandée.
-function InstagramCard({ v, label }) {
-  const [errored, setErrored] = useState(false)
-  const shortcode = v.source_url?.match(/instagram\.com\/(?:p|reels?|tv)\/([^/?#]+)/)?.[1]
-  const thumbUrl = shortcode
-    ? supabase.storage.from('videos').getPublicUrl(`thumbnails/${shortcode}.jpg`).data.publicUrl
-    : null
-  const showImg = thumbUrl && !errored
-
-  const info = (
-    <div className={styles.instaInfo}>
-      {v.creator_name && <span className={styles.instaAuthor}>{v.creator_name}</span>}
-      <span className={styles.instaCta}><Icon name="brand-instagram" /> {label}</span>
-    </div>
-  )
-
-  return (
-    <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener noreferrer" className={styles.instaCard}>
-      {showImg ? (
-        <>
-          <img
-            src={thumbUrl}
-            alt={v.title || v.creator_name || ''}
-            className={styles.instaImg}
-            loading="lazy"
-            onError={() => setErrored(true)}
-          />
-          <div className={styles.instaScrim}>
-            <div className={styles.instaPlay}><Icon name="player-play" /></div>
-            {info}
-          </div>
-        </>
-      ) : (
-        <div className={styles.instaFallback}>
-          <div className={styles.instaPlay}><Icon name="player-play" /></div>
-          {info}
-        </div>
-      )}
-    </a>
-  )
-}
-
-// Monte le contenu lourd (metadata vidéo / miniature) seulement quand
-// la carte approche du viewport — perf sur les figures à galerie longue.
-function useInView(rootMargin = '300px') {
-  const ref = useRef(null)
-  // Pas d'IntersectionObserver (vieux navigateur) → on monte tout de suite, décidé
-  // à l'initialisation plutôt que par un setState dans l'effet.
-  const [inView, setInView] = useState(() => typeof IntersectionObserver === 'undefined')
-  useEffect(() => {
-    const el = ref.current
-    if (!el || inView) return
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setInView(true); io.disconnect() }
-    }, { rootMargin })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [inView, rootMargin])
-  return [ref, inView]
-}
-
-// Carte YouTube : miniature, et lecture chez YouTube dans un nouvel onglet.
-//
-// Pas de lecteur intégré. Le lecteur embarqué impose ses propres contrôles, son
-// bouton plein écran est difficilement atteignable au clavier, et il retient
-// chez nous un trafic qui revient à l'auteur·ice de la vidéo. La miniature reste
-// — c'est elle qui donne envie et qui distingue deux vidéos d'une même figure.
-function YouTubeCard({ videoId, vertical, title, url }) {
-  const [ref, inView] = useInView()
-  const [hiRes, setHiRes] = useState(true) // maxres → repli hq si 404
-
-  const thumb = `https://i.ytimg.com/vi/${videoId}/${hiRes ? 'maxresdefault' : 'hqdefault'}.jpg`
-  return (
-    <a
-      ref={ref}
-      href={externalUrl(url, { ref: true })}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`${styles.mediaWrap} ${vertical ? styles.mediaVertical : ''}`}
-    >
-      {inView && (
-        <img
-          src={thumb}
-          alt={title || ''}
-          className={`${styles.ytThumb} ${vertical ? styles.ytThumbVertical : ''}`}
-          loading="lazy"
-          onError={() => hiRes && setHiRes(false)}
-        />
-      )}
-      <span className={styles.mediaScrim}>
-        <span className={styles.instaPlay}><Icon name="player-play" /></span>
-      </span>
-    </a>
-  )
-}
 
 // Vidéo uploadée : poster (1re frame), aperçu muet en boucle au survol, et
 // lecture pleine (son + contrôles) au clic. Metadata chargée seulement en vue.
@@ -125,7 +34,7 @@ function UploadVideo({ url }) {
   return (
     <div
       ref={ref}
-      className={styles.mediaWrap}
+      className={videoStyles.mediaWrap}
       onMouseEnter={hoverPlay}
       onMouseLeave={hoverStop}
     >
@@ -142,8 +51,8 @@ function UploadVideo({ url }) {
         />
       )}
       {!active && (
-        <button type="button" className={styles.mediaScrim} onClick={activate} aria-label="Lire la vidéo">
-          <span className={styles.instaPlay}><Icon name="player-play" /></span>
+        <button type="button" className={videoStyles.mediaScrim} onClick={activate} aria-label="Lire la vidéo">
+          <span className={videoStyles.instaPlay}><Icon name="player-play" /></span>
         </button>
       )}
     </div>
@@ -249,27 +158,35 @@ export default function FigureDetail() {
   const renderVideoMedia = (v) => {
     const url = getVideoUrl(v)
 
-    // Upload direct : poster + aperçu au survol + lecture pleine au clic.
+    // Upload direct : le seul cas qui se lit sur place — poster, aperçu au
+    // survol, lecture pleine au clic. Ce n'est pas une vignette, d'où sa place ici.
     if (v.source_type === 'upload' && url) {
       return <UploadVideo url={url} />
     }
 
-    // Instagram
-    if (v.source_type === 'instagram' && v.source_url) {
-      return <InstagramCard v={v} label={tr.viewOnInstagram} />
+    // Tout le reste part chez l'hébergeur. La plateforme est déduite de l'URL
+    // par `VideoCard` ; `sourceType` ne sert que de repli quand elle ne se
+    // laisse pas lire.
+    //
+    // `source_type` reste dans le test : une ligne `upload` dont le fichier a
+    // disparu garde une `source_url`, mais c'est une ATTRIBUTION — déjà rendue
+    // sous la carte en « voir la source originale ». En faire la vignette
+    // principale la doublerait.
+    if (v.source_type !== 'upload' && v.source_url) {
+      return (
+        <VideoCard
+          variant="figure"
+          url={v.source_url}
+          sourceType={v.source_type}
+          title={v.title}
+          creatorName={v.creator_name}
+          labels={{ instagram: tr.viewOnInstagram, youtube: tr.viewOnYoutube }}
+        />
+      )
     }
 
-    // YouTube : miniature cliquable, lecture chez YouTube dans un nouvel onglet.
-    if (v.source_type === 'youtube' && v.source_url) {
-      const videoId = v.source_url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?\s]+)/)?.[1]
-      const isShort = v.source_url.includes('/shorts/')
-      if (videoId) {
-        return <YouTubeCard videoId={videoId} vertical={isShort} title={v.title} url={v.source_url} />
-      }
-    }
-
-    // Fallback
-    return <div className={styles.videoPlaceholder}><Icon name="player-play" /></div>
+    // Ni fichier ni lien exploitable : rien à montrer.
+    return <div className={videoStyles.videoPlaceholder}><Icon name="player-play" /></div>
   }
 
   if (loading) return <span className="spinner" />
