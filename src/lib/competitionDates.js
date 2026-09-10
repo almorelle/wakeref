@@ -95,7 +95,11 @@ export function competitionState(comp, now = new Date()) {
 // formateur ou une normalisation NFC peut fondre dans le crochet précédent.
 export const slugify = (s) => String(s || '')
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60)
+  .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  // Le nettoyage repasse APRÈS la coupe : tronquer à 60 pouvait réintroduire un
+  // tiret final, et le slug cessait d'être stable par re-slugification — la page
+  // d'un circuit rendait alors 404 sur l'URL qu'elle publie elle-même.
+  .slice(0, 60).replace(/-+$/, '')
 
 export const competitionPath = (comp) => {
   if (comp?.id == null) return '/competitions'

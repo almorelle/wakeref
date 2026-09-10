@@ -1,0 +1,309 @@
+/* Le fil des compétitions — voir `CompetitionRibbon.jsx`.
+   Déplacé depuis `Competitions.module.css` sans modification : l'apparence
+   appartient au composant, qui sert désormais l'agenda complet ET les pages de
+   circuit. Les règles ci-dessous sont celles du commit 63898a4, à l'octet près. */
+
+/* ══════════════ La ligne de temps ══════════════
+   Le futur est en haut : on lit d'abord ce qui arrive, et on descend vers ce qui
+   a eu lieu. Une ligne court sur toute la hauteur, chaque compétition y pose sa
+   pastille, et la carte part alternativement à gauche puis à droite.
+
+   Les tailles sont IDENTIQUES pour le passé et le futur : une différence
+   d'échelle se lisait comme un défaut de rendu, pas comme une intention. Ce qui
+   distingue les deux, c'est la position par rapport au repère du jour et le
+   retrait de l'encre. */
+.ribbon {
+  --node: 64px;          /* diamètre de la pastille */
+  --gap: 2.25rem;        /* respiration entre la ligne et les cartes */
+  position: relative;
+  max-width: var(--page-max);
+  width: 100%;
+  margin: .5rem auto 5rem;
+  padding: 0 1.25rem;
+  list-style: none;
+}
+/* La ligne elle-même. */
+.ribbon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom, var(--c-rule) 0 4px, transparent 4px 8px
+  );
+  transform: translateX(-.5px);
+}
+
+.item { position: relative; padding: .9rem 0; }
+
+/* Le rang : pastille au centre, carte d'un côté. Les repères (millésime,
+   marqueur du jour) vivent HORS de cette grille — dans la même, l'auto-placement
+   renvoyait la carte de gauche à la ligne suivante, puisqu'une grille n'écrit
+   jamais en arrière : la carte réclamait la colonne 1 après une pastille déjà
+   posée en colonne 2. */
+.row {
+  display: grid;
+  grid-template-columns: 1fr var(--node) 1fr;
+  align-items: center;
+  column-gap: var(--gap);
+  position: relative;
+}
+
+/* Alternance : la carte occupe la colonne 1 ou la colonne 3. `grid-row: 1` est
+   indispensable des DEUX côtés — sans lui, une carte réclamant la colonne 1
+   après une pastille déjà posée en colonne 2 tombe à la ligne suivante, et se
+   retrouve décalée d'une hauteur de pastille sous son propre repère. */
+.left  .card { grid-column: 1; grid-row: 1; text-align: right; align-items: flex-end; }
+.right .card { grid-column: 3; grid-row: 1; }
+
+/* Le trait qui relie la carte à sa pastille. */
+.card::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: var(--gap);
+  height: 1px;
+  background: var(--c-rule);
+}
+/* Le trait relie le bord de la carte au bord de la pastille : mesuré depuis le
+   milieu du gap, il finissait 18px trop court d'un côté et passait sous la
+   pastille opaque de l'autre. */
+.left  .card::after { left: calc(50% - var(--node) / 2 - var(--gap)); }
+.right .card::after { right: calc(50% - var(--node) / 2 - var(--gap)); }
+
+/* ══════════════ La pastille ══════════════
+   Le repère visuel : c'est lui qui permet de retrouver une compétition sans
+   lire. Le logo est CONTENU, jamais recadré ni étiré — on ne connaît ni son
+   ratio ni son fond. Le cadre pointillé n'apparaît que sur le repli textuel,
+   pour ne pas ajouter de bruit autour d'un logo qui a déjà son propre fond. */
+.node {
+  grid-column: 2;
+  grid-row: 1;
+  width: var(--node);
+  height: var(--node);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: var(--c-bg);
+  z-index: 1;
+}
+.nodeEmpty { border: 1px dotted var(--c-rule); }
+.logo { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.logoFallback {
+  font-family: var(--font-title);
+  font-size: 20px;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--c-faint);
+}
+
+/* ══════════════ La carte ══════════════ */
+.card { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.when {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.when > span { white-space: pre; }
+/* Seul le mois prend l'accent : c'est le point d'appui du regard quand on
+   parcourt le fil. Le quantième et l'année restent en gris — les colorer aussi
+   ferait de la date entière un bloc de couleur, et on reperdrait le repère. */
+.month { color: var(--c-accent); }
+.past .month { color: var(--c-accent); opacity: .55; }
+.left .when, .left .meta { justify-content: flex-end; }
+.name {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(20px, 2.6vw, 26px);
+  line-height: 1.05;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 7px;
+  font-size: 12.5px;
+  color: var(--c-muted);
+}
+.meta > span + span::before { content: "\00b7"; margin-right: 7px; color: var(--c-faint); }
+.fuzzy {
+  font-weight: 400;
+  letter-spacing: .04em;
+  text-transform: none;
+  color: var(--c-faint);
+  font-size: 11.5px;
+}
+.card:hover .name { color: var(--c-accent); }
+
+/* ══════════════ L'appel à contribution ══════════════
+   Une entrée du fil comme les autres, à ceci près qu'elle n'a pas de date : le
+   carré pointillé est celui d'une compétition sans logo, et le point
+   d'interrogation y remplace les initiales. Le libellé garde EXACTEMENT
+   l'échelle des autres entrées : une taille à part se lit comme un défaut de
+   rendu, pas comme une intention. Ce qui distingue la ligne, c'est la pastille
+   — accentuée — et l'absence de date. */
+.suggestMark {
+  font-family: var(--font-title);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--c-accent);
+}
+/* Le cadre reprend l'encre du point d'interrogation : les deux forment un seul
+   objet, là où le pointillé gris du repli textuel n'est qu'un contenant. */
+.suggestNode { border-color: var(--c-accent); }
+
+/* Le lien couvre la grille, mais seules la pastille et la carte le reçoivent —
+   sans quoi la colonne vide en ferait une bande cliquable d'un bord à l'autre. */
+.suggestRow { pointer-events: none; }
+.suggestRow > * { pointer-events: auto; }
+/* Survoler le carré éclaire le libellé, et inversement : c'est une seule cible. */
+.suggestRow:hover .name { color: var(--c-accent); }
+
+/* Le passé (et l'annulé, qui n'aura pas lieu) : même échelle, encre retirée. */
+.past .name { color: var(--c-muted); }
+.past .node { opacity: .62; }
+.past .when, .past .meta { color: var(--c-faint); }
+
+/* ══════════════ Repères sur la ligne ══════════════
+   Millésime et marqueur du jour occupent toute la largeur et s'assoient SUR la
+   ligne, qu'ils masquent localement grâce au fond papier. */
+.year { margin: 2.4rem 0 1.35rem; text-align: center; }
+.todayMark { margin: 0 0 1rem; text-align: center; }
+.item:first-child .year { margin-top: .25rem; }
+.year span {
+  display: inline-block;
+  background-color: var(--c-bg);
+  padding: 0 14px;
+  font-family: var(--font-title);
+  font-size: 15px;
+  letter-spacing: .2em;
+  color: var(--c-faint);
+}
+.todayMark span {
+  display: inline-block;
+  /* Encre et non l'accent : blanc sur #c43d8c tombe à ~3,9:1, sous le seuil
+     AA pour du 10px gras. Le repère reste le seul élément plein du fil. */
+  background-color: var(--c-text);
+  color: var(--c-bg);
+  padding: 3px 12px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+/* ══════════════ En live ══════════════
+   Étiquette collée, reprise du vocabulaire de la couverture. Encre et blanc en
+   dur : ces valeurs ne suivent pas le thème, comme sur la home. */
+.liveTape {
+  align-self: flex-start;
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #fff;
+  color: #2a1e30;
+  padding: 4px 10px 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  transform: rotate(-1.8deg);
+  clip-path: var(--tape-clip-alt);
+  filter: var(--tape-shadow);
+}
+.left .liveTape { align-self: flex-end; }
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d32f4f;
+  flex-shrink: 0;
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+@keyframes livePulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+@media (prefers-reduced-motion: reduce) { .liveDot { animation: none } }
+
+.live .node { box-shadow: 0 0 0 2px var(--c-accent); }
+
+/* Annulée : barrée, jamais masquée — l'information vaut mieux que le silence. */
+.cancelled .name { text-decoration: line-through; }
+.cancelledTag {
+  color: var(--c-danger);
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  font-size: 11px;
+}
+
+/* ══════════════ Mobile ══════════════
+   L'alternance ne tient pas sous ~800px : deux colonnes laisseraient ~150px par
+   carte, où un nom de compétition descend sur huit lignes. La ligne passe donc à
+   gauche et toutes les cartes se rangent à droite — le zigzag est une mise en
+   forme desktop, pas la structure. */
+@media (max-width: 800px) {
+  .ribbon { --node: 48px; --gap: 1rem; padding-left: 1rem; }
+  .ribbon::before { left: calc(1rem + var(--node) / 2); }
+  .row { grid-template-columns: var(--node) 1fr; column-gap: var(--gap); }
+  .node { grid-column: 1; }
+  .left .card, .right .card { grid-column: 2; grid-row: 1; text-align: left; align-items: flex-start; }
+  .left .when, .left .meta { justify-content: flex-start; }
+  .left .liveTape { align-self: flex-start; }
+  .card::after { display: none; }
+  /* Alignés à gauche, sans décalage : `translateX(-50%)` s'appliquait au bloc
+     pleine largeur et non à l'étiquette, ce qui projetait le repère à 220px
+     hors de l'écran. */
+  .year, .todayMark { text-align: left; margin-left: 0; }
+  .name { font-size: clamp(18px, 5vw, 22px); }
+}
+
+
+/* ══════════════ Forme compacte ══════════════
+   Le passé et les autres années passent en ligne dense : le logo descend à la
+   hauteur du texte et la pastille cesse de creuser la colonne. Ce qui reste en
+   pleine forme, ce sont les compétitions à venir de la saison en cours — celles
+   pour lesquelles on ouvre la page. Sans ça, dix ans d'archives donneraient dix
+   ans de vignettes à faire défiler. */
+.compact { padding: .18rem 0; }
+.compact .row { align-items: center; }
+.compact .node { height: 26px; border: 0; }
+.compact .card { gap: 0; }
+.compact .name { font-size: 15px; line-height: 1.25; }
+.compact .when { font-size: 10px; letter-spacing: .1em; }
+.compact .meta { font-size: 10.5px; }
+
+/* La colonne se resserre : les cartes compactes se rapprochent de la ligne. */
+.compact.left  .card { padding-right: .5rem; }
+.compact.right .card { padding-left: .5rem; }
+
+@media (max-width: 800px) {
+  .compact .logo, .compact .logoFallback { max-height: 22px; }
+  .compact.left .card, .compact.right .card { padding: 0; }
+}
+
+
+/* Variante du repère quand rien n'est encore passé : il ferme le fil au lieu de
+   le couper en deux. */
+.todayMarkTail { margin: 1rem 0 0; }
+
+/* En forme compacte, `--node` est redéfini sur le rang alors que la ligne est
+   tracée d'après la valeur portée par le ruban : sur mobile, où la ligne est
+   calée à gauche, les pastilles compactes se retrouvaient à 13px du filet.
+   On garde donc la même gouttière et on ne réduit que l'image. */
+.compact .node { width: var(--node); }
+.compact .logo, .compact .logoFallback { max-height: 26px; }
+.compact .logoFallback { font-size: 13px; }
+
+

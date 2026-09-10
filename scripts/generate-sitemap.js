@@ -2,7 +2,8 @@ import dotenv from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
 // Une seule implémentation de la forme d'URL, partagée avec les pages : deux
 // copies divergentes produiraient des URLs de sitemap différentes des canonical.
-import { competitionPath } from '../src/lib/competitionDates.js'
+import { competitionPath, slugify } from '../src/lib/competitionDates.js'
+import { tourPath } from '../src/lib/competitionAssets.js'
 import { writeFileSync, mkdirSync, existsSync } from 'fs'
 
 dotenv.config({ path: '.env.local' })
@@ -68,7 +69,7 @@ async function fetchDynamicRoutes() {
   // routage) mais il doit figurer ici : c'est la forme que les gens partagent.
   const { data: comps, error: compErr } = await supabase
     .from('competitions')
-    .select('id, name')
+    .select('id, name, tour_name')
     .eq('published', true)
     .limit(MAX_ROWS)
   if (compErr) throw compErr
@@ -80,7 +81,25 @@ async function fetchDynamicRoutes() {
     changefreq: 'weekly',
   }))
 
-  return [...figureRoutes, ...competitionRoutes]
+  // Une page par circuit, déduite des `tour_name` distincts — il n'existe pas
+  // d'entité « circuit », donc pas de table à lire. Ces pages ne montrent que
+  // l'année en cours : leur contenu ne bouge qu'au rythme des étapes annoncées,
+  // d'où `weekly` — comme les compétitions qu'elles listent.
+  const tourSlugs = new Set()
+  const tourNames = []
+  for (const c of comps || []) {
+    const slug = slugify(c.tour_name)
+    if (slug && !tourSlugs.has(slug)) { tourSlugs.add(slug); tourNames.push(c.tour_name) }
+  }
+  // `tourPath` plutôt qu'une chaîne recopiée : l'URL d'un circuit n'a qu'une
+  // définition, partagée avec les pages — deux copies divergeraient un jour.
+  const tourRoutes = tourNames.map(name => ({
+    url: tourPath(name),
+    priority: 0.5,
+    changefreq: 'weekly',
+  }))
+
+  return [...figureRoutes, ...competitionRoutes, ...tourRoutes]
 }
 
 function renderSitemap(routes) {

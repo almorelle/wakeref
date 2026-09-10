@@ -14,9 +14,16 @@ import { supabase } from '../lib/supabase'
  * que la ligne garde le repère visuel qui la rend reconnaissable.
  *
  * Aucun ratio n'est supposé : l'image est contenue, jamais recadrée ni étirée.
+ *
+ * `eager` : à réserver aux logos placés HAUT dans la page. Le chargement différé
+ * s'y retourne contre lui-même — tant que l'image n'est pas chargée, sa largeur
+ * vaut 0 (elle n'a pas de dimensions intrinsèques et `width` est en `auto`), or
+ * le navigateur ne déclenche pas le chargement différé d'une image d'aire nulle.
+ * Elle reste donc invisible indéfiniment. Constaté sur l'emblème d'une page de
+ * circuit ; le fil, lui, n'est pas concerné : sa pastille impose 64 px.
  */
 export default function RemoteLogo({
-  path, alt = '', height, className, imgClassName, emptyClassName, fallback = null,
+  path, alt = '', height, className, imgClassName, emptyClassName, fallback = null, eager = false,
 }) {
   // `path` fait partie de la clé : sans ça, un composant réutilisé avec une
   // autre image resterait masqué à cause d'un échec précédent.
@@ -34,7 +41,7 @@ export default function RemoteLogo({
       src={url}
       alt={alt}
       className={imgClassName}
-      loading="lazy"
+      loading={eager ? 'eager' : 'lazy'}
       onError={() => setFailedPath(path)}
       style={height ? { height, width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' } : undefined}
     />

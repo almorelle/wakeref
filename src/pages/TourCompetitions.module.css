@@ -1,0 +1,84 @@
+.page { display: flex; flex-direction: column; }
+
+/* ══════════════ En-tête du circuit ══════════════
+   Le logo tient lieu d'emblème et se pose à gauche du nom, comme sur la fiche
+   d'une compétition. Il est CONTENU, jamais recadré : on ne connaît ni son
+   ratio ni son fond. */
+.masthead {
+  max-width: var(--page-max);
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem .5rem;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+/* Conteneur seulement : c'est `RemoteLogo` qui dimensionne l'image, par style
+   inline, à partir de son `height`. Mettre `object-fit` ici n'aurait rien fait. */
+.logoBox { flex-shrink: 0; display: flex; min-width: 54px; }
+.headings { min-width: 0; }
+.kicker {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--c-faint);
+  margin-bottom: 4px;
+}
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(30px, 6vw, 52px);
+  line-height: .92;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+/* Le millésime en accent : c'est la restriction de la page, et il vaut mieux
+   qu'elle se voie que de laisser croire à un historique complet. */
+.year {
+  font-family: var(--font-title);
+  font-size: 17px;
+  letter-spacing: .2em;
+  color: var(--c-accent);
+  margin-top: 6px;
+}
+
+/* ══════════════ Sorties ══════════════
+   Deux destinations de nature différente : le site du circuit (dehors) et
+   l'agenda complet (dedans). Même traitement discret — ce ne sont pas les
+   actions de la page, seulement ses portes. */
+.links {
+  max-width: var(--page-max);
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+}
+.out {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.out:hover,
+.out:focus-visible { color: var(--c-accent); }
+
+.empty {
+  max-width: var(--page-max);
+  margin: 2.5rem auto;
+  padding: 0 1.25rem;
+  color: var(--c-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 620px) {
+  .masthead { gap: 12px; }
+
+}

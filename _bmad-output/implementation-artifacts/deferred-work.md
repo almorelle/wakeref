@@ -53,3 +53,15 @@ demanderait de faire passer l'insertion par une Edge Function (qui, elle, voit
 l'en-tête) ou d'ajouter un captcha : les deux sortent du cadre « aucune brique
 d'infrastructure nouvelle ».
 
+## `RemoteLogo` : chargement différé sur une image sans largeur réservée (2026-09-10)
+
+`loading="lazy"` se retourne contre lui-même quand l'image n'a ni dimensions
+intrinsèques connues ni largeur imposée par le CSS : elle mesure 0 px, et le
+navigateur ne déclenche pas le chargement différé d'une image d'aire nulle. Elle
+reste invisible indéfiniment. Constaté sur l'emblème des pages de circuit,
+corrigé là par le prop `eager` + une largeur minimale.
+
+**Reste exposé** : `CompetitionDetail.jsx` (logo de circuit et logo FFSNW dans le
+bloc d'affiliation) appelle `RemoteLogo` sans réserver de largeur. Non reproduit
+sur un cache chaud. À traiter en réservant la place plutôt qu'en passant tout en
+`eager` — ces logos-là ne sont pas en haut de page.

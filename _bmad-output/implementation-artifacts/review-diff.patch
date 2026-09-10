@@ -1,762 +1,1436 @@
 diff --git a/CLAUDE.md b/CLAUDE.md
-index 0159e5a..d3f79d7 100644
+index 9754a9e..78d699f 100644
 --- a/CLAUDE.md
 +++ b/CLAUDE.md
-@@ -37,6 +37,7 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
- - `prerequisites` — many-to-many self-join on figures
- - `videos` — references to video files stored in Supabase Storage
-   - **No embedded player anywhere.** YouTube and Instagram videos render as a clickable thumbnail that opens the host in a new tab; only `source_type='upload'` (files WakeRef hosts itself) plays in place. An embed keeps traffic that belongs to the video's author, its controls can't be styled, and its fullscreen button is poorly reachable by keyboard.
-+  - **`components/VideoCards.jsx` is the single card**, used by figure pages and competition pages alike. It owns platform detection (`lib/videoSource.js`, from the URL — never from a column), thumbnail resolution and its failures, deferred mounting (`hooks/useInView.js`) and the outbound link. `variant` picks the skin: `figure` (thumbnail alone, author over the Instagram one, title and credit live *below* in `videoMeta`) or `competition` (title + CTA over the thumbnail, since nothing surrounds it there). Both skins live in `VideoCards.module.css` — `FigureDetail` imports that module too, for the uploaded-file player it still owns. `sourceType` is a fallback consulted only when the URL won't parse.
- - `takedown_requests` — copyright removal requests from video authors
- - `compositions` — saved runs from the Compo page (no auth); short text `id` used in the share URL, minimal JSONB snapshot in `data` (incl. `gridKey`), denormalized `score` (normalized to /20). Public can insert + load one by id via the `get_composition(cid)` function; only admin can list/delete (RLS)
+@@ -44,10 +44,12 @@ All data fetching goes through the singleton Supabase client at `src/lib/supabas
  - `figure_views` — per-figure/day counter; written by the `track_figure_view` RPC, read back through `most_viewed_figures`
-diff --git a/src/components/VideoCards.jsx b/src/components/VideoCards.jsx
-index 9eac2e2..a1f414b 100644
---- a/src/components/VideoCards.jsx
-+++ b/src/components/VideoCards.jsx
-@@ -1,69 +1,157 @@
- import { useState } from 'react'
- import { supabase } from '../lib/supabase'
- import { externalUrl } from '../lib/url'
--import Icon from './Icon'
- import { videoSourceFromUrl } from '../lib/videoSource'
-+import { useInView } from '../hooks/useInView'
-+import Icon from './Icon'
- import styles from './VideoCards.module.css'
+ - `judge_runs` — reference runs for `/entrainement-juge` (video + `solution` JSONB + `published`). No `anon` policy: public access only via `list_judge_runs()` (metadata, **no solution**) and `get_judge_run_solution(id)`
+ - `parcours` — competition courses; `id` = 8-char share code, `data` = course snapshot. No `anon` policy: public read only via `get_parcours(code)`
+-- `competitions` — public agenda of cable competitions (unrelated to `/juge`). **No status column** (past/live/upcoming are derived from the date), no source, **no discipline** (the implicit default is "all disciplines" — recording one would propagate an exclusion), and **no translatable prose, so no `_en` columns** — the free-text fields it does have (`name`, `wakepark`, `tour_name`) are proper nouns, which don't translate; everything else is an outbound link. `date_precision` (`day`|`year`) carries the uncertainty — for a year-only comp, `date_start` holds **Dec 31st** — an artefact that must never reach the screen. The last day, not the first: the comp stays upcoming while the year runs, and sorts after that year's dated comps in the feed. `cancelled` is the single editorial flag; anon reads `published = true` only
++- `competitions` — public agenda of cable competitions (unrelated to `/juge`). **No status column** (past/live/upcoming are derived from the date), no source, **no discipline** (the implicit default is "all disciplines" — recording one would propagate an exclusion), and **no translatable prose, so no `_en` columns** — the free-text fields it does have (`name`, `wakepark`, `tour_name`) are proper nouns, which don't translate; everything else is an outbound link. `date_precision` (`day`|`year`) carries the uncertainty — for a year-only comp, `date_start` holds **Dec 31st** — an artefact that must never reach the screen. The last day, not the first: the comp stays upcoming while the year runs, and sorts after that year's dated comps in the feed. `cancelled` is the single editorial flag; anon reads `published = true` only. **A tour is not an entity** — `tour_name` is free text, and everything about a tour is *derived from its slug*: `competitionAssets.js` maps it to a logo (`competitions/tours/<slug>.png`) and to a public page (`/competitions/circuit/<slug>`). No table, no FK, no admin picker — a 2026-09-06 design call the owner reconfirmed on 2026-09-10. The page resolves its slug client-side (`slugify` is JS; no column carries it) and shows the **current year only**, but queries every year so that "no such tour" (404) stays distinguishable from "this tour has no round this year" (stated on screen)
+ - `competition_submissions` — public suggestions of a missing competition (three fields: `name`, free-text `date_text`, optional `url`). Deliberately **not** a draft `competitions` row: a submission is raw input, a competition is editorial content, and nothing on screen distinguishes an admin entry from a validated submission — so there is no "publish now, fix later" path. Anon may `insert` only; a `security definer` trigger caps the table at 10 inserts/minute (`video_submissions` and `takedown_requests` are still unlimited — pre-existing, tracked in `deferred-work.md`). The e-mail alert reuses the `video_submissions` pattern: a Supabase webhook calls the `notify-competition-submission` Edge Function
+ - `competition_videos` — video links of a competition (FK `on delete cascade`, `sort_order`). A dedicated table, not JSONB: rows are ordered and individually editable in the form (saved by wholesale replace, so validate before writing). `videos` is not reusable — its `figure_id` is NOT NULL. Anon reads a row only if its parent comp is published (`exists(...)` in the policy)
  
--// Miniature d'une vidéo, selon sa plateforme.
--//
--// YouTube en sert une publiquement ; Instagram non, donc on lit celle déposée
--// dans le bucket sous `thumbnails/<shortcode>.jpg` — le même dossier et le même
--// geste que pour les figures. Sans miniature, une tuile de repli sobre plutôt
--// qu'une image cassée.
--function Thumb({ src, source, title, onError }) {
--  if (!src) return <span className={styles.fallback} aria-hidden="true" />
--  return (
--    <img
--      src={src}
--      alt={title || ''}
--      className={styles.img}
--      loading="lazy"
--      onError={onError}
--      data-source={source}
--    />
--  )
--}
-+const cx = (...c) => c.filter(Boolean).join(' ')
++**`components/CompetitionRibbon.jsx` is the single feed rendering** — the vertical timeline (year separators, today marker, compact past rows, left/right alternation, live tape). It queries nothing: rows arrive sorted and filtered, which is what lets `/competitions` and a tour page share one appearance. `suggest` adds the "?" contribution row (agenda only — offering it from a tour page would imply the submission is attached to that tour); `anchorToToday` scrolls to now on mount (off for short lists, where it would only push the heading off-screen).
++
+ Two read views: **`figures_full`** (detail — JSON aggregates for videos/prereqs/switch group/built-on tree) and **`figures_card`** (light list payload + `aliases`; also cached in `localStorage` as the offline catalogue of the voice matcher). Both are `security_invoker` — recreating one without it leaks unpublished rows. **The option does not survive on its own: every `create view` must be followed by its `alter view … set (security_invoker = true)`, in the same breath.** It drifted once on `figures_card` (2026-09-09, caught by the Supabase advisor, fixed by `scripts/migrations/0021-figures-card-security-invoker.sql`). Neither view carries a `published` filter, so the option *is* the protection — and `recent_video_figures()` leans on it, being the one RPC over these views that is not `security definer`.
  
- /**
-  * Un lien vidéo, rendu comme une vignette cliquable.
-  *
-  * La lecture se fait TOUJOURS chez l'hébergeur, dans un nouvel onglet : WakeRef
-  * pointe, il ne diffuse pas. Un lecteur intégré retiendrait chez nous le trafic
-- * qui revient à l'organisateur — c'est la contrepartie qu'il accepte en échange
-- * d'être référencé.
-+ * qui revient à l'auteur·ice — c'est la contrepartie qu'iel accepte en échange
-+ * d'être référencé·e. Seul un fichier que WakeRef héberge lui-même se lit sur
-+ * place, et ce cas-là n'est pas une vignette : il vit dans `FigureDetail`.
-+ *
-+ * Un seul composant sert les deux surfaces. `variant` choisit l'habillage —
-+ * les deux pages ne montrent pas la même chose et c'est délibéré : une fiche
-+ * compétition distingue ses vidéos par leur titre (« finales » vs « qualifs »),
-+ * une page de figure les distingue par leur miniature et crédite l'auteur·ice.
-+ * Ce qui est commun, et qui était jusqu'ici écrit deux fois, c'est tout le
-+ * reste : reconnaître la plateforme, trouver la miniature, gérer son échec,
-+ * différer le montage, ouvrir dehors.
-  */
--export default function VideoCard({ url, title, labels }) {
--  const src = videoSourceFromUrl(url)
-+export default function VideoCard({
-+  url,
-+  title,
-+  creatorName,
-+  sourceType,
-+  labels = {},
-+  variant = 'competition',
-+}) {
-+  const [ref, inView] = useInView()
-   // maxres n'existe pas pour toutes les vidéos : on retombe sur hq au 404.
-   const [ytHiRes, setYtHiRes] = useState(true)
-   const [thumbFailed, setThumbFailed] = useState(false)
+ Full-text search on figures uses a GIN index with French `unaccent`.
+@@ -98,10 +100,10 @@ Admin-only auth via Supabase email/password. `useAuth` (`src/hooks/useAuth.js`)
  
--  let thumb = null
--  let cta = labels.generic
--  let icon = 'player-play'
-+  const src = videoSourceFromUrl(url)
-+  // L'URL décide. La colonne `source_type` ne parle que si l'URL ne se laisse
-+  // pas lire : sans ce repli, une ligne Instagram pointant vers un profil —
-+  // aujourd'hui rendue en tuile de marque — tomberait sur la carte générique.
-+  const type = src.type !== 'link'
-+    ? src.type
-+    : (sourceType === 'youtube' || sourceType === 'instagram' ? sourceType : 'link')
+ Every route except `/` is lazy-loaded (`React.lazy` + `<Suspense>`). Three groups in `App.jsx`:
  
--  if (src.type === 'youtube') {
-+  let thumb = null
-+  if (type === 'youtube' && src.id) {
-     thumb = `https://i.ytimg.com/vi/${src.id}/${ytHiRes ? 'maxresdefault' : 'hqdefault'}.jpg`
--    cta = labels.youtube
--    icon = 'brand-youtube'
--  } else if (src.type === 'instagram') {
-+  } else if (type === 'instagram' && src.shortcode) {
-+    // YouTube sert une miniature publiquement ; Instagram non, donc on lit celle
-+    // déposée dans le bucket — même dossier et même geste que pour les figures.
-     thumb = supabase.storage.from('videos')
-       .getPublicUrl(`thumbnails/${src.shortcode}.jpg`).data.publicUrl
--    cta = labels.instagram
--    icon = 'brand-instagram'
-   }
-+  if (thumbFailed) thumb = null
+-- **Public** (`PublicLayout` — `Navbar` + `<Outlet>` + `Footer`): `/`, `/figures`, `/figures/:slug`, `/quiz`, `/competitions`, `/competitions/proposer`, `/competitions/:idSlug`, `/composition`, `/composition/:id`, `/grille-composition-old` (legacy `CompositionSimple`), `/entrainement-juge`, `/entrainement-juge/voix`, `/contact`, `/submit`, `/legal`, `/terms`, `/privacy`
++- **Public** (`PublicLayout` — `Navbar` + `<Outlet>` + `Footer`): `/`, `/figures`, `/figures/:slug`, `/quiz`, `/competitions`, `/competitions/proposer`, `/competitions/circuit/:slug`, `/competitions/:idSlug`, `/composition`, `/composition/:id`, `/grille-composition-old` (legacy `CompositionSimple`), `/entrainement-juge`, `/entrainement-juge/voix`, `/contact`, `/submit`, `/legal`, `/terms`, `/privacy`
+ - **Admin** (`AdminLayout`, auth-guarded): `/admin` + `figures`, `figures/new`, `figures/:id/edit`, `videos`, `takedowns`, `no-videos`, `submissions`, `competitions`, `competitions/new`, `competitions/:id/edit`, `competition-submissions`, `compositions`, `runs-entrainement-juge`, `runs-entrainement-juge/new`, `runs-entrainement-juge/:id/edit`, `parcours`, `parcours/new`, `parcours/:id/edit` — plus `/admin/login` outside the guard
+ - **Chromeless public** (no `Navbar`/`Footer`, full-screen judging surfaces): `/grille-composition` (`France2026` — feuille de note grilles France 2026), `/juge` and `/juge/:code` (`CompetitionView` — le juge charge un parcours par son code)
+-- **Legacy redirects** (renamed 2026-09-07): `/compo*` → `/composition*`, `/judge*` → `/entrainement-juge*`, `/competition*` → `/juge*`. They exist in **two layers, both needed** — `vercel.json` `redirects` (308, so crawlers consolidate and link-unfurl bots that don't run JS follow through) and matching routes in `App.jsx` (for in-SPA navigation, and for returning PWA users whose service worker serves the shell from cache without ever hitting the edge). Don't delete one as a duplicate of the other. Both declare the **closed set of legacy suffixes one at a time** — never a splat or `:path*` — so an unknown deep path like `/compo/a/b/c` stays a 404 at its real URL instead of being rewritten to a path that never existed. In `App.jsx` the target is rebuilt from the route param, never by `String.replace` on the pathname: the router matches case-insensitively, so `/Compo/x` must redirect like `/compo/x`. `/compo-old` and `/composition-simple` were deliberately NOT redirected. Note the near-collision: `/competitions` (public agenda) and `/competition*` (legacy alias of the judge tool) are **different features** — the redirect list must keep enumerating `/competition` and `/competition/:code` one at a time, never `/competition*` as a prefix, or it would swallow the agenda. Likewise `/competitions/proposer` is declared **before** `/competitions/:idSlug`, otherwise "proposer" would be read as a competition id
++- **Legacy redirects** (renamed 2026-09-07): `/compo*` → `/composition*`, `/judge*` → `/entrainement-juge*`, `/competition*` → `/juge*`. They exist in **two layers, both needed** — `vercel.json` `redirects` (308, so crawlers consolidate and link-unfurl bots that don't run JS follow through) and matching routes in `App.jsx` (for in-SPA navigation, and for returning PWA users whose service worker serves the shell from cache without ever hitting the edge). Don't delete one as a duplicate of the other. Both declare the **closed set of legacy suffixes one at a time** — never a splat or `:path*` — so an unknown deep path like `/compo/a/b/c` stays a 404 at its real URL instead of being rewritten to a path that never existed. In `App.jsx` the target is rebuilt from the route param, never by `String.replace` on the pathname: the router matches case-insensitively, so `/Compo/x` must redirect like `/compo/x`. `/compo-old` and `/composition-simple` were deliberately NOT redirected. Note the near-collision: `/competitions` (public agenda) and `/competition*` (legacy alias of the judge tool) are **different features** — the redirect list must keep enumerating `/competition` and `/competition/:code` one at a time, never `/competition*` as a prefix, or it would swallow the agenda. Likewise `/competitions/proposer` is declared **before** `/competitions/:idSlug`, otherwise "proposer" would be read as a competition id. `/competitions/circuit/:slug` takes two segments and cannot collide with either
  
-   const onThumbError = () => {
--    if (src.type === 'youtube' && ytHiRes) { setYtHiRes(false); return }
-+    if (type === 'youtube' && ytHiRes) { setYtHiRes(false); return }
-     setThumbFailed(true)
-   }
+ ### Database setup
  
-+  const link = {
-+    ref,
-+    href: externalUrl(url, { ref: true }),
-+    target: '_blank',
-+    rel: 'noopener noreferrer',
+diff --git a/scripts/generate-sitemap.js b/scripts/generate-sitemap.js
+index e4864f5..15983bb 100644
+--- a/scripts/generate-sitemap.js
++++ b/scripts/generate-sitemap.js
+@@ -2,7 +2,7 @@ import dotenv from 'dotenv'
+ import { createClient } from '@supabase/supabase-js'
+ // Une seule implémentation de la forme d'URL, partagée avec les pages : deux
+ // copies divergentes produiraient des URLs de sitemap différentes des canonical.
+-import { competitionPath } from '../src/lib/competitionDates.js'
++import { competitionPath, slugify } from '../src/lib/competitionDates.js'
+ import { writeFileSync, mkdirSync, existsSync } from 'fs'
+ 
+ dotenv.config({ path: '.env.local' })
+@@ -68,7 +68,7 @@ async function fetchDynamicRoutes() {
+   // routage) mais il doit figurer ici : c'est la forme que les gens partagent.
+   const { data: comps, error: compErr } = await supabase
+     .from('competitions')
+-    .select('id, name')
++    .select('id, name, tour_name')
+     .eq('published', true)
+     .limit(MAX_ROWS)
+   if (compErr) throw compErr
+@@ -80,7 +80,22 @@ async function fetchDynamicRoutes() {
+     changefreq: 'weekly',
+   }))
+ 
+-  return [...figureRoutes, ...competitionRoutes]
++  // Une page par circuit, déduite des `tour_name` distincts — il n'existe pas
++  // d'entité « circuit », donc pas de table à lire. Ces pages ne montrent que
++  // l'année en cours : leur contenu tourne chaque janvier, d'où `daily` plutôt
++  // qu'un `changefreq` figé.
++  const tourSlugs = new Map()
++  for (const c of comps || []) {
++    const slug = slugify(c.tour_name)
++    if (slug && !tourSlugs.has(slug)) tourSlugs.set(slug, c.tour_name)
 +  }
-+  const play = (cls) => <span className={cls}><Icon name="player-play" /></span>
++  const tourRoutes = [...tourSlugs.keys()].map(slug => ({
++    url: `/competitions/circuit/${slug}`,
++    priority: 0.5,
++    changefreq: 'weekly',
++  }))
 +
-+  // ── Habillage « figure » : la miniature parle, le titre et le crédit vivent
-+  // sous la carte (`videoMeta`), pas dessus. Seul Instagram porte un texte —
-+  // c'est le nom de l'auteur·ice, et il tient lieu de signature.
-+  if (variant === 'figure') {
-+    if (type === 'instagram') {
-+      const info = (
-+        <div className={styles.instaInfo}>
-+          {creatorName && <span className={styles.instaAuthor}>{creatorName}</span>}
-+          <span className={styles.instaCta}><Icon name="brand-instagram" /> {labels.instagram}</span>
-+        </div>
-+      )
-+      return (
-+        <a {...link} className={styles.instaCard}>
-+          {thumb ? (
-+            <>
-+              <img
-+                src={thumb}
-+                alt={title || creatorName || ''}
-+                className={styles.instaImg}
-+                loading="lazy"
-+                onError={onThumbError}
-+              />
-+              <div className={styles.instaScrim}>{play(styles.instaPlay)}{info}</div>
-+            </>
-+          ) : (
-+            <div className={styles.instaFallback}>{play(styles.instaPlay)}{info}</div>
-+          )}
-+        </a>
-+      )
-+    }
-+
-+    // YouTube, et tout lien dont on ne sait rien : même cadre, bouton lecture
-+    // seul. Sans miniature, un bloc vide au bon format plutôt qu'un cadre
-+    // écrasé à zéro — `ytThumb` porte déjà le ratio et le fond.
-+    const vertical = src.vertical
-+    return (
-+      <a {...link} className={cx(styles.mediaWrap, vertical && styles.mediaVertical)}>
-+        {inView && (thumb
-+          ? (
-+            <img
-+              src={thumb}
-+              alt={title || ''}
-+              className={cx(styles.ytThumb, vertical && styles.ytThumbVertical)}
-+              loading="lazy"
-+              onError={onThumbError}
-+            />
-+          )
-+          : <span className={cx(styles.ytThumb, vertical && styles.ytThumbVertical)} aria-hidden="true" />
-+        )}
-+        <span className={styles.mediaScrim}>{play(styles.instaPlay)}</span>
-+      </a>
-+    )
-+  }
-+
-+  // ── Habillage « compétition » : le titre est porté par la carte elle-même.
-+  // Rien ne l'entoure sur la fiche, donc « jour 1 » et « finales » ne se
-+  // distinguent que là.
-+  const cta = type === 'youtube' ? labels.youtube
-+    : type === 'instagram' ? labels.instagram
-+      : labels.generic
-+  const icon = type === 'youtube' ? 'brand-youtube'
-+    : type === 'instagram' ? 'brand-instagram'
-+      : 'player-play'
-+
-   return (
--    <a href={externalUrl(url, { ref: true })} target="_blank" rel="noopener noreferrer" className={styles.card}>
--      <Thumb src={thumbFailed ? null : thumb} source={src.type} title={title} onError={onThumbError} />
-+    <a {...link} className={styles.card}>
-+      {inView && (thumb
-+        ? (
-+          <img
-+            src={thumb}
-+            alt={title || ''}
-+            className={styles.img}
-+            loading="lazy"
-+            onError={onThumbError}
-+            data-source={type}
-+          />
-+        )
-+        // Aucune miniature déposée : un aplat sobre plutôt qu'une image cassée.
-+        : <span className={styles.fallback} aria-hidden="true" />
-+      )}
-       <span className={styles.scrim}>
--        <span className={styles.play}><Icon name="player-play" /></span>
-+        {play(styles.play)}
-         <span className={styles.info}>
-           {title && <span className={styles.title}>{title}</span>}
-           <span className={styles.cta}><Icon name={icon} size={15} /> {cta}</span>
-diff --git a/src/components/VideoCards.module.css b/src/components/VideoCards.module.css
-index a65c6c8..a5fa883 100644
---- a/src/components/VideoCards.module.css
-+++ b/src/components/VideoCards.module.css
-@@ -68,3 +68,150 @@
++  return [...figureRoutes, ...competitionRoutes, ...tourRoutes]
  }
  
+ function renderSitemap(routes) {
+diff --git a/src/App.jsx b/src/App.jsx
+index 2d09b74..5898885 100644
+--- a/src/App.jsx
++++ b/src/App.jsx
+@@ -23,6 +23,7 @@ const France2026 = lazy(() => import('./pages/France2026'))
+ const Competitions = lazy(() => import('./pages/Competitions'))
+ const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'))
+ const SubmitCompetition = lazy(() => import('./pages/SubmitCompetition'))
++const TourCompetitions = lazy(() => import('./pages/TourCompetitions'))
+ const JudgeTraining = lazy(() => import('./pages/JudgeTraining'))
+ // Saisie de run à la voix (outil juge) : route NON listée dans la Navbar,
+ // chunk isolé → un visiteur lambda ne charge jamais ce code.
+@@ -68,6 +69,9 @@ export default function App() {
+             {/* Avant `/competitions/:idSlug` : sans ça, « proposer » serait lu
+                 comme un identifiant de compétition. */}
+             <Route path="/competitions/proposer" element={<SubmitCompetition />} />
++            {/* Deux segments : aucune collision possible avec `:idSlug`, qui
++                n'en prend qu'un. Groupée ici pour rester lisible avec les autres. */}
++            <Route path="/competitions/circuit/:slug" element={<TourCompetitions />} />
+             <Route path="/competitions/:idSlug" element={<CompetitionDetail />} />
+             <Route path="/entrainement-juge" element={<JudgeTraining />} />
+             <Route path="/entrainement-juge/voix" element={<JudgeVoice />} />
+diff --git a/src/i18n/translations.js b/src/i18n/translations.js
+index 053db8b..25c8b8d 100644
+--- a/src/i18n/translations.js
++++ b/src/i18n/translations.js
+@@ -227,6 +227,11 @@ export const t = {
+       todayMark:  'aujourd’hui',
+       suggest:    'Il te manque un contest ? Ajoutes-le!',
+       partOf:       'Fait partie du circuit',
++      tourKicker:   'Circuit',
++      tourSite:     'Site du circuit',
++      tourSeeAll:   'Voir les compétitions du circuit',
++      tourNoneThisYear: 'Aucune étape annoncée pour {year} — les dates arrivent en général au printemps.',
++      allCompetitions: 'Toutes les compétitions',
+       affiliatedTo: 'Affiliée à la FFSNW',
+       linksTitle: 'Liens',
+       videosTitle:'Vidéos',
+@@ -616,6 +621,11 @@ export const t = {
+       todayMark:  'today',
+       suggest:    'You\'re missing a contest? Add it!',
+       partOf:       'Part of',
++      tourKicker:   'Tour',
++      tourSite:     'Tour website',
++      tourSeeAll:   'See the tour’s competitions',
++      tourNoneThisYear: 'No round announced for {year} yet — dates usually land in spring.',
++      allCompetitions: 'All competitions',
+       affiliatedTo: 'Affiliated to the FFSNW',
+       linksTitle: 'Links',
+       videosTitle:'Videos',
+diff --git a/src/lib/competitionAssets.js b/src/lib/competitionAssets.js
+index d40659a..0c3470d 100644
+--- a/src/lib/competitionAssets.js
++++ b/src/lib/competitionAssets.js
+@@ -17,3 +17,12 @@ export const tourLogoPath = (tourName) => {
+   const slug = slugify(tourName)
+   return slug ? `competitions/tours/${slug}.png` : null
+ }
++
++// La page publique d'un circuit. Même slug que le logo, et pour la même raison :
++// il n'existe pas d'entité « circuit » en base — seulement un texte libre sur
++// chaque compétition. Le slug est donc la seule clé stable qu'on puisse mettre
++// dans une URL, et la page se résout en comparant les slugs côté client.
++export const tourPath = (tourName) => {
++  const slug = slugify(tourName)
++  return slug ? `/competitions/circuit/${slug}` : null
++}
+diff --git a/src/pages/CompetitionDetail.jsx b/src/pages/CompetitionDetail.jsx
+index 75e0601..5047c62 100644
+--- a/src/pages/CompetitionDetail.jsx
++++ b/src/pages/CompetitionDetail.jsx
+@@ -11,7 +11,7 @@ import Icon from '../components/Icon'
+ import NotFound from './NotFound'
+ import VideoCard from '../components/VideoCards'
+ import RemoteLogo from '../components/RemoteLogo'
+-import { FFSNW_URL, FFSNW_LOGO, tourLogoPath } from '../lib/competitionAssets'
++import { FFSNW_URL, FFSNW_LOGO, tourLogoPath, tourPath } from '../lib/competitionAssets'
+ import styles from './CompetitionDetail.module.css'
  
-+/* ══════════════════════════════════════════════════════════════════════════
-+   Habillage « figure »
-+   ══════════════════════════════════════════════════════════════════════════
-+   Déplacé depuis `FigureDetail.module.css` : la peau voyage avec le composant.
-+   Le cadre (`mediaWrap`, `mediaScrim`) et le bouton (`instaPlay`) servent aussi
-+   au lecteur de fichier hébergé, resté dans la page — elle importe donc ce
-+   module en plus du sien plutôt que de recopier ces trois règles. */
+ // Colonnes explicites plutôt que `*` : la fiche est publique, et toute colonne
+@@ -176,6 +176,14 @@ function CompetitionDetail({ idSlug }) {
+             )}
+           </div>
+         )}
++        {/* Sur sa propre ligne, sous le bloc : la destination est INTERNE, alors
++            que tout ce qui précède sort du site. Les mêler sur la même rangée
++            aurait rendu les deux indiscernables au premier coup d'œil. */}
++        {comp.tour_name && (
++          <Link className={styles.tourLink} to={tourPath(comp.tour_name)}>
++            {tr.competitions.tourSeeAll} <Icon name="arrow-right" size={13} />
++          </Link>
++        )}
+       </header>
+ 
+       {/* Les liens sortants. Un lien absent s'affiche « à venir » plutôt que de
+diff --git a/src/pages/CompetitionDetail.module.css b/src/pages/CompetitionDetail.module.css
+index 955edc5..24b9cc8 100644
+--- a/src/pages/CompetitionDetail.module.css
++++ b/src/pages/CompetitionDetail.module.css
+@@ -301,3 +301,20 @@ a:hover > .tape { color: #8f2a64; transform: rotate(0deg); }
+   }
+   a:hover > .tape { transform: translateY(-50%) rotate(0deg); }
+ }
 +
-+/* ── Média unifié : façade (upload + YouTube) + overlay play ── */
-+.mediaWrap {
-+  position: relative;
-+  display: block;
-+  width: 100%;
-+  padding: 0;
-+  border: none;
-+  background: var(--c-surface2);
-+  color: inherit;
-+  font: inherit;
-+  text-align: left;
-+  cursor: pointer;
-+  overflow: hidden;
-+}
-+/* Miniature YouTube : ratio fixe, recadrée (cover) pour remplir le cadre. */
-+.ytThumb {
-+  width: 100%;
-+  aspect-ratio: 16 / 9;
-+  object-fit: cover;
-+  display: block;
-+  background: var(--c-surface2);
-+}
-+.ytThumbVertical { aspect-ratio: 9 / 16; }
-+/* Formats verticaux (Shorts/reels) : largeur plafonnée + centrés pour éviter
-+   le « mur » vidéo sur desktop. */
-+.mediaVertical { max-width: 320px; margin-left: auto; margin-right: auto; }
-+
-+/* Overlay cliquable : voile léger + bouton play centré (style commun avec la
-+   carte Instagram). */
-+.mediaScrim {
-+  position: absolute;
-+  inset: 0;
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  border: none;
-+  cursor: pointer;
-+  background: linear-gradient(to top, rgba(26, 20, 32, .45), rgba(26, 20, 32, .05) 45%, rgba(26, 20, 32, .25));
-+  transition: background var(--t-fast);
-+}
-+.mediaWrap:hover .mediaScrim,
-+.mediaScrim:hover { background: linear-gradient(to top, rgba(26, 20, 32, .5), rgba(26, 20, 32, .1) 45%, rgba(26, 20, 32, .3)); }
-+.mediaWrap:hover .instaPlay,
-+.mediaScrim:hover .instaPlay { transform: scale(1.06); }
-+
-+/* ══════════════ Carte Instagram ══════════════ */
-+.instaCard {
-+  position: relative;
-+  display: block;
-+  width: 100%;
-+  text-decoration: none;
-+  overflow: hidden;
-+}
-+.instaCard:hover .instaPlay { transform: scale(1.06); }
-+
-+/* Variante avec thumbnail */
-+.instaImg {
-+  width: 100%;
-+  height: auto;
-+  max-height: 460px;
-+  object-fit: cover;
-+  display: block;
-+}
-+.instaScrim {
-+  position: absolute;
-+  inset: 0;
-+  display: flex;
-+  flex-direction: column;
-+  align-items: center;
-+  justify-content: center;
-+  gap: 14px;
-+  background: linear-gradient(to top, rgba(26, 20, 32, .78), rgba(26, 20, 32, .3) 50%, rgba(26, 20, 32, .5));
-+}
-+
-+/* Variante sans thumbnail : le dégradé de marque Instagram jurerait avec le
-+   papier — on retombe sur un aplat d'encre, l'icône suffit à identifier la
-+   plateforme. */
-+.instaFallback {
-+  width: 100%;
-+  aspect-ratio: 9 / 16;
-+  max-height: 280px;
-+  display: flex;
-+  flex-direction: column;
-+  align-items: center;
-+  justify-content: center;
-+  gap: 16px;
-+  background: #2a1e30;
-+}
-+.instaPlay {
-+  width: 56px;
-+  height: 56px;
-+  border-radius: var(--r-round);
-+  background: none;
-+  border: 2px solid #f2eedf;
-+  color: #f2eedf;
-+  display: flex;
-+  align-items: center;
-+  justify-content: center;
-+  transition: transform var(--t-fast);
-+}
-+.instaPlay svg {
-+  width: 24px;
-+  height: 24px;
-+  margin-left: 3px;
-+}
-+.instaInfo {
-+  display: flex;
-+  flex-direction: column;
-+  align-items: center;
-+  gap: 5px;
-+  text-align: center;
-+  padding: 0 12px;
-+  max-width: 100%;
-+}
-+.instaAuthor {
-+  font-family: var(--font-title);
-+  font-size: 22px;
-+  font-weight: 400;
-+  line-height: 1;
-+  letter-spacing: .02em;
-+  text-transform: uppercase;
-+  color: #f2eedf;
-+  overflow: hidden;
-+  text-overflow: ellipsis;
-+  white-space: nowrap;
-+  max-width: 100%;
-+}
-+.instaCta {
++/* Le circuit, vu de l'intérieur du site. Posé sous le bloc d'affiliation et non
++   dedans : ce dernier ne contient que des liens sortants, et une destination
++   interne au milieu se serait lue comme l'un d'eux. */
++.tourLink {
 +  display: inline-flex;
 +  align-items: center;
 +  gap: 6px;
-+  font-size: 10px;
++  margin-top: 12px;
++  font-size: 12.5px;
 +  font-weight: 700;
-+  letter-spacing: .12em;
++  letter-spacing: .06em;
 +  text-transform: uppercase;
-+  color: #f2eedf;
++  color: var(--c-accent);
++  border-bottom: 1px solid transparent;
 +}
-+.instaCta i { font-size: 14px; }
-+
-diff --git a/src/pages/CompetitionDetail.jsx b/src/pages/CompetitionDetail.jsx
-index ab385d5..75e0601 100644
---- a/src/pages/CompetitionDetail.jsx
-+++ b/src/pages/CompetitionDetail.jsx
-@@ -249,6 +249,7 @@ function CompetitionDetail({ idSlug }) {
-               {videos.map(v => (
-                 <li key={v.id}>
-                   <VideoCard
-+                    variant="competition"
-                     url={v.url}
-                     title={v.title}
-                     labels={{
-diff --git a/src/pages/FigureDetail.jsx b/src/pages/FigureDetail.jsx
-index 17d4ce0..f62ddca 100644
---- a/src/pages/FigureDetail.jsx
-+++ b/src/pages/FigureDetail.jsx
-@@ -6,107 +6,16 @@ import { SportBadge, CategoryBadge, ContextBadge } from '../components/Badges'
++.tourLink:hover { border-bottom-color: var(--c-accent); }
+diff --git a/src/pages/Competitions.jsx b/src/pages/Competitions.jsx
+index 76fce76..5a97bb7 100644
+--- a/src/pages/Competitions.jsx
++++ b/src/pages/Competitions.jsx
+@@ -1,32 +1,19 @@
+-import { useEffect, useRef, useState } from 'react'
+-import { Link, useNavigationType } from 'react-router-dom'
++import { useEffect, useState } from 'react'
+ import { supabase } from '../lib/supabase'
  import { useT } from '../i18n/useT'
- import { useLocalizedField } from '../contexts/language-context'
+-import { useLanguage } from '../contexts/language-context'
+-import { competitionState, competitionPath, formatCompetitionDate, dateSegments, todayISO } from '../lib/competitionDates'
  import SEO from '../components/SEO'
-+import VideoCard from '../components/VideoCards'
-+import { useInView } from '../hooks/useInView'
- import styles from './FigureDetail.module.css'
-+// Le lecteur de fichier hébergé partage son cadre et son bouton avec les cartes
-+// sorties dans `VideoCards` : deux modules CSS ici valent mieux que d'y recopier
-+// `mediaWrap`, `mediaScrim` et `instaPlay`.
-+import videoStyles from '../components/VideoCards.module.css'
- import Icon from '../components/Icon'
- import { decomposeTrick, rotationIcon } from '../lib/trickDecomposition'
+-import RemoteLogo from '../components/RemoteLogo'
++import CompetitionRibbon from '../components/CompetitionRibbon'
+ import styles from './Competitions.module.css'
  
--// Carte Instagram : affiche le thumbnail `thumbnails/<shortcode>.jpg` du bucket
--// s'il existe, sinon retombe sur la tuile dégradée brandée.
--function InstagramCard({ v, label }) {
--  const [errored, setErrored] = useState(false)
--  const shortcode = v.source_url?.match(/instagram\.com\/(?:p|reels?|tv)\/([^/?#]+)/)?.[1]
--  const thumbUrl = shortcode
--    ? supabase.storage.from('videos').getPublicUrl(`thumbnails/${shortcode}.jpg`).data.publicUrl
--    : null
--  const showImg = thumbUrl && !errored
+-// Vrai une fois la page montée au moins une fois dans cette session JS. Sert à
+-// distinguer les deux « POP » que React Router ne sépare pas : le tout premier
+-// rendu d'une URL ouverte directement (où il faut ancrer) et un retour arrière
+-// vers une page déjà visitée (où le navigateur restitue une position qu'on ne
+-// doit pas écraser).
+-let mountedOnce = false
 -
--  const info = (
--    <div className={styles.instaInfo}>
--      {v.creator_name && <span className={styles.instaAuthor}>{v.creator_name}</span>}
--      <span className={styles.instaCta}><Icon name="brand-instagram" /> {label}</span>
--    </div>
--  )
--
--  return (
--    <a href={externalUrl(v.source_url, { ref: true })} target="_blank" rel="noopener noreferrer" className={styles.instaCard}>
--      {showImg ? (
--        <>
--          <img
--            src={thumbUrl}
--            alt={v.title || v.creator_name || ''}
--            className={styles.instaImg}
--            loading="lazy"
--            onError={() => setErrored(true)}
--          />
--          <div className={styles.instaScrim}>
--            <div className={styles.instaPlay}><Icon name="player-play" /></div>
--            {info}
--          </div>
--        </>
--      ) : (
--        <div className={styles.instaFallback}>
--          <div className={styles.instaPlay}><Icon name="player-play" /></div>
--          {info}
--        </div>
--      )}
--    </a>
--  )
--}
--
--// Monte le contenu lourd (metadata vidéo / miniature) seulement quand
--// la carte approche du viewport — perf sur les figures à galerie longue.
--function useInView(rootMargin = '300px') {
--  const ref = useRef(null)
--  // Pas d'IntersectionObserver (vieux navigateur) → on monte tout de suite, décidé
--  // à l'initialisation plutôt que par un setState dans l'effet.
--  const [inView, setInView] = useState(() => typeof IntersectionObserver === 'undefined')
+ // `date_precision` doit rester dans le select : sans lui, le formateur laisserait
+ // remonter le 31 décembre fictif des compétitions connues à l'année seule.
+ const COLS = 'id, name, date_start, date_end, date_precision, wakepark, affiliation, tour_name, cancelled, logo_path'
+ 
+ export default function Competitions() {
+   const tr = useT()
+-  const { lang } = useLanguage()
+   const [rows, setRows] = useState([])
+   const [loading, setLoading] = useState(true)
+   const [failed, setFailed] = useState(false)
+-  const anchorRef = useRef(null)
+-  const navType = useNavigationType()
+ 
+   useEffect(() => {
+     let cancelled = false
+@@ -51,44 +38,6 @@ export default function Competitions() {
+     return () => { cancelled = true }
+   }, [])
+ 
+-  // Le fil est chronologique et continu ; c'est le défilement initial qui place
+-  // le visiteur sur « maintenant ». Sans ça il atterrirait sur la plus ancienne
+-  // compétition de l'historique.
+-  //
+-  // Deux abstentions. Sur un retour arrière (POP), le navigateur restitue la
+-  // position et `ScrollToTop` s'efface volontairement pour la préserver : on
+-  // ferait exactement ce que ce composant existe pour éviter. Et si l'ancre est
+-  // déjà la première ligne, défiler ne ferait que pousser le titre hors écran.
 -  useEffect(() => {
--    const el = ref.current
--    if (!el || inView) return
--    const io = new IntersectionObserver(([e]) => {
--      if (e.isIntersecting) { setInView(true); io.disconnect() }
--    }, { rootMargin })
--    io.observe(el)
--    return () => io.disconnect()
--  }, [inView, rootMargin])
--  return [ref, inView]
--}
+-    if (loading) return
+-    const isBackNavigation = mountedOnce && navType === 'POP'
+-    mountedOnce = true
+-    if (isBackNavigation) return
+-    const el = anchorRef.current
+-    if (!el || el === el.parentElement?.firstElementChild) return
+-    el.scrollIntoView({ block: 'center', behavior: 'instant' })
+-  }, [loading, navType])
 -
--// Carte YouTube : miniature, et lecture chez YouTube dans un nouvel onglet.
--//
--// Pas de lecteur intégré. Le lecteur embarqué impose ses propres contrôles, son
--// bouton plein écran est difficilement atteignable au clavier, et il retient
--// chez nous un trafic qui revient à l'auteur·ice de la vidéo. La miniature reste
--// — c'est elle qui donne envie et qui distingue deux vidéos d'une même figure.
--function YouTubeCard({ videoId, vertical, title, url }) {
--  const [ref, inView] = useInView()
--  const [hiRes, setHiRes] = useState(true) // maxres → repli hq si 404
+-  const now = new Date()
+-  const states = rows.map(c => competitionState(c, now))
+-  // L'année du LIEU, pas celle du navigateur : autour du Nouvel An les deux
+-  // divergent pendant plusieurs heures, et toute la saison en cours basculait
+-  // alors en forme compacte pour un visiteur à l'étranger.
+-  const thisYear = todayISO(now).slice(0, 4)
+-  // Ancre : la compétition en cours, sinon la plus PROCHE à venir. Le tri étant
+-  // décroissant, celle-ci est la dernière du bloc à venir, juste avant le passé —
+-  // d'où les `lastIndexOf` plutôt que `indexOf`.
+-  // `competitionState` exclut déjà les annulées de l'état 'live', donc l'ancre ne
+-  // peut pas se poser sur un événement qui n'a pas lieu.
+-  let anchorIdx = states.indexOf('live')
+-  if (anchorIdx === -1) {
+-    for (let i = states.length - 1; i >= 0; i--) {
+-      if (states[i] === 'upcoming' && !rows[i].cancelled) { anchorIdx = i; break }
+-    }
+-  }
+-  if (anchorIdx === -1) anchorIdx = states.lastIndexOf('upcoming')
+-  if (anchorIdx === -1) anchorIdx = 0
 -
--  const thumb = `https://i.ytimg.com/vi/${videoId}/${hiRes ? 'maxresdefault' : 'hqdefault'}.jpg`
--  return (
--    <a
--      ref={ref}
--      href={externalUrl(url, { ref: true })}
--      target="_blank"
--      rel="noopener noreferrer"
--      className={`${styles.mediaWrap} ${vertical ? styles.mediaVertical : ''}`}
--    >
--      {inView && (
--        <img
--          src={thumb}
--          alt={title || ''}
--          className={`${styles.ytThumb} ${vertical ? styles.ytThumbVertical : ''}`}
--          loading="lazy"
--          onError={() => hiRes && setHiRes(false)}
--        />
--      )}
--      <span className={styles.mediaScrim}>
--        <span className={styles.instaPlay}><Icon name="player-play" /></span>
--      </span>
--    </a>
--  )
--}
--
- // Vidéo uploadée : poster (1re frame), aperçu muet en boucle au survol, et
- // lecture pleine (son + contrôles) au clic. Metadata chargée seulement en vue.
- function UploadVideo({ url }) {
-@@ -125,7 +34,7 @@ function UploadVideo({ url }) {
    return (
-     <div
-       ref={ref}
--      className={styles.mediaWrap}
-+      className={videoStyles.mediaWrap}
-       onMouseEnter={hoverPlay}
-       onMouseLeave={hoverStop}
-     >
-@@ -142,8 +51,8 @@ function UploadVideo({ url }) {
-         />
+     <div className={styles.page}>
+       <SEO
+@@ -109,121 +58,8 @@ export default function Competitions() {
+         <p className={styles.empty}>{tr.competitions.none}</p>
        )}
-       {!active && (
--        <button type="button" className={styles.mediaScrim} onClick={activate} aria-label="Lire la vidéo">
--          <span className={styles.instaPlay}><Icon name="player-play" /></span>
-+        <button type="button" className={videoStyles.mediaScrim} onClick={activate} aria-label="Lire la vidéo">
-+          <span className={videoStyles.instaPlay}><Icon name="player-play" /></span>
-         </button>
+ 
+-      {/* `role="list"` : sous `list-style: none`, Safari/VoiceOver retire la
+-          sémantique de liste et n'annonce plus le nombre d'entrées. */}
+       {!loading && !failed && (
+-      <ol className={styles.ribbon} role="list" aria-label={tr.competitions.title}>
+-        {/* Première entrée du fil, au-dessus du premier millésime : on vient
+-            signaler une compétition à VENIR, et le futur est en haut. Même
+-            gabarit qu'une compétition — pastille au centre, carte sur le côté —
+-            pour qu'elle se lise comme une ligne du calendrier et non comme un
+-            encart. `right` : la première vraie entrée est à gauche, le zigzag
+-            continue. Ni date ni méta, seul le libellé. */}
+-        <li className={[styles.item, styles.right, styles.suggestItem].join(' ')}>
+-          {/* Un SEUL lien pour la ligne entière : le carré et le libellé sont
+-              deux poignées de la même destination, et deux <a> vers la même
+-              cible s'annoncent en double au lecteur d'écran. C'est donc le lien
+-              qui porte la grille — et il ne reçoit les clics que sur ses deux
+-              cellules pleines, jamais sur la colonne vide qui court sur toute
+-              la largeur de la page. */}
+-          <Link to="/competitions/proposer" className={`${styles.row} ${styles.suggestRow}`}>
+-            <span className={`${styles.node} ${styles.nodeEmpty} ${styles.suggestNode}`}>
+-              <span className={styles.suggestMark} aria-hidden="true">?</span>
+-            </span>
+-            <span className={styles.card}>
+-              <span className={styles.name}>{tr.competitions.suggest}</span>
+-            </span>
+-          </Link>
+-        </li>
+-        {rows.map((c, i) => {
+-          const state = states[i]
+-          const isYear = c.date_precision === 'year'
+-          // L'année de rattachement est celle de la FIN : une compétition du 28
+-          // décembre au 2 janvier se déroule pour l'essentiel dans l'année qui
+-          // commence, et c'est là qu'un lecteur la cherchera.
+-          const year = String(c.date_end || c.date_start).slice(0, 4)
+-          // Ruptures : le millésime quand l'année change en descendant, et le
+-          // repère « nous sommes ici » juste avant la première compétition passée.
+-          const newYear = i === 0 || year !== String(rows[i - 1].date_end || rows[i - 1].date_start).slice(0, 4)
+-          const firstPast = state === 'past' && (i === 0 || states[i - 1] !== 'past')
+-          // Sans compétition passée (saison fraîche), le repère n'apparaissait
+-          // nulle part : on le pose alors sous la dernière ligne à venir.
+-          const lastAhead = state !== 'past' && i === rows.length - 1 && !states.includes('past')
+-
+-          // Annulée : traitée comme le passé, elle n'aura pas lieu.
+-          const tone = c.cancelled ? 'past' : state
+-          // Forme compacte pour tout ce qui n'est pas imminent : le passé, et
+-          // les autres années — avant comme après. Ne reste en pleine forme que
+-          // ce qui arrive dans la saison en cours, c'est-à-dire ce pour quoi on
+-          // ouvre la page. Le fil redevient parcourable quand l'archive grossit.
+-          const compact = state === 'past' || year !== thisYear
+-          return (
+-            <li
+-              key={c.id}
+-              ref={i === anchorIdx ? anchorRef : undefined}
+-              // Les classes absentes sont filtrées : `styles.upcoming` n'existe pas
+-              // (l'état par défaut n'a pas de style propre) et interpolait la
+-              // chaîne « undefined » dans le DOM.
+-              className={[
+-                styles.item,
+-                styles[tone],
+-                i % 2 ? styles.right : styles.left,
+-                c.cancelled && styles.cancelled,
+-                compact && styles.compact,
+-              ].filter(Boolean).join(' ')}
+-            >
+-              {firstPast && (
+-                <p className={styles.todayMark}><span>{tr.competitions.todayMark}</span></p>
+-              )}
+-              {newYear && <p className={styles.year}><span>{year}</span></p>}
+-              <span className={styles.row}>
+-              {/* `RemoteLogo` retombe sur les initiales quand le fichier a disparu du
+-                  bucket : un `<img>` brut laissait une case vide, et la ligne perdait
+-                  son seul repère visuel. */}
+-              <RemoteLogo
+-                path={c.logo_path}
+-                className={styles.node}
+-                imgClassName={styles.logo}
+-                emptyClassName={styles.nodeEmpty}
+-                fallback={<span className={styles.logoFallback} aria-hidden="true">{[...c.name].slice(0, 2).join('')}</span>}
+-              />
+-              <Link to={competitionPath(c)} className={styles.card}>
+-                <span className={styles.when}>
+-                  {dateSegments(formatCompetitionDate(c, lang), lang).map((seg, n) => (
+-                    <span key={n} className={seg.isMonth ? styles.month : undefined}>{seg.text}</span>
+-                  ))}
+-                  {isYear && <span className={styles.fuzzy}>{tr.competitions.dateTbd}</span>}
+-                </span>
+-                <span className={styles.name}>{c.name}</span>
+-                {!compact && (
+-                  <span className={styles.meta}>
+-                    {c.cancelled && <span className={styles.cancelledTag}>{tr.competitions.cancelled}</span>}
+-                    {c.wakepark && <span>{c.wakepark}</span>}
+-                    {c.tour_name && <span>{c.tour_name}</span>}
+-                    {c.affiliation === 'federal' && <span>{tr.competitions.federal}</span>}
+-                  </span>
+-                )}
+-                {compact && c.cancelled && (
+-                  <span className={styles.meta}>
+-                    <span className={styles.cancelledTag}>{tr.competitions.cancelled}</span>
+-                  </span>
+-                )}
+-                {state === 'live' && !c.cancelled && (
+-                  <span className={styles.liveTape}>
+-                    <span className={styles.liveDot} aria-hidden="true" />{tr.competitions.live}
+-                  </span>
+-                )}
+-              </Link>
+-              </span>
+-              {lastAhead && (
+-                <p className={`${styles.todayMark} ${styles.todayMarkTail}`}>
+-                  <span>{tr.competitions.todayMark}</span>
+-                </p>
+-              )}
+-            </li>
+-          )
+-        })}
+-      </ol>
++        <CompetitionRibbon rows={rows} suggest />
        )}
      </div>
-@@ -249,26 +158,29 @@ export default function FigureDetail() {
-   const renderVideoMedia = (v) => {
-     const url = getVideoUrl(v)
- 
--    // Upload direct : poster + aperçu au survol + lecture pleine au clic.
-+    // Upload direct : le seul cas qui se lit sur place — poster, aperçu au
-+    // survol, lecture pleine au clic. Ce n'est pas une vignette, d'où sa place ici.
-     if (v.source_type === 'upload' && url) {
-       return <UploadVideo url={url} />
-     }
- 
--    // Instagram
--    if (v.source_type === 'instagram' && v.source_url) {
--      return <InstagramCard v={v} label={tr.viewOnInstagram} />
--    }
--
--    // YouTube : miniature cliquable, lecture chez YouTube dans un nouvel onglet.
--    if (v.source_type === 'youtube' && v.source_url) {
--      const videoId = v.source_url.match(/(?:v=|youtu\.be\/|shorts\/)([^&?\s]+)/)?.[1]
--      const isShort = v.source_url.includes('/shorts/')
--      if (videoId) {
--        return <YouTubeCard videoId={videoId} vertical={isShort} title={v.title} url={v.source_url} />
--      }
-+    // Tout le reste part chez l'hébergeur. La plateforme est déduite de l'URL
-+    // par `VideoCard` ; `sourceType` ne sert que de repli quand elle ne se
-+    // laisse pas lire.
-+    if (v.source_url) {
-+      return (
-+        <VideoCard
-+          variant="figure"
-+          url={v.source_url}
-+          sourceType={v.source_type}
-+          title={v.title}
-+          creatorName={v.creator_name}
-+          labels={{ instagram: tr.viewOnInstagram }}
-+        />
-+      )
-     }
- 
--    // Fallback
-+    // Ni fichier ni lien : rien à montrer.
-     return <div className={styles.videoPlaceholder}><Icon name="player-play" /></div>
-   }
- 
-diff --git a/src/pages/FigureDetail.module.css b/src/pages/FigureDetail.module.css
-index df9087e..df71bee 100644
---- a/src/pages/FigureDetail.module.css
-+++ b/src/pages/FigureDetail.module.css
-@@ -393,52 +393,6 @@ a.treeNode:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
+   )
+diff --git a/src/pages/Competitions.module.css b/src/pages/Competitions.module.css
+index 893320b..3d9c9b2 100644
+--- a/src/pages/Competitions.module.css
++++ b/src/pages/Competitions.module.css
+@@ -30,308 +30,3 @@
+   color: var(--c-muted);
+   font-size: 14px;
  }
- .videoPlaceholder i { font-size: 32px; color: var(--c-muted); }
- 
--/* ── Média unifié : façade (upload + YouTube) + overlay play ── */
--.mediaWrap {
+-
+-/* ══════════════ La ligne de temps ══════════════
+-   Le futur est en haut : on lit d'abord ce qui arrive, et on descend vers ce qui
+-   a eu lieu. Une ligne court sur toute la hauteur, chaque compétition y pose sa
+-   pastille, et la carte part alternativement à gauche puis à droite.
+-
+-   Les tailles sont IDENTIQUES pour le passé et le futur : une différence
+-   d'échelle se lisait comme un défaut de rendu, pas comme une intention. Ce qui
+-   distingue les deux, c'est la position par rapport au repère du jour et le
+-   retrait de l'encre. */
+-.ribbon {
+-  --node: 64px;          /* diamètre de la pastille */
+-  --gap: 2.25rem;        /* respiration entre la ligne et les cartes */
 -  position: relative;
--  display: block;
+-  max-width: var(--page-max);
 -  width: 100%;
--  padding: 0;
--  border: none;
--  background: var(--c-surface2);
--  color: inherit;
--  font: inherit;
--  text-align: left;
--  cursor: pointer;
--  overflow: hidden;
+-  margin: .5rem auto 5rem;
+-  padding: 0 1.25rem;
+-  list-style: none;
 -}
--/* Miniature YouTube : ratio fixe, recadrée (cover) pour remplir le cadre. */
--.ytThumb {
--  width: 100%;
--  aspect-ratio: 16 / 9;
--  object-fit: cover;
--  display: block;
--  background: var(--c-surface2);
--}
--.ytThumbVertical { aspect-ratio: 9 / 16; }
--/* Formats verticaux (Shorts/reels) : largeur plafonnée + centrés pour éviter
--   le « mur » vidéo sur desktop. */
--.mediaVertical,
--.mediaVerticalEl { max-width: 320px; margin-left: auto; margin-right: auto; }
--
--/* Overlay cliquable : voile léger + bouton play centré (style commun avec la
--   carte Instagram). */
--.mediaScrim {
+-/* La ligne elle-même. */
+-.ribbon::before {
+-  content: "";
 -  position: absolute;
--  inset: 0;
--  display: flex;
--  align-items: center;
--  justify-content: center;
--  border: none;
--  cursor: pointer;
--  background: linear-gradient(to top, rgba(26, 20, 32, .45), rgba(26, 20, 32, .05) 45%, rgba(26, 20, 32, .25));
--  transition: background var(--t-fast);
+-  top: 0;
+-  bottom: 0;
+-  left: 50%;
+-  width: 1px;
+-  background: repeating-linear-gradient(
+-    to bottom, var(--c-rule) 0 4px, transparent 4px 8px
+-  );
+-  transform: translateX(-.5px);
 -}
--.mediaWrap:hover .mediaScrim,
--.mediaScrim:hover { background: linear-gradient(to top, rgba(26, 20, 32, .5), rgba(26, 20, 32, .1) 45%, rgba(26, 20, 32, .3)); }
--.mediaWrap:hover .instaPlay,
--.mediaScrim:hover .instaPlay { transform: scale(1.06); }
 -
- .videoMeta { padding: 10px 0 0; display: flex; flex-direction: column; gap: 6px; }
- .creator {
-   display: inline-flex;
-@@ -556,118 +510,6 @@ a.treeNode:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
-   .videosGrid { columns: 1; }
- }
- 
--/* ══════════════ Carte Instagram ══════════════ */
--.instaCard {
+-.item { position: relative; padding: .9rem 0; }
+-
+-/* Le rang : pastille au centre, carte d'un côté. Les repères (millésime,
+-   marqueur du jour) vivent HORS de cette grille — dans la même, l'auto-placement
+-   renvoyait la carte de gauche à la ligne suivante, puisqu'une grille n'écrit
+-   jamais en arrière : la carte réclamait la colonne 1 après une pastille déjà
+-   posée en colonne 2. */
+-.row {
+-  display: grid;
+-  grid-template-columns: 1fr var(--node) 1fr;
+-  align-items: center;
+-  column-gap: var(--gap);
 -  position: relative;
--  display: block;
--  width: 100%;
--  text-decoration: none;
--  overflow: hidden;
 -}
--.instaCard:hover .instaPlay { transform: scale(1.06); }
 -
--/* Variante avec thumbnail */
--.instaImg {
--  width: 100%;
--  height: auto;
--  max-height: 460px;
--  object-fit: cover;
--  display: block;
--}
--.instaScrim {
+-/* Alternance : la carte occupe la colonne 1 ou la colonne 3. `grid-row: 1` est
+-   indispensable des DEUX côtés — sans lui, une carte réclamant la colonne 1
+-   après une pastille déjà posée en colonne 2 tombe à la ligne suivante, et se
+-   retrouve décalée d'une hauteur de pastille sous son propre repère. */
+-.left  .card { grid-column: 1; grid-row: 1; text-align: right; align-items: flex-end; }
+-.right .card { grid-column: 3; grid-row: 1; }
+-
+-/* Le trait qui relie la carte à sa pastille. */
+-.card::after {
+-  content: "";
 -  position: absolute;
--  inset: 0;
--  display: flex;
--  flex-direction: column;
--  align-items: center;
--  justify-content: center;
--  gap: 14px;
--  background: linear-gradient(to top, rgba(26, 20, 32, .78), rgba(26, 20, 32, .3) 50%, rgba(26, 20, 32, .5));
+-  top: 50%;
+-  width: var(--gap);
+-  height: 1px;
+-  background: var(--c-rule);
 -}
+-/* Le trait relie le bord de la carte au bord de la pastille : mesuré depuis le
+-   milieu du gap, il finissait 18px trop court d'un côté et passait sous la
+-   pastille opaque de l'autre. */
+-.left  .card::after { left: calc(50% - var(--node) / 2 - var(--gap)); }
+-.right .card::after { right: calc(50% - var(--node) / 2 - var(--gap)); }
 -
--/* Variante sans thumbnail : le dégradé de marque Instagram jurerait avec le
--   papier — on retombe sur un aplat d'encre, l'icône suffit à identifier la
--   plateforme. */
--.instaFallback {
--  width: 100%;
--  aspect-ratio: 9 / 16;
--  max-height: 280px;
--  display: flex;
--  flex-direction: column;
--  align-items: center;
--  justify-content: center;
--  gap: 16px;
--  background: #2a1e30;
--}
--.instaPlay {
--  width: 56px;
--  height: 56px;
--  border-radius: var(--r-round);
--  background: none;
--  border: 2px solid #f2eedf;
--  color: #f2eedf;
+-/* ══════════════ La pastille ══════════════
+-   Le repère visuel : c'est lui qui permet de retrouver une compétition sans
+-   lire. Le logo est CONTENU, jamais recadré ni étiré — on ne connaît ni son
+-   ratio ni son fond. Le cadre pointillé n'apparaît que sur le repli textuel,
+-   pour ne pas ajouter de bruit autour d'un logo qui a déjà son propre fond. */
+-.node {
+-  grid-column: 2;
+-  grid-row: 1;
+-  width: var(--node);
+-  height: var(--node);
 -  display: flex;
 -  align-items: center;
 -  justify-content: center;
--  transition: transform var(--t-fast);
+-  overflow: hidden;
+-  background-color: var(--c-bg);
+-  z-index: 1;
 -}
--.instaPlay svg {
--  width: 24px;
--  height: 24px;
--  margin-left: 3px;
--}
--.instaInfo {
--  display: flex;
--  flex-direction: column;
--  align-items: center;
--  gap: 5px;
--  text-align: center;
--  padding: 0 12px;
--  max-width: 100%;
--}
--.instaAuthor {
+-.nodeEmpty { border: 1px dotted var(--c-rule); }
+-.logo { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+-.logoFallback {
 -  font-family: var(--font-title);
--  font-size: 22px;
--  font-weight: 400;
--  line-height: 1;
+-  font-size: 20px;
 -  letter-spacing: .02em;
 -  text-transform: uppercase;
--  color: #f2eedf;
--  overflow: hidden;
--  text-overflow: ellipsis;
--  white-space: nowrap;
--  max-width: 100%;
+-  color: var(--c-faint);
 -}
--.instaCta {
--  display: inline-flex;
--  align-items: center;
--  gap: 6px;
--  font-size: 10px;
+-
+-/* ══════════════ La carte ══════════════ */
+-.card { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+-.when {
+-  font-family: var(--font-body);
+-  font-size: 11px;
 -  font-weight: 700;
 -  letter-spacing: .12em;
 -  text-transform: uppercase;
--  color: #f2eedf;
--}
--.instaCta i { font-size: 14px; }
--
--/* Thumbnail plateforme (fallback générique) */
--.platformThumb {
--  width: 100%;
--  aspect-ratio: 9/16;
--  max-height: 280px;
--  background: var(--c-surface2);
+-  color: var(--c-muted);
 -  display: flex;
--  flex-direction: column;
--  align-items: center;
--  justify-content: center;
--  gap: 10px;
--  text-decoration: none;
--  transition: opacity var(--t-fast);
+-  align-items: baseline;
+-  flex-wrap: wrap;
 -}
--.platformThumb:hover { opacity: 0.75; }
--.platformThumb i { font-size: 44px; }
--.platformThumb span { font-size: 12px; color: var(--c-muted); }
+-.when > span { white-space: pre; }
+-/* Seul le mois prend l'accent : c'est le point d'appui du regard quand on
+-   parcourt le fil. Le quantième et l'année restent en gris — les colorer aussi
+-   ferait de la date entière un bloc de couleur, et on reperdrait le repère. */
+-.month { color: var(--c-accent); }
+-.past .month { color: var(--c-accent); opacity: .55; }
+-.left .when, .left .meta { justify-content: flex-end; }
+-.name {
+-  font-family: var(--font-title);
+-  font-weight: 400;
+-  font-size: clamp(20px, 2.6vw, 26px);
+-  line-height: 1.05;
+-  letter-spacing: .01em;
+-  text-transform: uppercase;
+-  color: var(--c-text);
+-}
+-.meta {
+-  display: flex;
+-  flex-wrap: wrap;
+-  align-items: center;
+-  gap: 0 7px;
+-  font-size: 12.5px;
+-  color: var(--c-muted);
+-}
+-.meta > span + span::before { content: "\00b7"; margin-right: 7px; color: var(--c-faint); }
+-.fuzzy {
+-  font-weight: 400;
+-  letter-spacing: .04em;
+-  text-transform: none;
+-  color: var(--c-faint);
+-  font-size: 11.5px;
+-}
+-.card:hover .name { color: var(--c-accent); }
 -
- /* ══════════════ Fil d'Ariane ══════════════ */
- .breadcrumb {
-   display: flex;
+-/* ══════════════ L'appel à contribution ══════════════
+-   Une entrée du fil comme les autres, à ceci près qu'elle n'a pas de date : le
+-   carré pointillé est celui d'une compétition sans logo, et le point
+-   d'interrogation y remplace les initiales. Le libellé garde EXACTEMENT
+-   l'échelle des autres entrées : une taille à part se lit comme un défaut de
+-   rendu, pas comme une intention. Ce qui distingue la ligne, c'est la pastille
+-   — accentuée — et l'absence de date. */
+-.suggestMark {
+-  font-family: var(--font-title);
+-  font-size: 30px;
+-  line-height: 1;
+-  color: var(--c-accent);
+-}
+-/* Le cadre reprend l'encre du point d'interrogation : les deux forment un seul
+-   objet, là où le pointillé gris du repli textuel n'est qu'un contenant. */
+-.suggestNode { border-color: var(--c-accent); }
+-
+-/* Le lien couvre la grille, mais seules la pastille et la carte le reçoivent —
+-   sans quoi la colonne vide en ferait une bande cliquable d'un bord à l'autre. */
+-.suggestRow { pointer-events: none; }
+-.suggestRow > * { pointer-events: auto; }
+-/* Survoler le carré éclaire le libellé, et inversement : c'est une seule cible. */
+-.suggestRow:hover .name { color: var(--c-accent); }
+-
+-/* Le passé (et l'annulé, qui n'aura pas lieu) : même échelle, encre retirée. */
+-.past .name { color: var(--c-muted); }
+-.past .node { opacity: .62; }
+-.past .when, .past .meta { color: var(--c-faint); }
+-
+-/* ══════════════ Repères sur la ligne ══════════════
+-   Millésime et marqueur du jour occupent toute la largeur et s'assoient SUR la
+-   ligne, qu'ils masquent localement grâce au fond papier. */
+-.year { margin: 2.4rem 0 1.35rem; text-align: center; }
+-.todayMark { margin: 0 0 1rem; text-align: center; }
+-.item:first-child .year { margin-top: .25rem; }
+-.year span {
+-  display: inline-block;
+-  background-color: var(--c-bg);
+-  padding: 0 14px;
+-  font-family: var(--font-title);
+-  font-size: 15px;
+-  letter-spacing: .2em;
+-  color: var(--c-faint);
+-}
+-.todayMark span {
+-  display: inline-block;
+-  /* Encre et non l'accent : blanc sur #c43d8c tombe à ~3,9:1, sous le seuil
+-     AA pour du 10px gras. Le repère reste le seul élément plein du fil. */
+-  background-color: var(--c-text);
+-  color: var(--c-bg);
+-  padding: 3px 12px 2px;
+-  font-size: 10px;
+-  font-weight: 700;
+-  letter-spacing: .18em;
+-  text-transform: uppercase;
+-}
+-
+-/* ══════════════ En live ══════════════
+-   Étiquette collée, reprise du vocabulaire de la couverture. Encre et blanc en
+-   dur : ces valeurs ne suivent pas le thème, comme sur la home. */
+-.liveTape {
+-  align-self: flex-start;
+-  margin-top: 6px;
+-  display: inline-flex;
+-  align-items: center;
+-  gap: 7px;
+-  background: #fff;
+-  color: #2a1e30;
+-  padding: 4px 10px 3px;
+-  font-size: 10.5px;
+-  font-weight: 700;
+-  letter-spacing: .12em;
+-  text-transform: uppercase;
+-  transform: rotate(-1.8deg);
+-  clip-path: var(--tape-clip-alt);
+-  filter: var(--tape-shadow);
+-}
+-.left .liveTape { align-self: flex-end; }
+-.liveDot {
+-  width: 7px;
+-  height: 7px;
+-  border-radius: 50%;
+-  background: #d32f4f;
+-  flex-shrink: 0;
+-  animation: livePulse 1.8s ease-in-out infinite;
+-}
+-@keyframes livePulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
+-@media (prefers-reduced-motion: reduce) { .liveDot { animation: none } }
+-
+-.live .node { box-shadow: 0 0 0 2px var(--c-accent); }
+-
+-/* Annulée : barrée, jamais masquée — l'information vaut mieux que le silence. */
+-.cancelled .name { text-decoration: line-through; }
+-.cancelledTag {
+-  color: var(--c-danger);
+-  font-weight: 700;
+-  letter-spacing: .1em;
+-  text-transform: uppercase;
+-  font-size: 11px;
+-}
+-
+-/* ══════════════ Mobile ══════════════
+-   L'alternance ne tient pas sous ~800px : deux colonnes laisseraient ~150px par
+-   carte, où un nom de compétition descend sur huit lignes. La ligne passe donc à
+-   gauche et toutes les cartes se rangent à droite — le zigzag est une mise en
+-   forme desktop, pas la structure. */
+-@media (max-width: 800px) {
+-  .ribbon { --node: 48px; --gap: 1rem; padding-left: 1rem; }
+-  .ribbon::before { left: calc(1rem + var(--node) / 2); }
+-  .row { grid-template-columns: var(--node) 1fr; column-gap: var(--gap); }
+-  .node { grid-column: 1; }
+-  .left .card, .right .card { grid-column: 2; grid-row: 1; text-align: left; align-items: flex-start; }
+-  .left .when, .left .meta { justify-content: flex-start; }
+-  .left .liveTape { align-self: flex-start; }
+-  .card::after { display: none; }
+-  /* Alignés à gauche, sans décalage : `translateX(-50%)` s'appliquait au bloc
+-     pleine largeur et non à l'étiquette, ce qui projetait le repère à 220px
+-     hors de l'écran. */
+-  .year, .todayMark { text-align: left; margin-left: 0; }
+-  .name { font-size: clamp(18px, 5vw, 22px); }
+-}
+-
+-
+-/* ══════════════ Forme compacte ══════════════
+-   Le passé et les autres années passent en ligne dense : le logo descend à la
+-   hauteur du texte et la pastille cesse de creuser la colonne. Ce qui reste en
+-   pleine forme, ce sont les compétitions à venir de la saison en cours — celles
+-   pour lesquelles on ouvre la page. Sans ça, dix ans d'archives donneraient dix
+-   ans de vignettes à faire défiler. */
+-.compact { padding: .18rem 0; }
+-.compact .row { align-items: center; }
+-.compact .node { height: 26px; border: 0; }
+-.compact .card { gap: 0; }
+-.compact .name { font-size: 15px; line-height: 1.25; }
+-.compact .when { font-size: 10px; letter-spacing: .1em; }
+-.compact .meta { font-size: 10.5px; }
+-
+-/* La colonne se resserre : les cartes compactes se rapprochent de la ligne. */
+-.compact.left  .card { padding-right: .5rem; }
+-.compact.right .card { padding-left: .5rem; }
+-
+-@media (max-width: 800px) {
+-  .compact .logo, .compact .logoFallback { max-height: 22px; }
+-  .compact.left .card, .compact.right .card { padding: 0; }
+-}
+-
+-
+-/* Variante du repère quand rien n'est encore passé : il ferme le fil au lieu de
+-   le couper en deux. */
+-.todayMarkTail { margin: 1rem 0 0; }
+-
+-/* En forme compacte, `--node` est redéfini sur le rang alors que la ligne est
+-   tracée d'après la valeur portée par le ruban : sur mobile, où la ligne est
+-   calée à gauche, les pastilles compactes se retrouvaient à 13px du filet.
+-   On garde donc la même gouttière et on ne réduit que l'image. */
+-.compact .node { width: var(--node); }
+-.compact .logo, .compact .logoFallback { max-height: 26px; }
+-.compact .logoFallback { font-size: 13px; }
+-
+-
 --- /dev/null
-+++ b/src/hooks/useInView.js
-+import { useState, useEffect, useRef } from 'react'
++++ b/src/components/CompetitionRibbon.jsx
++import { useEffect, useRef } from 'react'
++import { Link, useNavigationType } from 'react-router-dom'
++import { useT } from '../i18n/useT'
++import { useLanguage } from '../contexts/language-context'
++import { competitionState, competitionPath, formatCompetitionDate, dateSegments, todayISO } from '../lib/competitionDates'
++import RemoteLogo from './RemoteLogo'
++import styles from './CompetitionRibbon.module.css'
 +
-+// Monte le contenu lourd (metadata vidéo / miniature) seulement quand l'élément
-+// approche du viewport — perf sur les galeries longues.
-+//
-+// Extrait de `FigureDetail.jsx` : les cartes vidéo en ont besoin des deux côtés
-+// du site, et un hook exporté depuis un fichier de page ne peut pas être importé
-+// sans traîner la page entière avec lui.
-+export function useInView(rootMargin = '300px') {
-+  const ref = useRef(null)
-+  // Pas d'IntersectionObserver (vieux navigateur) → on monte tout de suite, décidé
-+  // à l'initialisation plutôt que par un setState dans l'effet.
-+  const [inView, setInView] = useState(() => typeof IntersectionObserver === 'undefined')
++// Vrai une fois le ruban monté au moins une fois dans cette session JS. Sert à
++// distinguer les deux « POP » que React Router ne sépare pas : le tout premier
++// rendu d'une URL ouverte directement (où il faut ancrer) et un retour arrière
++// vers une page déjà visitée (où le navigateur restitue une position qu'on ne
++// doit pas écraser).
++let mountedOnce = false
++
++/**
++ * Le fil des compétitions : une ligne de temps verticale, le futur en haut.
++ *
++ * Les lignes arrivent DÉJÀ triées et filtrées — le composant ne requête rien.
++ * C'est ce qui lui permet de servir aussi bien l'agenda complet qu'une page de
++ * circuit restreinte à une année : la même apparence, deux jeux de données.
++ *
++ * `suggest` : la ligne d'appel à contribution, posée en tête. Elle n'existe que
++ * sur l'agenda complet — proposer une compétition depuis la page d'un circuit
++ * laisserait croire qu'on la rattache à ce circuit.
++ *
++ * `anchorToToday` : au chargement, faire défiler jusqu'à « aujourd'hui ». Utile
++ * sur un fil long, contre-productif sur une liste courte, où défiler ne ferait
++ * que pousser le titre de la page hors de l'écran.
++ */
++export default function CompetitionRibbon({ rows, suggest = false, anchorToToday = true }) {
++  const tr = useT()
++  const { lang } = useLanguage()
++  const anchorRef = useRef(null)
++  const navType = useNavigationType()
++
++  const now = new Date()
++  const states = rows.map(c => competitionState(c, now))
++  // L'année du LIEU, pas celle du navigateur : autour du Nouvel An les deux
++  // divergent pendant plusieurs heures, et toute la saison en cours basculait
++  // alors en forme compacte pour un visiteur à l'étranger.
++  const thisYear = todayISO(now).slice(0, 4)
++  // Ancre : la compétition en cours, sinon la plus PROCHE à venir. Le tri étant
++  // décroissant, celle-ci est la dernière du bloc à venir, juste avant le passé —
++  // d'où les `lastIndexOf` plutôt que `indexOf`.
++  // `competitionState` exclut déjà les annulées de l'état 'live', donc l'ancre ne
++  // peut pas se poser sur un événement qui n'a pas lieu.
++  let anchorIdx = states.indexOf('live')
++  if (anchorIdx === -1) {
++    for (let i = states.length - 1; i >= 0; i--) {
++      if (states[i] === 'upcoming' && !rows[i].cancelled) { anchorIdx = i; break }
++    }
++  }
++  if (anchorIdx === -1) anchorIdx = states.lastIndexOf('upcoming')
++  if (anchorIdx === -1) anchorIdx = 0
++
++  // Le fil est chronologique et continu ; c'est le défilement initial qui place
++  // le visiteur sur « maintenant ». Sans ça il atterrirait sur la plus ancienne
++  // compétition de l'historique.
++  //
++  // Deux abstentions. Sur un retour arrière (POP), le navigateur restitue la
++  // position et `ScrollToTop` s'efface volontairement pour la préserver : on
++  // ferait exactement ce que ce composant existe pour éviter. Et si l'ancre est
++  // déjà la première ligne, défiler ne ferait que pousser le titre hors écran.
 +  useEffect(() => {
-+    const el = ref.current
-+    if (!el || inView) return
-+    const io = new IntersectionObserver(([e]) => {
-+      if (e.isIntersecting) { setInView(true); io.disconnect() }
-+    }, { rootMargin })
-+    io.observe(el)
-+    return () => io.disconnect()
-+  }, [inView, rootMargin])
-+  return [ref, inView]
++    if (!anchorToToday) return
++    const isBackNavigation = mountedOnce && navType === 'POP'
++    mountedOnce = true
++    if (isBackNavigation) return
++    const el = anchorRef.current
++    if (!el || el === el.parentElement?.firstElementChild) return
++    el.scrollIntoView({ block: 'center', behavior: 'instant' })
++  }, [anchorToToday, navType])
++
++  return (
++    /* `role="list"` : sous `list-style: none`, Safari/VoiceOver retire la
++       sémantique de liste et n'annonce plus le nombre d'entrées. */
++    <ol className={styles.ribbon} role="list" aria-label={tr.competitions.title}>
++      {suggest && (
++        /* Première entrée du fil, au-dessus du premier millésime : on vient
++           signaler une compétition à VENIR, et le futur est en haut. Même
++           gabarit qu'une compétition — pastille au centre, carte sur le côté —
++           pour qu'elle se lise comme une ligne du calendrier et non comme un
++           encart. `right` : la première vraie entrée est à gauche, le zigzag
++           continue. Ni date ni méta, seul le libellé. */
++        <li className={[styles.item, styles.right, styles.suggestItem].join(' ')}>
++          {/* Un SEUL lien pour la ligne entière : le carré et le libellé sont
++              deux poignées de la même destination, et deux <a> vers la même
++              cible s'annoncent en double au lecteur d'écran. C'est donc le lien
++              qui porte la grille — et il ne reçoit les clics que sur ses deux
++              cellules pleines, jamais sur la colonne vide qui court sur toute
++              la largeur de la page. */}
++          <Link to="/competitions/proposer" className={`${styles.row} ${styles.suggestRow}`}>
++            <span className={`${styles.node} ${styles.nodeEmpty} ${styles.suggestNode}`}>
++              <span className={styles.suggestMark} aria-hidden="true">?</span>
++            </span>
++            <span className={styles.card}>
++              <span className={styles.name}>{tr.competitions.suggest}</span>
++            </span>
++          </Link>
++        </li>
++      )}
++      {rows.map((c, i) => {
++        const state = states[i]
++        const isYear = c.date_precision === 'year'
++        // L'année de rattachement est celle de la FIN : une compétition du 28
++        // décembre au 2 janvier se déroule pour l'essentiel dans l'année qui
++        // commence, et c'est là qu'un lecteur la cherchera.
++        const year = String(c.date_end || c.date_start).slice(0, 4)
++        // Ruptures : le millésime quand l'année change en descendant, et le
++        // repère « nous sommes ici » juste avant la première compétition passée.
++        const newYear = i === 0 || year !== String(rows[i - 1].date_end || rows[i - 1].date_start).slice(0, 4)
++        const firstPast = state === 'past' && (i === 0 || states[i - 1] !== 'past')
++        // Sans compétition passée (saison fraîche), le repère n'apparaissait
++        // nulle part : on le pose alors sous la dernière ligne à venir.
++        const lastAhead = state !== 'past' && i === rows.length - 1 && !states.includes('past')
++
++        // Annulée : traitée comme le passé, elle n'aura pas lieu.
++        const tone = c.cancelled ? 'past' : state
++        // Forme compacte pour tout ce qui n'est pas imminent : le passé, et
++        // les autres années — avant comme après. Ne reste en pleine forme que
++        // ce qui arrive dans la saison en cours, c'est-à-dire ce pour quoi on
++        // ouvre la page. Le fil redevient parcourable quand l'archive grossit.
++        const compact = state === 'past' || year !== thisYear
++        return (
++          <li
++            key={c.id}
++            ref={i === anchorIdx ? anchorRef : undefined}
++            // Les classes absentes sont filtrées : `styles.upcoming` n'existe pas
++            // (l'état par défaut n'a pas de style propre) et interpolait la
++            // chaîne « undefined » dans le DOM.
++            className={[
++              styles.item,
++              styles[tone],
++              i % 2 ? styles.right : styles.left,
++              c.cancelled && styles.cancelled,
++              compact && styles.compact,
++            ].filter(Boolean).join(' ')}
++          >
++            {firstPast && (
++              <p className={styles.todayMark}><span>{tr.competitions.todayMark}</span></p>
++            )}
++            {newYear && <p className={styles.year}><span>{year}</span></p>}
++            <span className={styles.row}>
++            {/* `RemoteLogo` retombe sur les initiales quand le fichier a disparu du
++                bucket : un `<img>` brut laissait une case vide, et la ligne perdait
++                son seul repère visuel. */}
++            <RemoteLogo
++              path={c.logo_path}
++              className={styles.node}
++              imgClassName={styles.logo}
++              emptyClassName={styles.nodeEmpty}
++              fallback={<span className={styles.logoFallback} aria-hidden="true">{[...c.name].slice(0, 2).join('')}</span>}
++            />
++            <Link to={competitionPath(c)} className={styles.card}>
++              <span className={styles.when}>
++                {dateSegments(formatCompetitionDate(c, lang), lang).map((seg, n) => (
++                  <span key={n} className={seg.isMonth ? styles.month : undefined}>{seg.text}</span>
++                ))}
++                {isYear && <span className={styles.fuzzy}>{tr.competitions.dateTbd}</span>}
++              </span>
++              <span className={styles.name}>{c.name}</span>
++              {!compact && (
++                <span className={styles.meta}>
++                  {c.cancelled && <span className={styles.cancelledTag}>{tr.competitions.cancelled}</span>}
++                  {c.wakepark && <span>{c.wakepark}</span>}
++                  {c.tour_name && <span>{c.tour_name}</span>}
++                  {c.affiliation === 'federal' && <span>{tr.competitions.federal}</span>}
++                </span>
++              )}
++              {compact && c.cancelled && (
++                <span className={styles.meta}>
++                  <span className={styles.cancelledTag}>{tr.competitions.cancelled}</span>
++                </span>
++              )}
++              {state === 'live' && !c.cancelled && (
++                <span className={styles.liveTape}>
++                  <span className={styles.liveDot} aria-hidden="true" />{tr.competitions.live}
++                </span>
++              )}
++            </Link>
++            </span>
++            {lastAhead && (
++              <p className={`${styles.todayMark} ${styles.todayMarkTail}`}>
++                <span>{tr.competitions.todayMark}</span>
++              </p>
++            )}
++          </li>
++        )
++      })}
++    </ol>
++  )
++}
+--- /dev/null
++++ b/src/components/CompetitionRibbon.module.css
++/* Le fil des compétitions — voir `CompetitionRibbon.jsx`.
++   Déplacé depuis `Competitions.module.css` sans modification : l'apparence
++   appartient au composant, qui sert désormais l'agenda complet ET les pages de
++   circuit. Les règles ci-dessous sont celles du commit 63898a4, à l'octet près. */
++
++/* ══════════════ La ligne de temps ══════════════
++   Le futur est en haut : on lit d'abord ce qui arrive, et on descend vers ce qui
++   a eu lieu. Une ligne court sur toute la hauteur, chaque compétition y pose sa
++   pastille, et la carte part alternativement à gauche puis à droite.
++
++   Les tailles sont IDENTIQUES pour le passé et le futur : une différence
++   d'échelle se lisait comme un défaut de rendu, pas comme une intention. Ce qui
++   distingue les deux, c'est la position par rapport au repère du jour et le
++   retrait de l'encre. */
++.ribbon {
++  --node: 64px;          /* diamètre de la pastille */
++  --gap: 2.25rem;        /* respiration entre la ligne et les cartes */
++  position: relative;
++  max-width: var(--page-max);
++  width: 100%;
++  margin: .5rem auto 5rem;
++  padding: 0 1.25rem;
++  list-style: none;
++}
++/* La ligne elle-même. */
++.ribbon::before {
++  content: "";
++  position: absolute;
++  top: 0;
++  bottom: 0;
++  left: 50%;
++  width: 1px;
++  background: repeating-linear-gradient(
++    to bottom, var(--c-rule) 0 4px, transparent 4px 8px
++  );
++  transform: translateX(-.5px);
++}
++
++.item { position: relative; padding: .9rem 0; }
++
++/* Le rang : pastille au centre, carte d'un côté. Les repères (millésime,
++   marqueur du jour) vivent HORS de cette grille — dans la même, l'auto-placement
++   renvoyait la carte de gauche à la ligne suivante, puisqu'une grille n'écrit
++   jamais en arrière : la carte réclamait la colonne 1 après une pastille déjà
++   posée en colonne 2. */
++.row {
++  display: grid;
++  grid-template-columns: 1fr var(--node) 1fr;
++  align-items: center;
++  column-gap: var(--gap);
++  position: relative;
++}
++
++/* Alternance : la carte occupe la colonne 1 ou la colonne 3. `grid-row: 1` est
++   indispensable des DEUX côtés — sans lui, une carte réclamant la colonne 1
++   après une pastille déjà posée en colonne 2 tombe à la ligne suivante, et se
++   retrouve décalée d'une hauteur de pastille sous son propre repère. */
++.left  .card { grid-column: 1; grid-row: 1; text-align: right; align-items: flex-end; }
++.right .card { grid-column: 3; grid-row: 1; }
++
++/* Le trait qui relie la carte à sa pastille. */
++.card::after {
++  content: "";
++  position: absolute;
++  top: 50%;
++  width: var(--gap);
++  height: 1px;
++  background: var(--c-rule);
++}
++/* Le trait relie le bord de la carte au bord de la pastille : mesuré depuis le
++   milieu du gap, il finissait 18px trop court d'un côté et passait sous la
++   pastille opaque de l'autre. */
++.left  .card::after { left: calc(50% - var(--node) / 2 - var(--gap)); }
++.right .card::after { right: calc(50% - var(--node) / 2 - var(--gap)); }
++
++/* ══════════════ La pastille ══════════════
++   Le repère visuel : c'est lui qui permet de retrouver une compétition sans
++   lire. Le logo est CONTENU, jamais recadré ni étiré — on ne connaît ni son
++   ratio ni son fond. Le cadre pointillé n'apparaît que sur le repli textuel,
++   pour ne pas ajouter de bruit autour d'un logo qui a déjà son propre fond. */
++.node {
++  grid-column: 2;
++  grid-row: 1;
++  width: var(--node);
++  height: var(--node);
++  display: flex;
++  align-items: center;
++  justify-content: center;
++  overflow: hidden;
++  background-color: var(--c-bg);
++  z-index: 1;
++}
++.nodeEmpty { border: 1px dotted var(--c-rule); }
++.logo { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
++.logoFallback {
++  font-family: var(--font-title);
++  font-size: 20px;
++  letter-spacing: .02em;
++  text-transform: uppercase;
++  color: var(--c-faint);
++}
++
++/* ══════════════ La carte ══════════════ */
++.card { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
++.when {
++  font-family: var(--font-body);
++  font-size: 11px;
++  font-weight: 700;
++  letter-spacing: .12em;
++  text-transform: uppercase;
++  color: var(--c-muted);
++  display: flex;
++  align-items: baseline;
++  flex-wrap: wrap;
++}
++.when > span { white-space: pre; }
++/* Seul le mois prend l'accent : c'est le point d'appui du regard quand on
++   parcourt le fil. Le quantième et l'année restent en gris — les colorer aussi
++   ferait de la date entière un bloc de couleur, et on reperdrait le repère. */
++.month { color: var(--c-accent); }
++.past .month { color: var(--c-accent); opacity: .55; }
++.left .when, .left .meta { justify-content: flex-end; }
++.name {
++  font-family: var(--font-title);
++  font-weight: 400;
++  font-size: clamp(20px, 2.6vw, 26px);
++  line-height: 1.05;
++  letter-spacing: .01em;
++  text-transform: uppercase;
++  color: var(--c-text);
++}
++.meta {
++  display: flex;
++  flex-wrap: wrap;
++  align-items: center;
++  gap: 0 7px;
++  font-size: 12.5px;
++  color: var(--c-muted);
++}
++.meta > span + span::before { content: "\00b7"; margin-right: 7px; color: var(--c-faint); }
++.fuzzy {
++  font-weight: 400;
++  letter-spacing: .04em;
++  text-transform: none;
++  color: var(--c-faint);
++  font-size: 11.5px;
++}
++.card:hover .name { color: var(--c-accent); }
++
++/* ══════════════ L'appel à contribution ══════════════
++   Une entrée du fil comme les autres, à ceci près qu'elle n'a pas de date : le
++   carré pointillé est celui d'une compétition sans logo, et le point
++   d'interrogation y remplace les initiales. Le libellé garde EXACTEMENT
++   l'échelle des autres entrées : une taille à part se lit comme un défaut de
++   rendu, pas comme une intention. Ce qui distingue la ligne, c'est la pastille
++   — accentuée — et l'absence de date. */
++.suggestMark {
++  font-family: var(--font-title);
++  font-size: 30px;
++  line-height: 1;
++  color: var(--c-accent);
++}
++/* Le cadre reprend l'encre du point d'interrogation : les deux forment un seul
++   objet, là où le pointillé gris du repli textuel n'est qu'un contenant. */
++.suggestNode { border-color: var(--c-accent); }
++
++/* Le lien couvre la grille, mais seules la pastille et la carte le reçoivent —
++   sans quoi la colonne vide en ferait une bande cliquable d'un bord à l'autre. */
++.suggestRow { pointer-events: none; }
++.suggestRow > * { pointer-events: auto; }
++/* Survoler le carré éclaire le libellé, et inversement : c'est une seule cible. */
++.suggestRow:hover .name { color: var(--c-accent); }
++
++/* Le passé (et l'annulé, qui n'aura pas lieu) : même échelle, encre retirée. */
++.past .name { color: var(--c-muted); }
++.past .node { opacity: .62; }
++.past .when, .past .meta { color: var(--c-faint); }
++
++/* ══════════════ Repères sur la ligne ══════════════
++   Millésime et marqueur du jour occupent toute la largeur et s'assoient SUR la
++   ligne, qu'ils masquent localement grâce au fond papier. */
++.year { margin: 2.4rem 0 1.35rem; text-align: center; }
++.todayMark { margin: 0 0 1rem; text-align: center; }
++.item:first-child .year { margin-top: .25rem; }
++.year span {
++  display: inline-block;
++  background-color: var(--c-bg);
++  padding: 0 14px;
++  font-family: var(--font-title);
++  font-size: 15px;
++  letter-spacing: .2em;
++  color: var(--c-faint);
++}
++.todayMark span {
++  display: inline-block;
++  /* Encre et non l'accent : blanc sur #c43d8c tombe à ~3,9:1, sous le seuil
++     AA pour du 10px gras. Le repère reste le seul élément plein du fil. */
++  background-color: var(--c-text);
++  color: var(--c-bg);
++  padding: 3px 12px 2px;
++  font-size: 10px;
++  font-weight: 700;
++  letter-spacing: .18em;
++  text-transform: uppercase;
++}
++
++/* ══════════════ En live ══════════════
++   Étiquette collée, reprise du vocabulaire de la couverture. Encre et blanc en
++   dur : ces valeurs ne suivent pas le thème, comme sur la home. */
++.liveTape {
++  align-self: flex-start;
++  margin-top: 6px;
++  display: inline-flex;
++  align-items: center;
++  gap: 7px;
++  background: #fff;
++  color: #2a1e30;
++  padding: 4px 10px 3px;
++  font-size: 10.5px;
++  font-weight: 700;
++  letter-spacing: .12em;
++  text-transform: uppercase;
++  transform: rotate(-1.8deg);
++  clip-path: var(--tape-clip-alt);
++  filter: var(--tape-shadow);
++}
++.left .liveTape { align-self: flex-end; }
++.liveDot {
++  width: 7px;
++  height: 7px;
++  border-radius: 50%;
++  background: #d32f4f;
++  flex-shrink: 0;
++  animation: livePulse 1.8s ease-in-out infinite;
++}
++@keyframes livePulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
++@media (prefers-reduced-motion: reduce) { .liveDot { animation: none } }
++
++.live .node { box-shadow: 0 0 0 2px var(--c-accent); }
++
++/* Annulée : barrée, jamais masquée — l'information vaut mieux que le silence. */
++.cancelled .name { text-decoration: line-through; }
++.cancelledTag {
++  color: var(--c-danger);
++  font-weight: 700;
++  letter-spacing: .1em;
++  text-transform: uppercase;
++  font-size: 11px;
++}
++
++/* ══════════════ Mobile ══════════════
++   L'alternance ne tient pas sous ~800px : deux colonnes laisseraient ~150px par
++   carte, où un nom de compétition descend sur huit lignes. La ligne passe donc à
++   gauche et toutes les cartes se rangent à droite — le zigzag est une mise en
++   forme desktop, pas la structure. */
++@media (max-width: 800px) {
++  .ribbon { --node: 48px; --gap: 1rem; padding-left: 1rem; }
++  .ribbon::before { left: calc(1rem + var(--node) / 2); }
++  .row { grid-template-columns: var(--node) 1fr; column-gap: var(--gap); }
++  .node { grid-column: 1; }
++  .left .card, .right .card { grid-column: 2; grid-row: 1; text-align: left; align-items: flex-start; }
++  .left .when, .left .meta { justify-content: flex-start; }
++  .left .liveTape { align-self: flex-start; }
++  .card::after { display: none; }
++  /* Alignés à gauche, sans décalage : `translateX(-50%)` s'appliquait au bloc
++     pleine largeur et non à l'étiquette, ce qui projetait le repère à 220px
++     hors de l'écran. */
++  .year, .todayMark { text-align: left; margin-left: 0; }
++  .name { font-size: clamp(18px, 5vw, 22px); }
++}
++
++
++/* ══════════════ Forme compacte ══════════════
++   Le passé et les autres années passent en ligne dense : le logo descend à la
++   hauteur du texte et la pastille cesse de creuser la colonne. Ce qui reste en
++   pleine forme, ce sont les compétitions à venir de la saison en cours — celles
++   pour lesquelles on ouvre la page. Sans ça, dix ans d'archives donneraient dix
++   ans de vignettes à faire défiler. */
++.compact { padding: .18rem 0; }
++.compact .row { align-items: center; }
++.compact .node { height: 26px; border: 0; }
++.compact .card { gap: 0; }
++.compact .name { font-size: 15px; line-height: 1.25; }
++.compact .when { font-size: 10px; letter-spacing: .1em; }
++.compact .meta { font-size: 10.5px; }
++
++/* La colonne se resserre : les cartes compactes se rapprochent de la ligne. */
++.compact.left  .card { padding-right: .5rem; }
++.compact.right .card { padding-left: .5rem; }
++
++@media (max-width: 800px) {
++  .compact .logo, .compact .logoFallback { max-height: 22px; }
++  .compact.left .card, .compact.right .card { padding: 0; }
++}
++
++
++/* Variante du repère quand rien n'est encore passé : il ferme le fil au lieu de
++   le couper en deux. */
++.todayMarkTail { margin: 1rem 0 0; }
++
++/* En forme compacte, `--node` est redéfini sur le rang alors que la ligne est
++   tracée d'après la valeur portée par le ruban : sur mobile, où la ligne est
++   calée à gauche, les pastilles compactes se retrouvaient à 13px du filet.
++   On garde donc la même gouttière et on ne réduit que l'image. */
++.compact .node { width: var(--node); }
++.compact .logo, .compact .logoFallback { max-height: 26px; }
++.compact .logoFallback { font-size: 13px; }
++
++
+--- /dev/null
++++ b/src/pages/TourCompetitions.jsx
++import { useEffect, useState } from 'react'
++import { Link, useParams } from 'react-router-dom'
++import { supabase } from '../lib/supabase'
++import { useT } from '../i18n/useT'
++import { externalUrl } from '../lib/url'
++import { slugify, todayISO } from '../lib/competitionDates'
++import { tourLogoPath } from '../lib/competitionAssets'
++import SEO from '../components/SEO'
++import Icon from '../components/Icon'
++import RemoteLogo from '../components/RemoteLogo'
++import CompetitionRibbon from '../components/CompetitionRibbon'
++import NotFound from './NotFound'
++import styles from './TourCompetitions.module.css'
++
++// Mêmes colonnes que l'agenda : c'est le même ruban qui les rend. `tour_url`
++// s'ajoute, pour le lien sortant de l'en-tête.
++const COLS = 'id, name, date_start, date_end, date_precision, wakepark, affiliation, tour_name, tour_url, cancelled, logo_path'
++
++export default function TourCompetitions() {
++  const { slug } = useParams()
++  const tr = useT()
++  const [rows, setRows] = useState([])
++  const [loading, setLoading] = useState(true)
++  const [failed, setFailed] = useState(false)
++
++  // L'année du LIEU, pas celle du navigateur — même raison que dans le ruban.
++  const year = todayISO().slice(0, 4)
++
++  // La requête ne dépend NI du slug NI de l'année : elle rapporte toutes les
++  // compétitions publiées rattachées à un circuit, et le tri se fait au rendu.
++  // Passer d'un circuit à l'autre ne relance donc rien.
++  //
++  // On charge le circuit sur TOUTES ses années, alors que la page n'en montre
++  // qu'une. C'est ce qui permet de distinguer les deux silences : un circuit
++  // qui n'existe pas (404) et un circuit réel sans étape cette année (on le
++  // dit). Restreindre la requête à l'année en cours rendait les deux cas
++  // identiques, et un visiteur venu de l'édition précédente tombait sur un 404.
++  useEffect(() => {
++    let cancelled = false
++    ;(async () => {
++      const { data, error } = await supabase
++        .from('competitions')
++        .select(COLS)
++        .eq('published', true)
++        .not('tour_name', 'is', null)
++        .order('date_start', { ascending: false })
++        .order('id', { ascending: false })
++        // Même plafond que l'agenda : sans lui, la troncature de PostgREST
++        // couperait par la fin, donc par les compétitions à venir.
++        .limit(2000)
++      if (cancelled) return
++      if (error) { setFailed(true); setLoading(false); return }
++      setRows(data || [])
++      setLoading(false)
++    })()
++    return () => { cancelled = true }
++  }, [])
++
++  if (loading) return <span className="spinner" />
++  // Sortie avant l'en-tête : sans elle, un chargement raté rendait le nom du
++  // circuit vide au-dessus du message d'erreur.
++  if (failed) return <div className={styles.page}><p className={styles.empty}>{tr.competitions.loadError}</p></div>
++
++  // Le slug ne se résout pas en SQL : `slugify` est du JS, et aucune colonne ne
++  // porte de slug. La comparaison se fait donc ici, sur des lignes déjà chargées.
++  const tourRows = rows.filter(c => slugify(c.tour_name) === slug)
++  // L'année de rattachement est celle de la FIN, comme dans le ruban.
++  const thisYear = tourRows.filter(c => String(c.date_end || c.date_start).slice(0, 4) === year)
++
++  // Aucune compétition publiée ne porte ce circuit : indiscernable d'une URL
++  // inventée, et c'est voulu — sinon l'anon apprendrait qu'un brouillon existe.
++  if (tourRows.length === 0) return <NotFound />
++
++  const tourName = tourRows[0]?.tour_name || ''
++  const tourUrl = tourRows.find(c => c.tour_url)?.tour_url || null
++
++  return (
++    <div className={styles.page}>
++      <SEO
++        titleFr={`${tourName} ${year}`}
++        titleEn={`${tourName} ${year}`}
++        descriptionFr={`Les étapes du circuit ${tourName} en ${year} : dates, lieux, live et vidéos.`}
++        descriptionEn={`The ${tourName} tour in ${year}: dates, venues, live streams and videos.`}
++        path={`/competitions/circuit/${slug}`}
++      />
++
++      <header className={styles.masthead}>
++        <RemoteLogo path={tourLogoPath(tourName)} className={styles.logo} alt="" height={54} />
++        <div className={styles.headings}>
++          <p className={styles.kicker}>{tr.competitions.tourKicker}</p>
++          <h1 className={styles.title}>{tourName}</h1>
++          <p className={styles.year}>{year}</p>
++        </div>
++      </header>
++
++      <div className={styles.links}>
++        {tourUrl && (
++          <a className={styles.out} href={externalUrl(tourUrl, { ref: true })} target="_blank" rel="noopener noreferrer">
++            {tr.competitions.tourSite} <Icon name="external-link" size={13} />
++          </a>
++        )}
++        <Link to="/competitions" className={styles.out}>
++          <Icon name="arrow-left" size={13} /> {tr.competitions.allCompetitions}
++        </Link>
++      </div>
++
++      {/* Le circuit existe, mais pas cette année. On le DIT plutôt que de rendre
++          une page muette : le vide annoncé donne rendez-vous, le vide silencieux
++          fait partir. */}
++      {thisYear.length === 0 && (
++        <p className={styles.empty}>{tr.competitions.tourNoneThisYear.replace('{year}', year)}</p>
++      )}
++
++      {/* Pas d'ancrage : la liste tient sur un écran, et défiler ne ferait que
++          pousser le nom du circuit hors de vue. Pas d'appel à contribution non
++          plus — proposer une compétition depuis ici laisserait croire qu'on la
++          rattache à ce circuit. */}
++      {thisYear.length > 0 && (
++        <CompetitionRibbon rows={thisYear} anchorToToday={false} />
++      )}
++    </div>
++  )
++}
+--- /dev/null
++++ b/src/pages/TourCompetitions.module.css
++.page { display: flex; flex-direction: column; }
++
++/* ══════════════ En-tête du circuit ══════════════
++   Le logo tient lieu d'emblème et se pose à gauche du nom, comme sur la fiche
++   d'une compétition. Il est CONTENU, jamais recadré : on ne connaît ni son
++   ratio ni son fond. */
++.masthead {
++  max-width: var(--page-max);
++  width: 100%;
++  margin: 0 auto;
++  padding: 1.5rem 1.25rem .5rem;
++  display: flex;
++  align-items: center;
++  gap: 18px;
++}
++.logo {
++  flex-shrink: 0;
++  max-height: 54px;
++  width: auto;
++  object-fit: contain;
++}
++.headings { min-width: 0; }
++.kicker {
++  font-size: 10.5px;
++  font-weight: 700;
++  letter-spacing: .18em;
++  text-transform: uppercase;
++  color: var(--c-faint);
++  margin-bottom: 4px;
++}
++.title {
++  font-family: var(--font-title);
++  font-weight: 400;
++  font-size: clamp(30px, 6vw, 52px);
++  line-height: .92;
++  letter-spacing: .01em;
++  text-transform: uppercase;
++  color: var(--c-text);
++}
++/* Le millésime en accent : c'est la restriction de la page, et il vaut mieux
++   qu'elle se voie que de laisser croire à un historique complet. */
++.year {
++  font-family: var(--font-title);
++  font-size: 17px;
++  letter-spacing: .2em;
++  color: var(--c-accent);
++  margin-top: 6px;
++}
++
++/* ══════════════ Sorties ══════════════
++   Deux destinations de nature différente : le site du circuit (dehors) et
++   l'agenda complet (dedans). Même traitement discret — ce ne sont pas les
++   actions de la page, seulement ses portes. */
++.links {
++  max-width: var(--page-max);
++  width: 100%;
++  margin: 0 auto;
++  padding: 0 1.25rem;
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px 20px;
++}
++.out {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  font-size: 12.5px;
++  font-weight: 700;
++  letter-spacing: .06em;
++  text-transform: uppercase;
++  color: var(--c-muted);
++}
++.out:hover { color: var(--c-accent); }
++
++.empty {
++  max-width: var(--page-max);
++  margin: 2.5rem auto;
++  padding: 0 1.25rem;
++  color: var(--c-muted);
++  font-size: 14px;
++}
++
++@media (max-width: 620px) {
++  .masthead { gap: 12px; }
++  .logo { max-height: 42px; }
 +}
