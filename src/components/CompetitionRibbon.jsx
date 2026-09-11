@@ -24,20 +24,20 @@ let mountedOnce = false
  * sur l'agenda complet — proposer une compétition depuis la page d'un circuit
  * laisserait croire qu'on la rattache à ce circuit.
  *
- * `anchorToToday` : au chargement, faire défiler jusqu'à « aujourd'hui ». Utile
- * sur un fil long, contre-productif sur une liste courte, où défiler ne ferait
- * que pousser le titre de la page hors de l'écran.
- *
- * `showYears` : les séparateurs de millésime. Inutiles quand la liste tient dans
- * une seule année et que la page l'annonce déjà dans son titre — les répéter
- * quarante pixels plus bas n'ajoute rien, et sur une saison terminée le repère
- * « aujourd'hui » se retrouvait au-dessus du millésime, en tête de page.
+ * `timeline` : les mécaniques de FRISE — défilement initial jusqu'à
+ * « aujourd'hui », séparateurs de millésime, repère « aujourd'hui », forme
+ * compacte du passé et des autres années. Elles servent un fil long, qui court
+ * sur plusieurs saisons et qu'on parcourt. Sur une liste courte tenant dans une
+ * seule saison — la page d'un circuit —, elles deviennent du bruit : le titre de
+ * la page annonce déjà l'année, et tailler différemment quatre étapes d'un même
+ * circuit se lirait comme un défaut de rendu. Le passé reste distingué, mais par
+ * l'encre seulement, comme le fil le faisait avant d'avoir une forme compacte.
  *
  * `label` : ce que le lecteur d'écran annonce en entrant dans la liste. Sur une
  * page de circuit, « Compétitions » serait vrai mais inutile — c'est le nom du
  * circuit qui situe.
  */
-export default function CompetitionRibbon({ rows, suggest = false, anchorToToday = true, showYears = true, label }) {
+export default function CompetitionRibbon({ rows, suggest = false, timeline = true, label }) {
   const tr = useT()
   const { lang } = useLanguage()
   const anchorRef = useRef(null)
@@ -76,12 +76,12 @@ export default function CompetitionRibbon({ rows, suggest = false, anchorToToday
     // dans cette session », un fait indépendant de la décision d'ancrer.
     const dejaMonte = mountedOnce
     mountedOnce = true
-    if (!anchorToToday) return
+    if (!timeline) return
     if (dejaMonte && navType === 'POP') return
     const el = anchorRef.current
     if (!el || el === el.parentElement?.firstElementChild) return
     el.scrollIntoView({ block: 'center', behavior: 'instant' })
-  }, [anchorToToday, navType])
+  }, [timeline, navType])
 
   return (
     /* `role="list"` : sous `list-style: none`, Safari/VoiceOver retire la
@@ -121,10 +121,10 @@ export default function CompetitionRibbon({ rows, suggest = false, anchorToToday
         // Ruptures : le millésime quand l'année change en descendant, et le
         // repère « nous sommes ici » juste avant la première compétition passée.
         const newYear = i === 0 || year !== String(rows[i - 1].date_end || rows[i - 1].date_start).slice(0, 4)
-        const firstPast = state === 'past' && (i === 0 || states[i - 1] !== 'past')
+        const firstPast = timeline && state === 'past' && (i === 0 || states[i - 1] !== 'past')
         // Sans compétition passée (saison fraîche), le repère n'apparaissait
         // nulle part : on le pose alors sous la dernière ligne à venir.
-        const lastAhead = state !== 'past' && i === rows.length - 1 && !states.includes('past')
+        const lastAhead = timeline && state !== 'past' && i === rows.length - 1 && !states.includes('past')
 
         // Annulée : traitée comme le passé, elle n'aura pas lieu.
         const tone = c.cancelled ? 'past' : state
@@ -132,7 +132,7 @@ export default function CompetitionRibbon({ rows, suggest = false, anchorToToday
         // les autres années — avant comme après. Ne reste en pleine forme que
         // ce qui arrive dans la saison en cours, c'est-à-dire ce pour quoi on
         // ouvre la page. Le fil redevient parcourable quand l'archive grossit.
-        const compact = state === 'past' || year !== thisYear
+        const compact = timeline && (state === 'past' || year !== thisYear)
         return (
           <li
             key={c.id}
@@ -151,7 +151,7 @@ export default function CompetitionRibbon({ rows, suggest = false, anchorToToday
             {firstPast && (
               <p className={styles.todayMark}><span>{tr.competitions.todayMark}</span></p>
             )}
-            {showYears && newYear && <p className={styles.year}><span>{year}</span></p>}
+            {timeline && newYear && <p className={styles.year}><span>{year}</span></p>}
             <span className={styles.row}>
             {/* `RemoteLogo` retombe sur les initiales quand le fichier a disparu du
                 bucket : un `<img>` brut laissait une case vide, et la ligne perdait

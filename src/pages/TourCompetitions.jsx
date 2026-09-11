@@ -121,12 +121,15 @@ export default function TourCompetitions() {
         <p className={styles.empty}>{tr.competitions.tourNoneThisYear.split('{year}').join(year)}</p>
       )}
 
-      {/* Pas d'ancrage : la liste tient sur un écran, et défiler ne ferait que
-          pousser le nom du circuit hors de vue. Pas d'appel à contribution non
-          plus — proposer une compétition depuis ici laisserait croire qu'on la
+      {/* Sans les mécaniques de frise (`timeline={false}`) : quatre étapes d'une
+          même saison n'ont besoin ni de défilement initial, ni de millésime — le
+          titre l'annonce —, ni du repère « aujourd'hui », ni d'une forme compacte
+          qui ferait lire l'étape passée comme un défaut de rendu. Le passé reste
+          reconnaissable à son encre. Pas d'appel à contribution non plus :
+          proposer une compétition depuis ici laisserait croire qu'on la
           rattache à ce circuit. */}
       {thisYear.length > 0 && (
-        <CompetitionRibbon rows={thisYear} anchorToToday={false} showYears={false} label={`${tourName} ${year}`} />
+        <CompetitionRibbon rows={thisYear} timeline={false} label={`${tourName} ${year}`} />
       )}
     </div>
   )

@@ -81,6 +81,22 @@ context: []
 
 ## Spec Change Log
 
+### 2026-09-11 — une seule taille, pas de repère « aujourd'hui » (demande d'Alexis)
+
+Sur la page d'un circuit, toutes les étapes sont désormais à la même taille et la
+tape « aujourd'hui » disparaît. Plutôt que d'ajouter deux booléens au ruban, les
+deux réglages existants (`anchorToToday`, `showYears`) sont fusionnés en un seul,
+`timeline`, qui porte toutes les mécaniques de frise : défilement initial,
+millésimes, repère du jour, forme compacte. Le ruban passe de cinq réglages
+d'affichage envisagés à trois (`suggest`, `timeline`, `label`).
+
+Le passé reste distingué, par l'encre seulement — la règle qu'Alexis avait posée
+sur l'agenda au lot B, avant que la forme compacte n'existe.
+
+Vérifié : empreinte de `/competitions` identique avant/après (15 lignes, zéro
+différence) ; sur la page du Pro Tour, quatre étapes de même hauteur, logos
+chargés, étapes 1 et 2 à l'encre atténuée, aucune tape.
+
 ### 2026-09-10 — vérification en navigateur, et ce qu'elle a trouvé
 
 L'empreinte avant/après est **passée** : commit de référence monté dans un
