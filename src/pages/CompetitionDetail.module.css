@@ -302,14 +302,20 @@ a:hover > .tape { color: #8f2a64; transform: rotate(0deg); }
   a:hover > .tape { transform: translateY(-50%) rotate(0deg); }
 }
 
-/* Le circuit, vu de l'intérieur du site. Posé sous le bloc d'affiliation et non
-   dedans : ce dernier ne contient que des liens sortants, et une destination
-   interne au milieu se serait lue comme l'un d'eux. */
-.tourLink {
+/* La fédération et le circuit, vus de l'intérieur du site. Posés sous le bloc
+   d'affiliation et non dedans : ce dernier ne contient que des liens sortants,
+   et une destination interne au milieu se serait lue comme l'un d'eux. Même
+   gouttière horizontale que le bloc, pour que les deux rangées s'alignent. */
+.innerLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin-top: 12px;
+}
+.innerLink {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 12px;
   font-size: 12.5px;
   font-weight: 700;
   letter-spacing: .06em;
@@ -317,5 +323,5 @@ a:hover > .tape { color: #8f2a64; transform: rotate(0deg); }
   color: var(--c-accent);
   border-bottom: 1px solid transparent;
 }
-.tourLink:hover,
-.tourLink:focus-visible { border-bottom-color: var(--c-accent); }
+.innerLink:hover,
+.innerLink:focus-visible { border-bottom-color: var(--c-accent); }

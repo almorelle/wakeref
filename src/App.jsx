@@ -24,6 +24,7 @@ const Competitions = lazy(() => import('./pages/Competitions'))
 const CompetitionDetail = lazy(() => import('./pages/CompetitionDetail'))
 const SubmitCompetition = lazy(() => import('./pages/SubmitCompetition'))
 const TourCompetitions = lazy(() => import('./pages/TourCompetitions'))
+const FederalCompetitions = lazy(() => import('./pages/TourCompetitions').then(m => ({ default: m.FederalCompetitions })))
 const JudgeTraining = lazy(() => import('./pages/JudgeTraining'))
 // Saisie de run à la voix (outil juge) : route NON listée dans la Navbar,
 // chunk isolé → un visiteur lambda ne charge jamais ce code.
@@ -69,6 +70,8 @@ export default function App() {
             {/* Avant `/competitions/:idSlug` : sans ça, « proposer » serait lu
                 comme un identifiant de compétition. */}
             <Route path="/competitions/proposer" element={<SubmitCompetition />} />
+            {/* Même raison : « federales » ne doit pas être lu comme un id. */}
+            <Route path="/competitions/federales" element={<FederalCompetitions />} />
             {/* Deux segments : aucune collision possible avec `:idSlug`, qui
                 n'en prend qu'un. Groupée ici pour rester lisible avec les autres. */}
             <Route path="/competitions/circuit/:slug" element={<TourCompetitions />} />

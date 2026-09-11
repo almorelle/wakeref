@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 // Une seule implémentation de la forme d'URL, partagée avec les pages : deux
 // copies divergentes produiraient des URLs de sitemap différentes des canonical.
 import { competitionPath, slugify } from '../src/lib/competitionDates.js'
-import { tourPath } from '../src/lib/competitionAssets.js'
+import { tourPath, FEDERAL_PATH } from '../src/lib/competitionAssets.js'
 import { writeFileSync, mkdirSync, existsSync } from 'fs'
 
 dotenv.config({ path: '.env.local' })
@@ -26,6 +26,9 @@ const staticRoutes = [
   { url: '/quiz',    priority: 0.6, changefreq: 'weekly' },
   { url: '/contact', priority: 0.6, changefreq: 'weekly' },
   { url: '/competitions', priority: 0.7, changefreq: 'weekly' },
+  // Statique, contrairement aux circuits : la page existe même sans compétition
+  // fédérale publiée — elle dit alors qu'aucune n'est annoncée.
+  { url: FEDERAL_PATH,    priority: 0.5, changefreq: 'weekly' },
 ]
 
 // Un plafond atteint est indiscernable d'un jeu complet : on le dit, sinon la

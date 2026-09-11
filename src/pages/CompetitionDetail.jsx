@@ -11,7 +11,7 @@ import Icon from '../components/Icon'
 import NotFound from './NotFound'
 import VideoCard from '../components/VideoCards'
 import RemoteLogo from '../components/RemoteLogo'
-import { FFSNW_URL, FFSNW_LOGO, tourLogoPath, tourPath } from '../lib/competitionAssets'
+import { FFSNW_URL, FFSNW_LOGO, FEDERAL_PATH, tourLogoPath, tourPath } from '../lib/competitionAssets'
 import styles from './CompetitionDetail.module.css'
 
 // Colonnes explicites plutôt que `*` : la fiche est publique, et toute colonne
@@ -176,16 +176,26 @@ function CompetitionDetail({ idSlug }) {
             )}
           </div>
         )}
-        {/* Sur sa propre ligne, sous le bloc : la destination est INTERNE, alors
-            que tout ce qui précède sort du site. Les mêler sur la même rangée
-            aurait rendu les deux indiscernables au premier coup d'œil. */}
-        {/* Le garde porte sur le CHEMIN, pas sur le nom : un nom truthy peut ne
-            produire aucun slug (« ??? », « — »), `tourPath` renvoie alors null,
-            et <Link to={null}> lève dans le routeur — la fiche entière tombait. */}
-        {tourPath(comp.tour_name) && (
-          <Link className={styles.tourLink} to={tourPath(comp.tour_name)}>
-            {tr.competitions.tourSeeAll} <Icon name="arrow-right" size={13} />
-          </Link>
+        {/* Sur leur propre ligne, sous le bloc : ces destinations sont INTERNES,
+            alors que tout ce qui précède sort du site. Les mêler sur la même
+            rangée aurait rendu les deux indiscernables au premier coup d'œil. */}
+        {(comp.affiliation === 'federal' || tourPath(comp.tour_name)) && (
+          <div className={styles.innerLinks}>
+            {comp.affiliation === 'federal' && (
+              <Link className={styles.innerLink} to={FEDERAL_PATH}>
+                {tr.competitions.federalSeeAll} <Icon name="arrow-right" size={13} />
+              </Link>
+            )}
+            {/* Le garde porte sur le CHEMIN, pas sur le nom : un nom truthy peut
+                ne produire aucun slug (« ??? », « — »), `tourPath` renvoie alors
+                null, et <Link to={null}> lève dans le routeur — la fiche entière
+                tombait. */}
+            {tourPath(comp.tour_name) && (
+              <Link className={styles.innerLink} to={tourPath(comp.tour_name)}>
+                {tr.competitions.tourSeeAll} <Icon name="arrow-right" size={13} />
+              </Link>
+            )}
+          </div>
         )}
       </header>
 

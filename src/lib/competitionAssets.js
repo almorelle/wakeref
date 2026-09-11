@@ -12,6 +12,10 @@ import { slugify } from './competitionDates.js'
 
 export const FFSNW_URL = 'https://www.ffsnw.fr/'
 export const FFSNW_LOGO = 'competitions/ffsnw.png'
+// La page publique des compétitions fédérales. Pas de slug : l'affiliation est
+// une valeur fermée (`federal` | `independent`), et une seule des deux fait une
+// page — « indépendante » ne désigne qu'une absence de fédération.
+export const FEDERAL_PATH = '/competitions/federales'
 
 export const tourLogoPath = (tourName) => {
   const slug = slugify(tourName)
