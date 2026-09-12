@@ -182,3 +182,22 @@ CREATE TABLE public.competition_submissions (
                                      created_at timestamp with time zone NOT NULL DEFAULT now(),
                                      CONSTRAINT competition_submissions_pkey PRIMARY KEY (id)
 );
+CREATE TABLE public.page_routes (
+                                     path text NOT NULL,
+                                     label text NOT NULL,
+                                     CONSTRAINT page_routes_pkey PRIMARY KEY (path)
+);
+CREATE TABLE public.page_views (
+                                     path text NOT NULL,
+                                     day date NOT NULL DEFAULT CURRENT_DATE,
+                                     views integer NOT NULL DEFAULT 0,
+                                     CONSTRAINT page_views_pkey PRIMARY KEY (path, day),
+                                     CONSTRAINT page_views_path_fkey FOREIGN KEY (path) REFERENCES public.page_routes(path) ON DELETE CASCADE
+);
+CREATE TABLE public.competition_views (
+                                     competition_id bigint NOT NULL,
+                                     day date NOT NULL DEFAULT CURRENT_DATE,
+                                     views integer NOT NULL DEFAULT 0,
+                                     CONSTRAINT competition_views_pkey PRIMARY KEY (competition_id, day),
+                                     CONSTRAINT competition_views_competition_id_fkey FOREIGN KEY (competition_id) REFERENCES public.competitions(id) ON DELETE CASCADE
+);

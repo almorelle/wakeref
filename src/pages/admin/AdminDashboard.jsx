@@ -6,7 +6,7 @@ import Icon from '../../components/Icon'
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ figures: 0, videos: 0, submissions: 0, takedowns: 0, videoPct: 0, instaNoThumb: 0, runs: 0, noVideo: 0, noUpload: 0, competitions: 0, compSubmissions: 0 })
+  const [stats, setStats] = useState({ figures: 0, videos: 0, submissions: 0, takedowns: 0, videoPct: 0, instaNoThumb: 0, runs: 0, noVideo: 0, noUpload: 0, competitions: 0, compSubmissions: 0, vues30: 0 })
 
   useEffect(() => {
     Promise.all([
@@ -22,7 +22,8 @@ export default function AdminDashboard() {
       supabase.rpc('figures_without_uploaded_videos'),
       supabase.from('competitions').select('id', { count: 'exact', head: true }).eq('published', true),
       supabase.from('competition_submissions').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-    ]).then(([f, v, sub, t, hs, insta, thumbs, runs, nv, nu, comp, compSub]) => {
+      supabase.rpc('view_stats_totals'),
+    ]).then(([f, v, sub, t, hs, insta, thumbs, runs, nv, nu, comp, compSub, vues]) => {
       const row = hs.data?.[0]
       const videoPct = row && row.total_figures > 0
         ? Math.round((row.figures_with_video / row.total_figures) * 100)
@@ -49,6 +50,7 @@ export default function AdminDashboard() {
         noUpload,
         competitions: comp.count || 0,
         compSubmissions: compSub.count || 0,
+        vues30: vues.data?.[0]?.views_30d || 0,
       })
     })
   }, [])
@@ -60,6 +62,11 @@ export default function AdminDashboard() {
     { label: 'Figures avec vidéo', value: `${stats.videoPct}%`, icon: 'video', action: () => navigate('/admin/no-videos') },
     { label: 'Compétitions publiées', value: stats.competitions, icon: 'calendar-event', action: () => navigate('/admin/competitions') },
     { label: 'Runs sauvegardés', value: stats.runs, icon: 'list', action: () => navigate('/admin/compositions') },
+    // Vues de TRICKS seulement, pas le cumul avec `page_views` : ce dernier
+    // compteur a démarré le 2026-09-12, et l'additionner ferait monter la
+    // tuile pendant trente jours pour une raison qui n'est pas la
+    // fréquentation. Le détail des deux est dans /admin/vues.
+    { label: 'Vues de tricks (30 j)', value: stats.vues30.toLocaleString('fr-FR'), icon: 'eye', action: () => navigate('/admin/vues') },
   ]
   // À traiter : compteurs d'action. >0 = rouge (à faire), 0 = vert (rien à faire).
   const todo = [

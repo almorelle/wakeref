@@ -372,6 +372,188 @@ set search_path = public as $$
   order by top.v desc;
 $$;
 
+-- ── Lecture longue de figure_views : les RPC de /admin/vues (migration 0022) ──
+-- Contrairement aux RPC publiques ci-dessus, aucune n'est `security definer` :
+-- elles s'exécutent avec les droits de l'appelant, donc la policy « Lecture
+-- admin figure_views » s'applique et un `anon` lirait une table vide. Le grant
+-- ne va qu'à `authenticated`. Ne pas les passer en definer : ce sont des
+-- données de fréquentation, pas du contenu public.
+
+drop function if exists public.view_stats_totals();
+create function public.view_stats_totals()
+returns table(
+  views_30d       bigint,
+  views_365d      bigint,
+  views_total     bigint,
+  first_day       date,
+  last_day        date,
+  figures_tracked bigint
+)
+language sql stable
+set search_path = public as $$
+  select
+    coalesce(sum(views) filter (where day > current_date - 30),  0)::bigint,
+    coalesce(sum(views) filter (where day > current_date - 365), 0)::bigint,
+    coalesce(sum(views), 0)::bigint,
+    min(day),
+    max(day),
+    count(distinct figure_id)::bigint
+  from figure_views;
+$$;
+
+-- `generate_series` produit les mois vides : un trou dans la courbe est une
+-- information, une barre absente serait un mensonge par omission.
+drop function if exists public.views_by_month(integer);
+create function public.views_by_month(months integer default 12)
+returns table(month date, views bigint)
+language sql stable
+set search_path = public as $$
+  select m.month::date,
+         coalesce(sum(fv.views), 0)::bigint
+  from generate_series(
+         date_trunc('month', current_date) - ((greatest(months, 1) - 1) || ' months')::interval,
+         date_trunc('month', current_date),
+         interval '1 month'
+       ) as m(month)
+  left join figure_views fv on date_trunc('month', fv.day) = m.month
+  group by m.month
+  order by m.month;
+$$;
+
+-- Distinct de `most_viewed_figures`, qui sert la home : ici on veut le total et
+-- AUSSI les figures non publiées — une page dépubliée encore visitée est
+-- précisément ce qu'un admin doit voir.
+drop function if exists public.top_viewed_figures(integer, integer);
+create function public.top_viewed_figures(days integer default 30, lim integer default 10)
+returns table(
+  figure_id integer,
+  name      text,
+  slug      text,
+  sport     text,
+  published boolean,
+  views     bigint
+)
+language sql stable
+set search_path = public as $$
+  select f.id, f.name, f.slug, f.sport::text, f.published, sum(fv.views)::bigint
+  from figure_views fv
+  join figures f on f.id = fv.figure_id
+  where fv.day > current_date - greatest(days, 1)
+  group by f.id, f.name, f.slug, f.sport, f.published
+  order by sum(fv.views) desc, f.name
+  limit greatest(lim, 1);
+$$;
+
+drop function if exists public.never_viewed_figures(integer);
+create function public.never_viewed_figures(days integer default 365)
+returns table(
+  figure_id integer,
+  name      text,
+  slug      text,
+  sport     text
+)
+language sql stable
+set search_path = public as $$
+  select f.id, f.name, f.slug, f.sport::text
+  from figures f
+  where f.published
+    and not exists (
+      select 1 from figure_views fv
+      where fv.figure_id = f.id
+        and fv.day > current_date - greatest(days, 1)
+    )
+  order by f.name;
+$$;
+
+-- ── page_views (migration 0023) ──
+-- Écriture : security definer comme track_figure_view, mais bornée à la liste
+-- blanche — un chemin inconnu ne fait rien et ne dit rien.
+drop function if exists public.track_page_view(text);
+create function public.track_page_view(p text)
+returns void
+language sql security definer
+set search_path = public as $$
+  insert into page_views (path, day, views)
+  select p, current_date, 1
+  where exists (select 1 from page_routes where path = p)
+  on conflict (path, day) do update
+    set views = page_views.views + 1;
+$$;
+
+-- Lecture admin : `left join` depuis page_routes pour qu'une page jamais vue
+-- apparaisse à zéro plutôt que de disparaître.
+drop function if exists public.page_view_stats();
+create function public.page_view_stats()
+returns table(
+  path        text,
+  label       text,
+  views_30d   bigint,
+  views_365d  bigint,
+  views_total bigint
+)
+language sql stable
+set search_path = public as $$
+  select r.path,
+         r.label,
+         coalesce(sum(pv.views) filter (where pv.day > current_date - 30),  0)::bigint,
+         coalesce(sum(pv.views) filter (where pv.day > current_date - 365), 0)::bigint,
+         coalesce(sum(pv.views), 0)::bigint
+  from page_routes r
+  left join page_views pv on pv.path = r.path
+  group by r.path, r.label
+  order by 3 desc, r.path;
+$$;
+
+drop function if exists public.page_view_span();
+create function public.page_view_span()
+returns table(first_day date, last_day date, views_total bigint)
+language sql stable
+set search_path = public as $$
+  select min(day), max(day), coalesce(sum(views), 0)::bigint from page_views;
+$$;
+
+-- ── competition_views (migration 0024) ──
+-- Écriture : security definer, compétitions publiées seulement.
+drop function if exists public.track_competition_view(bigint);
+create function public.track_competition_view(cid bigint)
+returns void
+language sql security definer
+set search_path = public as $$
+  insert into competition_views (competition_id, day, views)
+  select cid, current_date, 1
+  where exists (select 1 from competitions where id = cid and published)
+  on conflict (competition_id, day) do update
+    set views = competition_views.views + 1;
+$$;
+
+-- Lecture admin : chaque compétition publiée, vue ou non. `date_precision`
+-- renvoyée avec les dates, sinon une compète datée à l'année afficherait son
+-- 31 décembre de stockage.
+drop function if exists public.competition_view_stats();
+create function public.competition_view_stats()
+returns table(
+  competition_id bigint,
+  name           text,
+  date_start     date,
+  date_end       date,
+  date_precision text,
+  tour_name      text,
+  cancelled      boolean,
+  views_30d      bigint,
+  views_total    bigint
+)
+language sql stable
+set search_path = public as $$
+  select c.id, c.name, c.date_start, c.date_end, c.date_precision, c.tour_name, c.cancelled,
+         coalesce(sum(cv.views) filter (where cv.day > current_date - 30), 0)::bigint,
+         coalesce(sum(cv.views), 0)::bigint
+  from competitions c
+  left join competition_views cv on cv.competition_id = c.id
+  where c.published
+  group by c.id
+  order by 9 desc, 8 desc, c.date_start;
+$$;
+
 -- Figures dont la vidéo (hors retrait) est la plus récente, prêtes à afficher.
 -- Remplace l'ancien waterfall « videos → figures_full.in(ids) » de la home.
 create or replace function public.recent_video_figures(lim integer default 5)
@@ -448,6 +630,53 @@ create table if not exists public.figure_views (
 );
 -- Fenêtre glissante de most_viewed_figures (filtre sur day).
 create index if not exists figure_views_day_idx on figure_views (day);
+
+-- page_views : le compteur des pages qui ne sont pas des figures (migration 0023).
+-- `page_routes` est la liste blanche : sans elle, `track_page_view` accepterait
+-- n'importe quelle chaîne d'un appelant anonyme.
+create table if not exists public.page_routes (
+  path  text primary key,
+  label text not null
+);
+
+insert into public.page_routes (path, label) values
+  ('/',                           'Accueil'),
+  ('/figures',                    'Catalogue'),
+  ('/quiz',                       'Quiz'),
+  ('/competitions',               'Agenda des compétitions'),
+  ('/competitions/proposer',      'Proposer une compétition'),
+  ('/competitions/federales',     'Compétitions fédérales'),
+  ('/competitions/circuit/:slug', 'Page de circuit'),
+  ('/composition',                'Compo'),
+  ('/composition/:id',            'Run partagé'),
+  ('/entrainement-juge',          'Entraînement juge'),
+  ('/entrainement-juge/voix',     'Saisie vocale'),
+  ('/grille-composition-old',     'Grille de composition (héritée)'),
+  ('/contact',                    'Contact'),
+  ('/submit',                     'Proposer une vidéo'),
+  ('/legal',                      'Mentions légales'),
+  ('/terms',                      'Conditions d''utilisation'),
+  ('/privacy',                    'Confidentialité')
+on conflict (path) do update set label = excluded.label;
+
+create table if not exists public.page_views (
+  path  text not null references page_routes(path) on delete cascade,
+  day   date not null default current_date,
+  views integer not null default 0,
+  primary key (path, day)
+);
+
+create index if not exists page_views_day_idx on page_views (day);
+
+-- competition_views : compteur par fiche de compétition, par id (migration 0024).
+create table if not exists public.competition_views (
+  competition_id bigint  not null references competitions(id) on delete cascade,
+  day            date    not null default current_date,
+  views          integer not null default 0,
+  primary key (competition_id, day)
+);
+
+create index if not exists competition_views_day_idx on competition_views (day);
 
 -- Runs de référence du module d'entraînement juge. Une vidéo de run = une
 -- solution fixe (snapshot Compo : entries + jibPasses + otherEntries + gridKey).
@@ -610,6 +839,9 @@ alter table takedown_requests enable row level security;
 alter table video_submissions enable row level security;
 alter table compositions      enable row level security;
 alter table figure_views      enable row level security;
+alter table page_views        enable row level security;
+alter table page_routes       enable row level security;
+alter table competition_views enable row level security;
 alter table judge_runs        enable row level security;
 alter table parcours          enable row level security;
 alter table competitions        enable row level security;
@@ -655,6 +887,14 @@ create policy "Lecture admin compositions"      on compositions for select using
 create policy "Suppression admin compositions"  on compositions for delete using ((select auth.role()) = 'authenticated');
 -- figure_views : pas d'accès direct anon (écritures/top via RPC security definer) ; lecture admin seule.
 create policy "Lecture admin figure_views"      on figure_views  for select using ((select auth.role()) = 'authenticated');
+-- page_views : même règle que figure_views. page_routes est une nomenclature,
+-- lisible par tous — la RPC d'écriture s'en sert.
+drop policy if exists "Lecture admin page_views" on page_views;
+create policy "Lecture admin page_views"        on page_views    for select using ((select auth.role()) = 'authenticated');
+drop policy if exists "Lecture publique page_routes" on page_routes;
+create policy "Lecture publique page_routes"    on page_routes   for select using (true);
+drop policy if exists "Lecture admin competition_views" on competition_views;
+create policy "Lecture admin competition_views" on competition_views for select using ((select auth.role()) = 'authenticated');
 -- judge_runs : accès admin total ; pas de policy anon (l'anon lit via les RPC story 2.2).
 drop policy if exists "Ecriture admin judge_runs" on judge_runs;
 create policy "Ecriture admin judge_runs"       on judge_runs    for all using ((select auth.role()) = 'authenticated') with check ((select auth.role()) = 'authenticated');
@@ -755,6 +995,9 @@ grant execute on function public.get_parcours(text)       to anon, authenticated
 -- judge_runs : admin uniquement (l'anon passe par les RPC de lecture, story 2.2).
 grant select, insert, update, delete on public.judge_runs to authenticated;
 grant select on public.figure_views to authenticated;
+grant select on public.page_views  to authenticated;
+grant select on public.page_routes to anon, authenticated;
+grant select on public.competition_views to authenticated;
 grant select on public.competitions, public.competition_videos to anon, authenticated;
 grant insert, update, delete on public.competitions       to authenticated;
 grant insert, update, delete on public.competition_videos to authenticated;
@@ -765,4 +1008,14 @@ grant insert on public.competition_submissions to authenticated;
 grant select, update on public.competition_submissions to authenticated;
 grant execute on function public.track_figure_view(integer)            to anon, authenticated;
 grant execute on function public.most_viewed_figures(integer, integer)  to anon, authenticated;
+-- Stats de vues : l'admin seul (cf. le commentaire au-dessus des fonctions).
+grant execute on function public.view_stats_totals()                    to authenticated;
+grant execute on function public.views_by_month(integer)                to authenticated;
+grant execute on function public.top_viewed_figures(integer, integer)   to authenticated;
+grant execute on function public.never_viewed_figures(integer)          to authenticated;
+grant execute on function public.track_page_view(text)                  to anon, authenticated;
+grant execute on function public.page_view_stats()                      to authenticated;
+grant execute on function public.page_view_span()                       to authenticated;
+grant execute on function public.track_competition_view(bigint)         to anon, authenticated;
+grant execute on function public.competition_view_stats()               to authenticated;
 grant execute on function public.recent_video_figures(integer)          to anon, authenticated;

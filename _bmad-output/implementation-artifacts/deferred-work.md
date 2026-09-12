@@ -4,7 +4,7 @@ Issues surfaced during quick-dev reviews, deferred for later focused attention.
 
 ## from spec-most-viewed-tricks (review 2026-06-14)
 - ~~**Purge des vieux buckets `figure_views`.**~~ **Abandonné (2026-06-16).** Volume négligeable (≈73k lignes/an) et la donnée historique a de la valeur analytics : top sur 1 an (`most_viewed_figures(365, …)`, déjà supporté), figures jamais consultées, saisonnalité. On garde donc tout l'historique — pas de purge. Si un jour le volume devenait gênant, purger très large (`day < current_date - interval '2 years'`) plutôt que 90 j.
-- **(Optionnel) Page admin de stats vues.** Non démarré. Exposerait : top 30 j vs top 1 an + liste des figures jamais vues sur la fenêtre. Ne manque qu'un RPC `never_viewed_figures(days)` ; le top par fenêtre existe déjà.
+- ~~**(Optionnel) Page admin de stats vues.**~~ — **traité le 2026-09-12** : `/admin/vues`, servie par les quatre RPC de `scripts/migrations/0022-view-stats.sql` (`view_stats_totals`, `views_by_month`, `top_viewed_figures`, `never_viewed_figures`). La décision de 2026-06-16 de ne pas purger prend ici tout son sens : l'écran lit un historique déjà accumulé, bien plus profond que les 30 jours de l'hébergeur. ~~**Reste ouvert** : seules les pages de figures sont comptées~~ — **fait le 2026-09-12** : `page_views` + `page_routes` (`scripts/migrations/0023-page-views.sql`), comptage branché dans `PublicLayout`, section « Pages du site » dans l'écran. Ce qui reste hors mesure, volontairement : les surfaces chromeless (`/grille-composition`, `/juge`) et l'admin.
 
 ## QW3 — Ordre par défaut des vidéos (#24)
 **Clos côté technique (2026-06-16).** Le mécanisme existe déjà : colonne `videos.sort_order` + la vue `figures_full` agrège les vidéos `order by v.sort_order`. Aucun dev à faire — le reste est de la curation de contenu (remonter les rideuses via l'admin vidéos). Suivi global dans `../BACKLOG.md`.
@@ -75,3 +75,18 @@ corrigé là par le prop `eager` + une largeur minimale.
 bloc d'affiliation) appelle `RemoteLogo` sans réserver de largeur. Non reproduit
 sur un cache chaud. À traiter en réservant la place plutôt qu'en passant tout en
 `eager` — ces logos-là ne sont pas en haut de page.
+
+## Clés `localStorage` du dédoublonnage de `figure_views` (2026-09-12)
+
+`FigureDetail.jsx` pose une clé par figure et par jour (`wakeref_viewed_<id>_<date>`)
+pour ne pas compter deux fois la même visite. Ces clés ne sont jamais relues
+au-delà de la journée, ni nettoyées : un visiteur assidu en accumule autant que
+de (figure, jour) consultés — plusieurs milliers sur une saison, pour quelques
+centaines de Ko dans un quota de ~5 Mo. Aucun symptôme constaté, mais la courbe
+ne redescend jamais.
+
+Les compteurs `page_views` et `competition_views` (migrations 0023 et 0024) ne
+reproduisent pas le motif : ils passent par `src/lib/vuDuJour.js`, qui tient la
+journée entière dans **une** clé par compteur, remplacée au premier passage du
+lendemain. Brancher `FigureDetail` sur ce même helper est l'essentiel du
+correctif, si un jour il en faut un.

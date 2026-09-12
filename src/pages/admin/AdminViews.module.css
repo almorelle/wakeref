@@ -1,0 +1,249 @@
+.page { max-width: 940px; display: flex; flex-direction: column; gap: 1.75rem; }
+
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.sub { font-size: 13.5px; color: var(--c-muted); margin-top: 6px; max-width: 68ch; line-height: 1.5; }
+
+.section { display: flex; flex-direction: column; }
+.note { font-size: 12px; color: var(--c-muted); max-width: 68ch; line-height: 1.5; margin-top: 10px; }
+.vide { font-size: 13px; color: var(--c-muted); padding: 10px 0; }
+.erreur { font-size: 13.5px; color: var(--c-accent-ink); max-width: 66ch; line-height: 1.6; }
+
+.compteur {
+  font-family: var(--font-title);
+  font-size: 16px;
+  color: var(--c-accent-ink);
+  letter-spacing: 0;
+  margin-left: 4px;
+}
+
+/* ── Chiffres de tête ── */
+.chiffres { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; }
+.chiffre {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 2px 14px 2px 0;
+  border-left: 1px solid var(--c-rule);
+  padding-left: 14px;
+}
+.chiffre:first-child { border-left: 0; padding-left: 0; }
+.chiffreLabel { font-size: 11px; color: var(--c-muted); letter-spacing: .04em; }
+/* Chiffre de tête : chasse proportionnelle, pas tabulaire — ces valeurs ne
+   s'alignent avec rien. */
+.chiffreValeur {
+  font-family: var(--font-title);
+  font-size: clamp(26px, 4vw, 34px);
+  line-height: 1;
+  color: var(--c-text);
+}
+.chiffreValeurPetite {
+  font-family: var(--font-title);
+  font-size: clamp(16px, 2.4vw, 20px);
+  line-height: 1.15;
+  color: var(--c-text);
+}
+
+/* ── Graphe mensuel ── */
+/* Grille plutôt qu'un empilement : l'axe X hérite de la colonne du plot, donc
+   il reste aligné quelle que soit la largeur prise par les graduations — un
+   `padding-left` calculé se décalerait au premier total à cinq chiffres. */
+.graphe {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 6px;
+  margin-top: 18px;
+}
+.axeY {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 160px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-muted);
+  text-align: right;
+  min-width: 3ch;
+}
+.axeY span { transform: translateY(-.5em); }
+.axeY span:last-child { transform: none; }
+
+.plot { position: relative; flex: 1; height: 160px; min-width: 0; }
+/* Filets pleins d'un cran au-dessus du fond : jamais de pointillés sur une
+   grille, ça se lit comme un seuil. */
+.filets { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; }
+.filets i { display: block; height: 1px; background: var(--c-rule); opacity: .6; }
+
+/* Calées à gauche et bornées en largeur : à trois mois de mesure, des colonnes
+   élastiques étaleraient trois barres sur toute la page, ce qui se lit comme un
+   graphe cassé. La même borne s'applique aux graduations de l'axe X. */
+.colonnes { position: relative; display: flex; align-items: flex-end; gap: 4px; height: 100%; }
+.colonne {
+  position: relative;
+  flex: 1 1 0;
+  max-width: 72px;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  cursor: default;
+}
+.colonne:focus-visible { outline: 2px solid var(--c-accent-ink); outline-offset: 2px; }
+
+.barre {
+  width: min(24px, 100%);
+  background: var(--c-accent);
+  border-radius: 4px 4px 0 0;
+  transition: background var(--t-fast);
+}
+.colonne:hover .barre, .colonne:focus-visible .barre { background: var(--c-accent-ink); }
+/* Mois en cours : même encre, moins dense — la barre est incomplète, elle ne
+   doit pas se lire comme une chute. */
+.barrePartielle { background: color-mix(in srgb, var(--c-accent) 45%, transparent); }
+
+/* Étiquette du seul extrême. */
+.valeurMax {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-muted);
+  margin-bottom: 3px;
+  white-space: nowrap;
+}
+
+.bulle {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--c-text);
+  background: var(--c-bg);
+  border: 1px solid var(--c-rule);
+  padding: 3px 7px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-fast);
+  z-index: 2;
+}
+.colonne:hover .bulle, .colonne:focus-visible .bulle { opacity: 1; }
+
+.axeX {
+  grid-column: 2;
+  display: flex;
+  gap: 4px;
+  font-size: 10px;
+  color: var(--c-muted);
+}
+.axeX span { flex: 1 1 0; max-width: 72px; min-width: 0; text-align: center; }
+
+.tableau { margin-top: 12px; font-size: 12.5px; }
+.tableau summary { color: var(--c-muted); cursor: pointer; }
+.tableau summary:hover { color: var(--c-accent-ink); }
+.tableau table { width: 100%; max-width: 320px; margin-top: 8px; border-collapse: collapse; }
+.tableau th, .tableau td { text-align: left; padding: 4px 0; border-bottom: 1px dotted var(--c-rule); }
+.tableau th { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--c-muted); font-weight: 700; }
+.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Tops ── */
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem; }
+
+.top { list-style: none; display: flex; flex-direction: column; }
+.topItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 4px;
+  border-bottom: 1px dotted var(--c-rule);
+  overflow: hidden;
+}
+.jauge {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--c-accent);
+  opacity: .1;
+  pointer-events: none;
+}
+.topNom {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--c-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topNom:hover { color: var(--c-accent-ink); }
+.topVues {
+  position: relative;
+  font-family: var(--font-title);
+  font-size: 17px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-accent-ink);
+}
+.brouillon {
+  position: relative;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  border: 1px solid var(--c-rule);
+  padding: 1px 5px;
+}
+
+/* ── Jamais ouvertes ── */
+.jamais {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 2px 16px;
+}
+.jamais li { display: flex; align-items: center; gap: 7px; padding: 5px 0; border-bottom: 1px dotted var(--c-rule); min-width: 0; }
+.jamais a { font-size: 13px; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jamais a:hover { color: var(--c-accent-ink); }
+
+/* ── Tableau des pages ── */
+.pages { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
+.pages th, .pages td { padding: 7px 8px 7px 0; border-bottom: 1px dotted var(--c-rule); vertical-align: baseline; }
+.pages thead th {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--c-muted);
+  font-weight: 700;
+  text-align: left;
+}
+.pages tbody th { text-align: left; font-weight: 400; }
+/* `.pages thead th` l'emporterait sur `.num` par spécificité : les en-têtes de
+   colonnes chiffrées doivent être ramenés à droite explicitement. */
+.pages thead th.num { text-align: right; }
+.pageLabel { display: block; color: var(--c-text); }
+a.pageLabel:hover { color: var(--c-accent-ink); }
+.pagePath { display: block; font-size: 11px; color: var(--c-muted); margin-top: 1px; overflow-wrap: anywhere; }
+/* Une page à zéro n'est pas une erreur d'affichage : elle reste lisible, juste
+   en retrait — c'est souvent l'information la plus intéressante du tableau. */
+.ligneZero .pageLabel { color: var(--c-muted); }
+.pages tbody td { font-family: var(--font-title); font-size: 15px; color: var(--c-text); white-space: nowrap; }
+.ligneZero td { color: var(--c-faint); }
+
+@media (max-width: 760px) {
+  .duo { grid-template-columns: 1fr; gap: 1.5rem; }
+  .chiffres { grid-template-columns: repeat(2, 1fr); gap: 14px 0; }
+  .chiffre:nth-child(odd) { border-left: 0; padding-left: 0; }
+  /* Douze étiquettes ne tiennent pas : une sur deux, l'axe reste lisible. */
+  .axeX span:nth-child(even) { visibility: hidden; }
+}

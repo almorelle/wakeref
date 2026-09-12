@@ -46,6 +46,7 @@ export default function AdminLayout() {
     { to: '/admin/competitions',  icon: 'calendar-event',    label: 'Compétitions'          },
     { to: '/admin/competition-submissions', icon: 'inbox',   label: 'Propositions'          },
     { to: '/admin/no-videos',     icon: 'video-off',         label: 'À compléter'           },
+    { to: '/admin/vues',          icon: 'eye',               label: 'Vues'                  },
     { to: '/admin/special',       icon: 'eye-off',           label: 'Spécial'               },
   ]
 

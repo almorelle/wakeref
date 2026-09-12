@@ -3,6 +3,7 @@ import { Routes, Route, Outlet, Navigate, useLocation, useParams } from 'react-r
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
+import { useTrackPageView } from './hooks/useTrackPageView'
 import Home from './pages/Home'
 import { SpeedInsights } from '@vercel/speed-insights/react'
 
@@ -46,6 +47,7 @@ const JudgeRunForm = lazy(() => import('./pages/admin/JudgeRunForm'))
 const AdminCompetitions = lazy(() => import('./pages/admin/AdminCompetitions'))
 const AdminCompetitionSubmissions = lazy(() => import('./pages/admin/AdminCompetitionSubmissions'))
 const AdminSpecial = lazy(() => import('./pages/admin/AdminSpecial'))
+const AdminViews = lazy(() => import('./pages/admin/AdminViews'))
 const CompetitionForm = lazy(() => import('./pages/admin/CompetitionForm'))
 const AdminParcours = lazy(() => import('./pages/admin/AdminParcours'))
 const ParcoursSetup = lazy(() => import('./pages/admin/ParcoursSetup'))
@@ -108,6 +110,7 @@ export default function App() {
             <Route path="competitions/new" element={<CompetitionForm />} />
             <Route path="competitions/:id/edit" element={<CompetitionForm />} />
             <Route path="competition-submissions" element={<AdminCompetitionSubmissions />} />
+            <Route path="vues" element={<AdminViews />} />
             <Route path="special" element={<AdminSpecial />} />
           </Route>
 
@@ -145,6 +148,11 @@ function RouteFallback() {
 
 // Layout public : Navbar + contenu
 function PublicLayout() {
+  // Comptage des pages publiques (hors fiches de tricks, déjà couvertes par
+  // `figure_views`). Ici plutôt que dans chaque page : une route ajoutée au
+  // groupe public est comptée sans que personne ait à y penser — il reste à
+  // déclarer son motif dans `src/lib/pageViews.js` et dans `page_routes`.
+  useTrackPageView()
   return (
     <>
       <Navbar />

@@ -11,6 +11,7 @@ import Icon from '../components/Icon'
 import NotFound from './NotFound'
 import VideoCard from '../components/VideoCards'
 import RemoteLogo from '../components/RemoteLogo'
+import { useTrackCompetitionView } from '../hooks/useTrackCompetitionView'
 import { FFSNW_URL, FFSNW_LOGO, FEDERAL_PATH, tourLogoPath, tourPath } from '../lib/competitionAssets'
 import styles from './CompetitionDetail.module.css'
 
@@ -92,6 +93,10 @@ function CompetitionDetail({ idSlug }) {
     })()
     return () => { cancelled = true }
   }, [id])
+
+  // Compté une fois la fiche effectivement trouvée, jamais sur un 404 ni pendant
+  // le chargement. Appelé avant les retours anticipés : règle des hooks.
+  useTrackCompetitionView(comp?.id ?? null)
 
   if (loading) return <span className="spinner" role="status" aria-label={tr.competitions.loading} />
   if (failed) return <p className={styles.loadError}>{tr.competitions.loadError}</p>
