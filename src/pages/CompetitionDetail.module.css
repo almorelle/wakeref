@@ -93,10 +93,14 @@
 /* ══════════════ Liens sortants ══════════════
    WakeRef pointe, il n'héberge pas. Un lien manquant reste affiché avec « à
    venir » : c'est une information, et elle donne rendez-vous. */
-.links, .videos, .siblings { list-style: none; display: flex; flex-direction: column; }
-.links li, .videos li, .siblings li { border-bottom: 1px dotted var(--c-rule); }
-.links li:last-child, .videos li:last-child, .siblings li:last-child { border-bottom: 0; }
-.links a, .links > li > span, .videos a {
+/* `.videos` n'est plus de cette famille : ses lignes sont devenues des cartes
+   (voir plus bas), et la mise en forme « ligne de lien » y débordait — le
+   `padding` vertical repoussait la miniature à l'intérieur du cadre, qui la
+   dépassait alors en haut et en bas. */
+.links, .siblings { list-style: none; display: flex; flex-direction: column; }
+.links li, .siblings li { border-bottom: 1px dotted var(--c-rule); }
+.links li:last-child, .siblings li:last-child { border-bottom: 0; }
+.links a, .links > li > span {
   display: flex;
   align-items: center;
   gap: 11px;
@@ -205,11 +209,11 @@
 
 /* ══════════════ Vidéos ══════════════ */
 .videos {
+  list-style: none;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 14px;
 }
-.videos li { border-bottom: 0; }
 
 @media (max-width: 560px) {
   .poster { max-width: 100%; max-height: 380px; }
