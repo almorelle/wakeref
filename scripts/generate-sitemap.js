@@ -29,7 +29,34 @@ const staticRoutes = [
   // Statique, contrairement aux circuits : la page existe même sans compétition
   // fédérale publiée — elle dit alors qu'aucune n'est annoncée.
   { url: FEDERAL_PATH,    priority: 0.5, changefreq: 'weekly' },
+  // Les deux outils : dans le menu et le pied de page, avec titre, description
+  // et canonical propres — donc faits pour être trouvés. Ils manquaient ici
+  // depuis l'origine du script, sans que rien ne l'ait décidé.
+  { url: '/composition',       priority: 0.6, changefreq: 'weekly' },
+  { url: '/entrainement-juge', priority: 0.6, changefreq: 'weekly' },
 ]
+
+// Volontairement ABSENTES de la liste ci-dessus, pour que l'omission se
+// distingue de l'oubli :
+//
+// - `/submit` et `/competitions/proposer` : des formulaires. On veut qu'ils
+//   soient atteints depuis le site, pas depuis une recherche — un formulaire
+//   n'est pas une réponse à une question posée à un moteur.
+// - `/legal`, `/terms`, `/privacy` : obligations légales, à lire depuis le pied
+//   de page. Rien à y gagner en visibilité, et les déclarer diluerait un
+//   sitemap dont tout le reste est du contenu wake.
+//
+// Aucune n'est pour autant `noindex` : elles restent liées depuis chaque page,
+// donc explorables — les omettre ici ne les cache pas, ça dit seulement qu'on
+// ne les met pas en avant. Une page qu'on voudrait vraiment invisible demande
+// la balise robots, pas une absence.
+//
+// Pas déclarées non plus, mais pour une autre raison : les quatre pages hors
+// navigation (`/grille-composition`, `/juge`, `/entrainement-juge/voix`,
+// `/grille-composition-old`), qu'on ne veut pas voir circuler — elles sont
+// recensées dans /admin/special. Et `/composition/:id`, les runs partagés :
+// `Compo` pose une canonical en dur vers `/composition`, ils s'y consolident
+// déjà.
 
 // Un plafond atteint est indiscernable d'un jeu complet : on le dit, sinon la
 // troncature resterait aussi muette qu'avant, juste déplacée.

@@ -1,0 +1,90 @@
+.page { max-width: 940px; display: flex; flex-direction: column; gap: 1.75rem; }
+
+.title {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(30px, 5vw, 42px);
+  line-height: .95;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+.sub { font-size: 13.5px; color: var(--c-muted); margin-top: 6px; max-width: 62ch; }
+
+.section { display: flex; flex-direction: column; }
+.note {
+  font-size: 12.5px;
+  color: var(--c-muted);
+  max-width: 66ch;
+  margin: -4px 0 12px;
+}
+.note code { font-size: 12px; }
+
+/* Filets d'encre entre les lignes, pas de fond : même chemise que le reste de
+   l'admin. Le premier filet vient du `section-title` qui précède. */
+.list { display: flex; flex-direction: column; }
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 2px;
+  border-bottom: 1px dotted var(--c-rule);
+}
+.itemBody { flex: 1; min-width: 0; }
+
+.itemName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-title);
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+}
+
+.path {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--c-accent-ink);
+  overflow-wrap: anywhere;
+}
+
+.itemDesc {
+  margin-top: 5px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--c-muted);
+  max-width: 68ch;
+}
+
+.flags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.flag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  border: 1px solid var(--c-rule);
+  padding: 2px 6px;
+}
+.flagLegacy {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--c-accent-ink);
+  border: 1px solid var(--c-accent-ink);
+  padding: 2px 6px;
+}
+
+.itemActions { display: flex; gap: 4px; flex-shrink: 0; }
+
+@media (max-width: 560px) {
+  .item { flex-direction: column; gap: 8px; }
+  .itemActions { align-self: flex-start; }
+}

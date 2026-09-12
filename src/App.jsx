@@ -45,6 +45,7 @@ const AdminJudgeRuns = lazy(() => import('./pages/admin/AdminJudgeRuns'))
 const JudgeRunForm = lazy(() => import('./pages/admin/JudgeRunForm'))
 const AdminCompetitions = lazy(() => import('./pages/admin/AdminCompetitions'))
 const AdminCompetitionSubmissions = lazy(() => import('./pages/admin/AdminCompetitionSubmissions'))
+const AdminSpecial = lazy(() => import('./pages/admin/AdminSpecial'))
 const CompetitionForm = lazy(() => import('./pages/admin/CompetitionForm'))
 const AdminParcours = lazy(() => import('./pages/admin/AdminParcours'))
 const ParcoursSetup = lazy(() => import('./pages/admin/ParcoursSetup'))
@@ -107,6 +108,7 @@ export default function App() {
             <Route path="competitions/new" element={<CompetitionForm />} />
             <Route path="competitions/:id/edit" element={<CompetitionForm />} />
             <Route path="competition-submissions" element={<AdminCompetitionSubmissions />} />
+            <Route path="special" element={<AdminSpecial />} />
           </Route>
 
           {/* Feuille de note (public, hors Navbar) : plein écran, grilles France 2026 */}
