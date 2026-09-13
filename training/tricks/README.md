@@ -1,6 +1,6 @@
 # Fine-tuning du modèle de reconnaissance vocale (tricks)
 
-But : à partir des clips collectés dans `/judge/voix` (mode guidé → bouton
+But : à partir des clips collectés dans `/entrainement-juge/voix` (mode guidé → bouton
 **Exporter (.zip)**), entraîner un **petit Whisper spécialisé** sur ton vocabulaire
 + ta voix, puis le rebrancher dans l'app comme un modèle local de plus.
 
@@ -15,7 +15,7 @@ modèle devient un *reconnaisseur de trick*, et le matcher de l'app reste un fil
 
 ## Collecter (ou enrichir) le dataset
 
-Tout se passe dans l'app, sur **`/judge/voix`** (moteur **Local**) :
+Tout se passe dans l'app, sur **`/entrainement-juge/voix`** (moteur **Local**) :
 
 1. Coche **« mode guidé »**. L'app parcourt les tricks de la discipline **du moins
    au plus couvert**, affiche la cible (nom + variantes suggérées) et un compteur

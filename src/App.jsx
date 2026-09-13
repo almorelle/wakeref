@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route, Outlet, Navigate, useLocation, useParams } from 'react-router-dom'
+import { Routes, Route, Outlet } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import ScrollToTop from './components/ScrollToTop'
@@ -121,18 +121,6 @@ export default function App() {
           <Route path="/juge" element={<JudgeView />} />
           <Route path="/juge/:code" element={<JudgeView />} />
 
-          {/* Anciens chemins encore en circulation (runs partagés, codes de parcours
-              transmis aux juges, pages indexées). L'ensemble des suffixes legacy est
-              clos — rien, un id, un code, /voix — donc on les déclare un par un plutôt
-              qu'avec un splat : `/compo/a/b/c` reste un 404 à son URL réelle au lieu
-              d'être réécrit vers un chemin qui n'a jamais existé. */}
-          <Route path="/compo" element={<Navigate to="/composition" replace />} />
-          <Route path="/compo/:rest" element={<LegacyRedirect to="/composition" />} />
-          <Route path="/judge" element={<Navigate to="/entrainement-juge" replace />} />
-          <Route path="/judge/voix" element={<Navigate to="/entrainement-juge/voix" replace />} />
-          <Route path="/competition" element={<Navigate to="/juge" replace />} />
-          <Route path="/competition/:rest" element={<LegacyRedirect to="/juge" />} />
-
           <Route path='*' element={<NotFound />} />
         </Routes>
       </Suspense>
@@ -160,14 +148,4 @@ function PublicLayout() {
       <Footer />
     </>
   )
-}
-
-// Redirige un ancien chemin paramétré vers le nouveau : `/compo/x` → `/composition/x`.
-// La cible est reconstruite depuis le param, jamais par substitution sur le pathname —
-// React Router matche sans tenir compte de la casse, donc `/Compo/x` doit rediriger
-// comme `/compo/x` (un `String.replace` y échouerait et servirait une page blanche).
-function LegacyRedirect({ to }) {
-  const { rest } = useParams()
-  const { search, hash } = useLocation()
-  return <Navigate to={`${to}/${rest}${search}${hash}`} replace />
 }

@@ -21,7 +21,7 @@ reconnaître un trick isolé.
 | Cible `transcription` | nom canonique d'**un** trick | **texte complet de la passe** corrigé par le juge |
 | Nature | classifieur *de facto* (set fermé) | **transcripteur compositionnel** (open-ended) |
 | Longueur de sortie | courte (`max_length=64`) | plus longue (`max_length=128`) |
-| Collecte | `/judge/voix` **mode guidé** | `/judge/voix` **dictée libre (jib)** + case *collecter* |
+| Collecte | `/entrainement-juge/voix` **mode guidé** | `/entrainement-juge/voix` **dictée libre (jib)** + case *collecter* |
 | Export .zip | `wakeref-voix-dataset-*.zip` | `wakeref-voix-dataset-jib-*.zip` |
 | Repo HF cible | `…/whisper-wakeref-onnx` | `…/whisper-wakeref-jib-onnx` |
 
@@ -43,7 +43,7 @@ d'enchaîner**, la dernière valeur du champ = la vérité terrain enregistrée.
 
 ## 1. Collecter le dataset
 
-Dans l'app, `/judge/voix`, moteur **Local** :
+Dans l'app, `/entrainement-juge/voix`, moteur **Local** :
 
 1. Coche **« dictée libre (jib) »** (bascule auto sur whisper-small sans biais).
 2. Coche **« grammaire »** (structure propre → moins à corriger) et

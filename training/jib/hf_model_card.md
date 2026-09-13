@@ -21,7 +21,7 @@ inference: false
 
 Whisper-small **fine-tuné** pour transcrire des **passes de jib** de câble
 (wakeboard / wakeskate), utilisé par l'outil de jugement vocal de
-[WakeRef](https://wakeref.app) (`/judge/voix`, mode dictée libre). Exporté en
+[WakeRef](https://wakeref.app) (`/entrainement-juge/voix`, mode dictée libre). Exporté en
 **ONNX** pour tourner **en local dans le navigateur** via
 [Transformers.js](https://github.com/huggingface/transformers.js).
 

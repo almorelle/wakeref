@@ -20,7 +20,7 @@ inference: false
 
 Whisper-base **fine-tuné** pour reconnaître les noms de **tricks de wakeboard /
 wakeskate / wakeboard assis**, utilisé par l'outil de jugement vocal de
-[WakeRef](https://wakeref.app) (`/judge/voix`). Exporté en **ONNX** pour tourner
+[WakeRef](https://wakeref.app) (`/entrainement-juge/voix`). Exporté en **ONNX** pour tourner
 **en local dans le navigateur** via [Transformers.js](https://github.com/huggingface/transformers.js).
 
 ## Particularité

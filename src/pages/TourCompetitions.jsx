@@ -124,7 +124,7 @@ export default function TourCompetitions() {
   // Repassé par `slugify` : le routeur compare les chemins SANS tenir compte de
   // la casse, donc `/circuit/Le-Pro-Tour` atteint bien cette route — et
   // échouerait à la comparaison ci-dessous, rendant un 404 sur une URL que le
-  // routeur venait d'accepter. Même piège que les redirections `/Compo/x`.
+  // routeur venait d’accepter.
   const { slug: rawSlug } = useParams()
   const slug = slugify(rawSlug)
   const tr = useT()
