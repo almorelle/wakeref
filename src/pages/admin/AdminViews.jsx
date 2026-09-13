@@ -116,27 +116,74 @@ function GrapheMensuel({ mois }) {
   )
 }
 
-function ListeTop({ figures }) {
-  if (!figures.length) return <Vide>Aucune vue sur cette fenêtre.</Vide>
-  const max = figures[0]?.views || 1
+/* Liste classée, commune aux trois compteurs. Chaque entrée : `nom`, `views`,
+   `to` (lien optionnel, ouvert dans un onglet) et `extra` (badge ou précision
+   affichés après le nom). Le classement est celui reçu : trier est l'affaire
+   de l'appelant, qui sait sur quelle fenêtre il lit. */
+function ListeTop({ items }) {
+  if (!items.length) return <Vide>Aucune vue sur cette fenêtre.</Vide>
+  const max = items[0]?.views || 1
   return (
     <ol className={styles.top}>
-      {figures.map(f => (
-        <li key={f.figure_id} className={styles.topItem}>
+      {items.map(it => (
+        <li key={it.key} className={styles.topItem}>
           {/* La jauge est un fond de ligne, pas une barre à part : elle donne le
               rapport au premier d'un coup d'œil sans ajouter d'encre. */}
-          <span className={styles.jauge} style={{ width: `${(f.views / max) * 100}%` }} aria-hidden="true" />
-          <Link to={`/figures/${f.slug}`} target="_blank" rel="noopener" className={styles.topNom}>
-            {f.name}
-          </Link>
-          <SportBadge sport={f.sport} />
-          {!f.published && <span className={styles.brouillon}>dépubliée</span>}
-          <span className={styles.topVues}>{nf.format(f.views)}</span>
+          <span className={styles.jauge} style={{ width: `${(it.views / max) * 100}%` }} aria-hidden="true" />
+          {it.to ? (
+            <Link to={it.to} target="_blank" rel="noopener" className={styles.topNom}>{it.nom}</Link>
+          ) : (
+            <span className={styles.topNom}>{it.nom}</span>
+          )}
+          {it.extra}
+          <span className={styles.topVues}>{nf.format(it.views)}</span>
         </li>
       ))}
     </ol>
   )
 }
+
+/* Les entrées à zéro sur toute la mesure, sous la même forme que les figures
+   jamais ouvertes : une liste classée n'a rien à dire d'elles, mais leur
+   absence de vues est souvent l'information utile. */
+function JamaisVues({ items }) {
+  return (
+    <ul className={styles.jamais}>
+      {items.map(it => (
+        <li key={it.key}>
+          {it.to ? (
+            <Link to={it.to} target="_blank" rel="noopener">{it.nom}</Link>
+          ) : (
+            <span>{it.nom}</span>
+          )}
+          {it.extra}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// Classe sur une fenêtre et écarte les zéros : une ligne sans vue dans une
+// liste classée ne se lit que comme du bruit.
+function classer(items, champ) {
+  return items
+    .map(it => ({ ...it, views: Number(it[champ]) || 0 }))
+    .filter(it => it.views > 0)
+    .sort((a, b) => b.views - a.views)
+}
+
+const figureItem = f => ({
+  key: f.figure_id,
+  nom: f.name,
+  to: `/figures/${f.slug}`,
+  views: f.views,
+  extra: (
+    <>
+      <SportBadge sport={f.sport} />
+      {!f.published && <span className={styles.brouillon}>dépubliée</span>}
+    </>
+  ),
+})
 
 export default function AdminViews() {
   const [data, setData] = useState(null)
@@ -201,6 +248,33 @@ export default function AdminViews() {
   const { totaux, mois, top30, top365, jamais, pages, span, comps } = data
   const debut = totaux?.first_day ? dateLocale(totaux.first_day) : null
   const debutPages = span?.first_day ? dateLocale(span.first_day) : null
+
+  const compItems = comps.map(c => ({
+    key: c.competition_id,
+    nom: c.name,
+    to: competitionPath({ id: c.competition_id, name: c.name }),
+    views_30d: c.views_30d,
+    views_total: c.views_total,
+    extra: (
+      <>
+        <span className={styles.topMeta}>{formatCompetitionDate(c, 'fr')}</span>
+        {c.cancelled && <span className={styles.brouillon}>annulée</span>}
+      </>
+    ),
+  }))
+  const compsJamais = compItems.filter(c => Number(c.views_total) === 0)
+
+  // Un motif paramétré (`/composition/:id`) ne mène nulle part : pas de lien.
+  const pageItems = pages.map(p => ({
+    key: p.path,
+    nom: p.label,
+    to: p.path.includes(':') ? null : p.path,
+    views_30d: p.views_30d,
+    views_365d: p.views_365d,
+    views_total: p.views_total,
+    extra: <code className={styles.topMeta}>{p.path}</code>,
+  }))
+  const pagesJamais = pageItems.filter(p => Number(p.views_total) === 0)
   // Les mois antérieurs à la première mesure ne sont pas des mois à zéro : ils
   // n'ont pas été mesurés. Les tracer inventerait une chute au début du graphe.
   const moisMesures = debut
@@ -213,11 +287,49 @@ export default function AdminViews() {
         <h1 className={styles.title}>Vues</h1>
         <p className={styles.sub}>
           Compteur maison, conservé sans limite de durée — là où l’hébergeur ne
-          garde que trente jours. Ce sont des vues de pages de tricks, pas des
+          garde que trente jours. Ce sont des vues, pas des
           visiteurs : rien n’identifie qui que ce soit, et les robots qui
           exécutent le JavaScript sont comptés. À lire en relatif.
         </p>
       </div>
+
+      <section className={styles.section}>
+        <h2 className={styles.groupe}>Pages du site</h2>
+        <p className={styles.note}>
+          Compteur distinct de celui des tricks, démarré{' '}
+          {debutPages ? `le ${dateCourte.format(debutPages)}` : 'à la mise en service'} —
+          il ne remonte donc pas aussi loin. Ce sont des routes, pas des adresses :
+          les runs partagés ou les pages de circuit comptent sur une seule ligne.
+          Les fiches de tricks et de compétitions n’y figurent pas, elles ont leur
+          propre mesure plus bas.
+        </p>
+      </section>
+      {pages.length === 0 ? (
+        <Vide>Aucune page déclarée.</Vide>
+      ) : (
+        <>
+          <div className={styles.duo}>
+            <section className={styles.section}>
+              <p className="section-title">Top 30 jours</p>
+              <ListeTop items={classer(pageItems, 'views_30d')} />
+            </section>
+            <section className={styles.section}>
+              <p className="section-title">Top 12 mois</p>
+              <ListeTop items={classer(pageItems, 'views_365d')} />
+            </section>
+          </div>
+          {pagesJamais.length > 0 && (
+            <section className={styles.section}>
+              <p className="section-title">
+                Pages jamais ouvertes <span className={styles.compteur}>{pagesJamais.length}</span>
+              </p>
+              <JamaisVues items={pagesJamais} />
+            </section>
+          )}
+        </>
+      )}
+
+      <h2 className={styles.groupe}>Tricks</h2>
 
       <section className={styles.section}>
         <p className="section-title">En bref</p>
@@ -255,11 +367,11 @@ export default function AdminViews() {
       <div className={styles.duo}>
         <section className={styles.section}>
           <p className="section-title">Top 30 jours</p>
-          <ListeTop figures={top30} />
+          <ListeTop items={top30.map(figureItem)} />
         </section>
         <section className={styles.section}>
           <p className="section-title">Top 12 mois</p>
-          <ListeTop figures={top365} />
+          <ListeTop items={top365.map(figureItem)} />
         </section>
       </div>
 
@@ -289,89 +401,37 @@ export default function AdminViews() {
       </section>
 
       <section className={styles.section}>
-        <p className="section-title">Fiches de compétition</p>
+        <h2 className={styles.groupe}>Compétitions</h2>
         <p className={styles.note}>
-          Une ligne par compétition publiée, ouverte ou non. Comptées par id :
-          renommer une compétition ne remet pas son compteur à zéro. Le passé
-          antérieur à la mesure maison est une reprise de l’export de
-          l’hébergeur — totaux exacts, découpe par jour estimée.
+          Comptées par id : renommer une compétition ne remet pas son compteur à
+          zéro. Le passé antérieur à la mesure maison est une reprise de l’export
+          de l’hébergeur — totaux exacts, découpe par jour estimée.
         </p>
-        {comps.length === 0 ? (
-          <Vide>Aucune compétition publiée.</Vide>
-        ) : (
-          <table className={styles.pages}>
-            <thead>
-              <tr>
-                <th scope="col">Compétition</th>
-                <th scope="col" className={styles.num}>30 j</th>
-                <th scope="col" className={styles.num}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comps.map(c => (
-                <tr key={c.competition_id} className={c.views_total === 0 ? styles.ligneZero : ''}>
-                  <th scope="row">
-                    <Link
-                      to={competitionPath({ id: c.competition_id, name: c.name })}
-                      target="_blank"
-                      rel="noopener"
-                      className={styles.pageLabel}
-                    >
-                      {c.name}
-                    </Link>
-                    <span className={styles.pagePath}>
-                      {formatCompetitionDate(c, 'fr')}
-                      {c.tour_name ? ` · ${c.tour_name}` : ''}
-                      {c.cancelled ? ' · annulée' : ''}
-                    </span>
-                  </th>
-                  <td className={styles.num}>{nf.format(c.views_30d)}</td>
-                  <td className={styles.num}>{nf.format(c.views_total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
       </section>
-
-      <section className={styles.section}>
-        <p className="section-title">Pages du site</p>
-        <p className={styles.note}>
-          Compteur distinct de celui des tricks, démarré{' '}
-          {debutPages ? `le ${dateCourte.format(debutPages)}` : 'à la mise en service'} —
-          il ne remonte donc pas aussi loin. Ce sont des routes, pas des adresses :
-          les runs partagés ou les pages de circuit comptent sur une seule ligne.
-          Les fiches de tricks et de compétitions n’y figurent pas, elles ont leur
-          propre mesure ci-dessus.
-        </p>
-        {pages.length === 0 ? (
-          <Vide>Aucune page déclarée.</Vide>
-        ) : (
-          <table className={styles.pages}>
-            <thead>
-              <tr>
-                <th scope="col">Page</th>
-                <th scope="col" className={styles.num}>30 j</th>
-                <th scope="col" className={styles.num}>12 mois</th>
-                <th scope="col" className={styles.num}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pages.map(p => (
-                <tr key={p.path} className={p.views_total === 0 ? styles.ligneZero : ''}>
-                  <th scope="row">
-                    <span className={styles.pageLabel}>{p.label}</span>
-                    <code className={styles.pagePath}>{p.path}</code>
-                  </th>
-                  <td className={styles.num}>{nf.format(p.views_30d)}</td>
-                  <td className={styles.num}>{nf.format(p.views_365d)}</td>
-                  <td className={styles.num}>{nf.format(p.views_total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+      {comps.length === 0 ? (
+        <Vide>Aucune compétition publiée.</Vide>
+      ) : (
+        <>
+          <div className={styles.duo}>
+            <section className={styles.section}>
+              <p className="section-title">Top 30 jours</p>
+              <ListeTop items={classer(compItems, 'views_30d')} />
+            </section>
+            <section className={styles.section}>
+              <p className="section-title">Depuis le début</p>
+              <ListeTop items={classer(compItems, 'views_total')} />
+            </section>
+          </div>
+          {compsJamais.length > 0 && (
+            <section className={styles.section}>
+              <p className="section-title">
+                Compétitions jamais ouvertes <span className={styles.compteur}>{compsJamais.length}</span>
+              </p>
+              <JamaisVues items={compsJamais} />
+            </section>
+          )}
+        </>
+      )}
     </div>
   )
 }

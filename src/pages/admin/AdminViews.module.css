@@ -12,6 +12,19 @@
 .sub { font-size: 13.5px; color: var(--c-muted); margin-top: 6px; max-width: 68ch; line-height: 1.5; }
 
 .section { display: flex; flex-direction: column; }
+/* Un titre par compteur : sans lui, « Top 30 jours » revenait trois fois au même
+   niveau et on ne savait plus de quoi. Filet au-dessus pour marquer la coupure. */
+.groupe {
+  font-family: var(--font-title);
+  font-weight: 400;
+  font-size: clamp(20px, 3vw, 26px);
+  line-height: 1;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  color: var(--c-text);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--c-rule);
+}
 .note { font-size: 12px; color: var(--c-muted); max-width: 68ch; line-height: 1.5; margin-top: 10px; }
 .vide { font-size: 13px; color: var(--c-muted); padding: 10px 0; }
 .erreur { font-size: 13.5px; color: var(--c-accent-ink); max-width: 66ch; line-height: 1.6; }
@@ -194,6 +207,19 @@
   font-variant-numeric: tabular-nums;
   color: var(--c-accent-ink);
 }
+/* Précision après le nom (date d'une compétition, motif d'une route) : cède
+   la place au nom quand la ligne est étroite, jamais l'inverse. */
+.topMeta {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--c-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.jamais .topMeta { flex-shrink: 0; }
 .brouillon {
   position: relative;
   font-size: 9.5px;
@@ -213,32 +239,8 @@
   gap: 2px 16px;
 }
 .jamais li { display: flex; align-items: center; gap: 7px; padding: 5px 0; border-bottom: 1px dotted var(--c-rule); min-width: 0; }
-.jamais a { font-size: 13px; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jamais a, .jamais span:first-child { font-size: 13px; color: var(--c-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .jamais a:hover { color: var(--c-accent-ink); }
-
-/* ── Tableau des pages ── */
-.pages { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 4px; }
-.pages th, .pages td { padding: 7px 8px 7px 0; border-bottom: 1px dotted var(--c-rule); vertical-align: baseline; }
-.pages thead th {
-  font-size: 10.5px;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--c-muted);
-  font-weight: 700;
-  text-align: left;
-}
-.pages tbody th { text-align: left; font-weight: 400; }
-/* `.pages thead th` l'emporterait sur `.num` par spécificité : les en-têtes de
-   colonnes chiffrées doivent être ramenés à droite explicitement. */
-.pages thead th.num { text-align: right; }
-.pageLabel { display: block; color: var(--c-text); }
-a.pageLabel:hover { color: var(--c-accent-ink); }
-.pagePath { display: block; font-size: 11px; color: var(--c-muted); margin-top: 1px; overflow-wrap: anywhere; }
-/* Une page à zéro n'est pas une erreur d'affichage : elle reste lisible, juste
-   en retrait — c'est souvent l'information la plus intéressante du tableau. */
-.ligneZero .pageLabel { color: var(--c-muted); }
-.pages tbody td { font-family: var(--font-title); font-size: 15px; color: var(--c-text); white-space: nowrap; }
-.ligneZero td { color: var(--c-faint); }
 
 @media (max-width: 760px) {
   .duo { grid-template-columns: 1fr; gap: 1.5rem; }
