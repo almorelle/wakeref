@@ -1,8 +1,6 @@
 import { useCallback, useState, useEffect, useRef } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import styles from './AdminVideos.module.css'
 import Icon from '../../components/Icon'
 import { MAX_VIDEO_MB, refusSiTropLourd } from '../../lib/uploadLimits'
@@ -26,7 +24,7 @@ const deriveSourceType = (file, url) => {
 
 export default function AdminVideos() {
   const [searchParams] = useSearchParams()
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
   const prefigureId = searchParams.get('figure')
 
   const [figures, setFigures] = useState([])
@@ -194,7 +192,6 @@ export default function AdminVideos() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Vidéos</h1>

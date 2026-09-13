@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import styles from './FigureForm.module.css'
 import { useLocation } from 'react-router-dom'
 import Icon from '../../components/Icon'
@@ -131,7 +129,7 @@ export default function FigureForm() {
   const isEdit = !!id
   const navigate = useNavigate()
   const location = useLocation()
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
 
   // Création préremplie depuis une figure existante (bouton « Dupliquer »).
   const duplicateFrom = !isEdit ? (location.state?.duplicateFrom || null) : null
@@ -343,7 +341,6 @@ export default function FigureForm() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <div className={styles.header}>
         <div className={styles.headerTop}>
           <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/figures')}>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useT } from '../i18n/useT'
 import { useLanguage } from '../contexts/language-context'
@@ -47,6 +47,8 @@ function CompetitionDetail({ idSlug }) {
   const id = idFromParam(idSlug)
   const tr = useT()
   const { lang } = useLanguage()
+  const navigate = useNavigate()
+  const fromAgenda = useLocation().state?.from === '/competitions'
   const [comp, setComp] = useState(null)
   const [videos, setVideos] = useState([])
   const [videosFailed, setVideosFailed] = useState(false)
@@ -122,7 +124,20 @@ function CompetitionDetail({ idSlug }) {
       />
 
       <div className={styles.back}>
-        <Link to="/competitions" className="btn btn-ghost btn-sm">
+        {/* Venu du fil de l'agenda, ce lien est un RETOUR : un navigate(-1)
+            retrouve la position de défilement comme le bouton Retour du
+            navigateur, là où un PUSH relancerait l'ancrage sur « aujourd'hui ».
+            Arrivé autrement (lien partagé, page de circuit), c'est une vraie
+            navigation. Le href reste celui de l'agenda pour le clic milieu. */}
+        <Link
+          to="/competitions"
+          className="btn btn-ghost btn-sm"
+          onClick={(e) => {
+            if (!fromAgenda || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+            e.preventDefault()
+            navigate(-1)
+          }}
+        >
           <Icon name="arrow-left" /> {tr.competitions.title}
         </Link>
       </div>
@@ -132,7 +147,9 @@ function CompetitionDetail({ idSlug }) {
             sait pas ce que l'organisateur a produit. */}
         {comp.poster_path && (
           <div className={styles.posterWrap}>
-            <RemoteLogo path={comp.poster_path} imgClassName={styles.poster} />
+            {/* `eager` : l'affiche est en tête de page, c'est l'image que le
+                visiteur attend en premier — la différer ne ferait que la retarder. */}
+            <RemoteLogo path={comp.poster_path} imgClassName={styles.poster} eager />
           </div>
         )}
         <p className={styles.when}>

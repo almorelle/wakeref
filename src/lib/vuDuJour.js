@@ -1,10 +1,9 @@
 /* Dédoublonnage « une fois par jour et par navigateur » des compteurs de vues.
 
    Une clé par compteur, qui tient la journée entière et qu'on remplace au
-   premier passage du lendemain. Le dédoublonnage historique de `figure_views`
-   (`wakeref_viewed_<id>_<date>`, dans FigureDetail) pose au contraire une clé par
-   figure et par jour, jamais nettoyée — c'est ce qu'on évite ici, cf.
-   deferred-work.md. */
+   premier passage du lendemain. L'ancien dédoublonnage de `figure_views`
+   posait au contraire une clé par figure et par jour, jamais nettoyée ;
+   `useTrackFigureView` est passé sur ce helper et purge ces clés-là. */
 
 /**
  * Renvoie `true` si `valeur` a déjà été comptée aujourd'hui sous `cle`, et

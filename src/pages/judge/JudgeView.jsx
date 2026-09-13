@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getParcoursByCode } from '../../lib/competition/api'
-import { useHeatStore } from '../../lib/competition/heatStore'
-import { useCompetitionVoice } from '../../lib/competition/voice'
+import { getParcoursByCode } from '../../lib/judge/api'
+import { useHeatStore } from '../../lib/judge/heatStore'
+import { useJudgeVoice } from '../../lib/judge/voice'
 import { useToast } from '../../hooks/useToast'
 import ToastContainer from '../../components/Toast'
 import HeatTab from './HeatTab'
 import RunTab from './RunTab'
-import styles from './CompetitionView.module.css'
+import styles from './JudgeView.module.css'
 
 // Application juge d'un parcours partagé : charge par short-code (grant anon), puis
 // deux onglets Heat + Run alimentés par un store local (autosave par code). Le juge
 // juge en local — seul le parcours voyage entre devices.
-export default function CompetitionView() {
+export default function JudgeView() {
   const { code } = useParams()
   const navigate = useNavigate()
   const [row, setRow] = useState(null)
@@ -40,7 +40,7 @@ export default function CompetitionView() {
 
   // Saisie de code (/juge sans code)
   if (!code) {
-    const go = (e) => { e.preventDefault(); const c = input.trim(); if (c) navigate(`/juge/${c}`) }
+    const go = (e) => { e.preventDefault(); const c = input.trim(); if (c) navigate(`/juge/${encodeURIComponent(c)}`) }
     return (
       <div className={styles.gate}>
         <div className={styles.brand}>Wake<b>Ref</b> · Juge</div>
@@ -74,7 +74,7 @@ function HeatRunApp({ code, row }) {
   const [state, dispatch] = useHeatStore(code, row)
   const { toasts, toast } = useToast()
   // Moteur voix au niveau app : la file de transcription survit aux changements d'onglet.
-  const voice = useCompetitionVoice(dispatch, (msg) => toast(msg, 'error'))
+  const voice = useJudgeVoice(dispatch, (msg) => toast(msg, 'error'))
 
   return (
     <div className={styles.app}>

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
 import RunSaisie from '../../components/RunSaisie'
 import { GRIDS, GRID_OPTIONS, serializeEntry } from '../../lib/compoGrids'
@@ -31,7 +29,7 @@ export default function JudgeRunForm() {
   const { id } = useParams()
   const isEdit = !!id
   const navigate = useNavigate()
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
 
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving]   = useState(false)
@@ -149,7 +147,6 @@ export default function JudgeRunForm() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <div className={styles.header}>
         <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/runs-entrainement-juge')}>
           <Icon name="arrow-left" /> Retour

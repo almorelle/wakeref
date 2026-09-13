@@ -45,9 +45,9 @@ const HORS_NAVIGATION = [
   {
     path: '/grille-composition-old',
     title: 'Grille de composition (héritée)',
-    desc: 'Ancienne CompositionSimple, remplacée par la feuille France 2026. Atteignable depuis rien, mais indexable et porteuse de la même description que sa remplaçante — doublon connu, tracé dans deferred-work.md.',
+    desc: 'Ancienne CompositionSimple, remplacée par la feuille France 2026. Atteignable depuis rien ; marquée noindex pour ne pas concurrencer sa remplaçante dans les moteurs.',
     sitemap: false,
-    noindex: false,
+    noindex: true,
     legacy: true,
   },
 ]

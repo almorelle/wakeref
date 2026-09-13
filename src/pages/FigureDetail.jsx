@@ -1,6 +1,7 @@
 import { Fragment, useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { useTrackFigureView } from '../hooks/useTrackFigureView'
 import { externalUrl } from '../lib/url'
 import { SportBadge, CategoryBadge, ContextBadge } from '../components/Badges'
 import { useT } from '../i18n/useT'
@@ -70,6 +71,10 @@ export default function FigureDetail() {
   const [takedownVideo, setTakedownVideo] = useState(null)
   const [takedownForm, setTakedownForm] = useState({ name: '', email: '', message: '' })
   const [takedownSent, setTakedownSent] = useState(false)
+  // null | 'flood' | 'error' — l'envoi n'était jamais vérifié : la modale
+  // affichait « demande envoyée » même quand l'insertion avait échoué.
+  const [takedownError, setTakedownError] = useState(null)
+  const [takedownSending, setTakedownSending] = useState(false)
   const [copied, setCopied] = useState(false)
   // Discipline d'onglet tips préférée, mémorisée comme la langue (wakeref_lang).
   const [tipFacet, setTipFacet] = useState(() => localStorage.getItem('wakeref_facet') || '')
@@ -97,21 +102,8 @@ export default function FigureDetail() {
     return () => { active = false }
   }, [slug])
 
-  // Compteur de vues : une vue par figure / jour / navigateur (dédupe localStorage,
-  // pas d'auth). Écriture via la RPC security definer ; erreurs avalées (best-effort).
-  useEffect(() => {
-    if (!figure?.id) return
-    const key = `wakeref_viewed_${figure.id}_${new Date().toISOString().slice(0, 10)}`
-    // Flag posé AVANT l'appel : dédupe le double-rendu StrictMode / les remontages
-    // rapides. try/catch car localStorage throw en navigation privée.
-    try {
-      if (localStorage.getItem(key)) return
-      localStorage.setItem(key, '1')
-    } catch { /* storage indispo : on tracke au plus une fois par montage */ }
-    // NB : le builder supabase est « thenable » mais n'expose pas .catch() ;
-    // on passe le handler d'erreur en 2e argument de .then().
-    supabase.rpc('track_figure_view', { fig_id: figure.id }).then(() => {}, () => {})
-  }, [figure?.id])
+  // Compteur de vues : une vue par figure / jour / navigateur.
+  useTrackFigureView(figure?.id ?? null)
 
   // Centre le nœud courant dans l'arbre au chargement : sinon, sur mobile,
   // l'arbre déborde ancré à gauche et le nœud courant + ses « étapes suivantes »
@@ -143,8 +135,13 @@ export default function FigureDetail() {
   const submitTakedown = async (e) => {
     e.preventDefault()
     if (!takedownForm.email) return
-    await supabase.from('takedown_requests').insert({ video_id: takedownVideo.id, ...takedownForm })
-    setTakedownSent(true)
+    setTakedownSending(true); setTakedownError(null)
+    const { error, status } = await supabase.from('takedown_requests')
+      .insert({ video_id: takedownVideo.id, ...takedownForm })
+    setTakedownSending(false)
+    if (!error) { setTakedownSent(true); return }
+    // PT429 = plafond d'envois atteint (HTTP 429 côté PostgREST).
+    setTakedownError(status === 429 || error.code === 'PT429' ? 'flood' : 'error')
   }
 
   const getVideoUrl = (video) => {
@@ -492,7 +489,7 @@ export default function FigureDetail() {
                       <div className={styles.creditNote}>
                         <Icon name="info-circle" />
                         {tr.pedagogicNote}{' '}
-                        <button className={styles.takedownBtn} onClick={() => { setTakedownVideo(v); setTakedownSent(false) }}>
+                        <button className={styles.takedownBtn} onClick={() => { setTakedownVideo(v); setTakedownSent(false); setTakedownError(null) }}>
                           {tr.takedownCta}
                         </button>
                       </div>
@@ -538,9 +535,15 @@ export default function FigureDetail() {
                     <textarea className={`input ${styles.takedownTextarea}`} rows={3} placeholder={tr.takedownMsgPh}
                       value={takedownForm.message} onChange={e => setTakedownForm(f => ({ ...f, message: e.target.value }))} />
                   </div>
+                  {takedownError && (
+                    <p className={styles.takedownError} role="alert">
+                      {takedownError === 'flood' ? tr.takedownFlood : tr.takedownError}{' '}
+                      <Link to="/contact">{tr.takedownContactLink}</Link>
+                    </p>
+                  )}
                   <div className={styles.modalActions}>
                     <button type="button" className="btn btn-ghost" onClick={() => setTakedownVideo(null)}>{tr.cancel}</button>
-                    <button type="submit" className="btn btn-primary">{tr.takedownSend}</button>
+                    <button type="submit" className="btn btn-primary" disabled={takedownSending}>{tr.takedownSend}</button>
                   </div>
                 </form>
               )

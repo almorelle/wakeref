@@ -22,16 +22,16 @@ de ces lots sont listés dans les sections ci-dessous, chacune sous sa revue.
 
 ## from spec-rename-routes (review 2026-09-07)
 - **Route-name drift in the deeper docs.** `docs/component-inventory.md:94-97`, `docs/api-contracts.md:107`, `docs/source-tree-analysis.md:71-92`, `docs/architecture.md:142`, `docs/development-guide.md:92-103` and `README.md:43` still name the old routes. `CLAUDE.md` and `project-context.md` were fixed in the change itself (they are the normative agent files); these are the "deeper docs" project-context tells agents to cross-reference. Cheapest fix is a `bmad-document-project` rescan rather than hand-editing six files.
-- **`/grille-composition-old` is an indexable near-duplicate of `/grille-composition`.** `CompositionSimple` ships a title/description with no `noindex` and its description string is *verbatim* identical to `France2026`'s. Pre-existing, but the rename made the two URLs siblings, which sharpens the duplicate-content signal. Either mark the legacy page `noindex` or delete it — it is reachable from nothing.
-- **`CompetitionView.jsx:43` does not encode the parcours code.** `navigate(`/juge/${c}`)` with raw trimmed input: a pasted value containing `#` yields an empty code and a silent re-render, one containing `/` produces `/juge/a/b`, which matches nothing and lands on the chromeless 404 with no way back to the gate. `encodeURIComponent(c)` fixes both. Pre-existing; left alone because the spec mandated "rename only, no behaviour change".
-- **Lot A file naming.** The judging module keeps `pages/competition/`, `lib/competition/`, `components/competition/` and the `CompetitionView` component, while `competitions` is about to mean the public agenda. Lot A a été livré sans ce renommage : les deux sens de « competition » cohabitent donc bel et bien dans l'arborescence. Donner au module de jugement un espace de noms distinct (pas `competition/`) — les *routes*, elles, sont déjà sans ambiguïté (`/juge*` vs `/competitions`), seul le dossier ne l'est pas.
+- ~~**`/grille-composition-old` is an indexable near-duplicate of `/grille-composition`.**~~ — **traité le 2026-09-13** : `<SEO noindex>` sur `CompositionSimple`, et `AdminSpecial` le dit.
+- ~~**`CompetitionView.jsx:43` does not encode the parcours code.**~~ — **traité le 2026-09-13** : `encodeURIComponent` dans `JudgeView.jsx`.
+- ~~**Lot A file naming.**~~ — **traité le 2026-09-13** : le module de jugement vit dans `pages/judge/`, `lib/judge/`, `components/judge/` ; `CompetitionView` → `JudgeView`, `useCompetitionVoice` → `useJudgeVoice`. Clé `wakeref_heat_<code>` inchangée. Les docs de `docs/` gardent les anciens chemins (même rescan que ci-dessus).
 - **The legacy redirects have no removal date.** `/compo*`, `/judge*`, `/competition*` redirect indefinitely. They cost nothing and protect shared links, and the agenda has since shipped without conflict: `/competition` (singular) is not needed by it (`/competitions` is). Reste du poids mort à reconsidérer une fois les anciens liens périmés — pas de jalon pour ça, donc à décider à froid.
 
 ## from spec-competitions-admin (review 2026-09-07)
-- **Le logo d'une compétition non publiée est servi par URL.** Le bucket `videos` est public et sa policy select accepte tout objet ayant un segment de dossier ; la RLS de la table ne s'étend pas au Storage. Le chemin n'est pas devinable (`logo_path` n'existe que dans la ligne protégée), donc c'est de l'obscurité, pas une fuite — mais à trancher si un brouillon doit être vraiment invisible (les lots publics sont livrés, la question n'a jamais été tranchée). Même situation que les vidéos de figures non publiées.
+- ~~**Le logo d'une compétition non publiée est servi par URL.**~~ — **traité le 2026-09-13**, et c'était pire que noté : la policy SELECT de `storage.objects` était ouverte à anon, donc `list('competitions')` avec la clé anon rendait le nom de chaque fichier (38 constatés), brouillons compris. Migration `0025-storage-list-admin-only.sql` (listing réservé à l'admin ; les URL publiques restent servies) + noms de fichiers en UUID dans `CompetitionForm`. **À appliquer sur la base live.** Reste vrai : qui a l'URL exacte a le fichier — nature d'un bucket public.
 - **Remplacement des vidéos en delete-puis-insert, sans transaction.** Le formulaire valide désormais longueur et schéma avant d'y toucher, ce qui supprime la cause connue de rejet, mais une coupure réseau entre les deux instructions laisse la table enfant vide. Le fix propre est une RPC `security definer` qui fait les deux dans une transaction ; pas rentable tant qu'un seul admin saisit.
 - ~~**Upload du logo sans plafond de taille**~~ — **traité le 2026-09-09** : `src/lib/uploadLimits.js` (25 Mo vidéo, 5 Mo image) branché sur `AdminVideos`, `JudgeRunForm` et `CompetitionForm`, plus `file_size_limit` sur le bucket (`scripts/migrations/0020-bucket-file-size.sql`). **Reste ouvert : la vérification du type RÉEL du fichier.** Rien ne lit les octets d'en-tête — un `.mp4` renommé depuis un `.exe` est accepté. Le bucket est public, donc c'est un vecteur de distribution ; l'écriture y est réservée à l'admin authentifié, ce qui borne le risque à une erreur de manipulation.
-- **Toast de succès perdu à la navigation.** `toast(...)` suivi de `navigate(...)` démonte le `ToastContainer` local avant l'affichage. Pattern hérité de `JudgeRunForm.jsx:145` ; se corrigerait avec un toast au niveau de l'`AdminLayout`.
+- ~~**Toast de succès perdu à la navigation.**~~ — **traité le 2026-09-13** : un seul `useToast` dans `AdminLayout`, transmis aux pages par `useOutletContext()` ; le layout ne se démonte pas, le toast survit au `navigate()`.
 
 ## from spec-competitions-public (review 2026-09-08)
 - ~~**Unify the video cards with `FigureDetail`.**~~ — **traité le 2026-09-12**
@@ -40,15 +40,17 @@ de ces lots sont listés dans les sections ci-dessous, chacune sous sa revue.
   détection de plateforme vit dans `lib/videoSource.js`, et `FigureDetail`
   n'héberge plus en propre que le lecteur des fichiers uploadés — il importe
   `VideoCards.module.css` pour lui.
-- **Storage orphans when an image is removed without replacement.** In `CompetitionForm`, the orphan cleanup requires `files[k]` to be set, so clearing an image nulls the column and leaves the object in a bucket no screen lists. Pre-existing, now applying to two images instead of one.
+- ~~**Storage orphans when an image is removed without replacement.**~~ — **traité le 2026-09-13** : `CompetitionForm` compare les chemins à ceux chargés depuis la base (`stored`), plus à l'état du formulaire que « Retirer » vidait. Les orphelins créés avant le correctif restent dans le bucket.
 - **`RemoteLogo` per-instance failure state.** Fine today (one instance per page), but a list of N federal rows with a missing `competitions/ffsnw.png` would issue N independent 404s.
-- **Tour logos are locked to `.png`.** A `.svg` or `.jpg` upload silently never appears. Consider trying a small extension list, or storing the extension.
+- **Tour logos are locked to `.png`.** Accepté (2026-09-13) : convention tenue par l'admin, qui dépose des PNG. Essayer plusieurs extensions coûterait une requête 404 par essai.
 - ~~**`generate-sitemap.js` fetches competitions with no `.limit()`**~~ —
   **traité le 2026-09-09** (`3f7cb2f`) : la requête porte `.limit(MAX_ROWS)` et
   passe par `avertirSiPlafondAtteint`, comme celle des figures.
-- **The in-page "← Compétitions" link is a PUSH**, so it re-triggers the ribbon anchor and discards the scroll position, while the browser's Back correctly preserves it. Two behaviours for what reads as one action.
+- ~~**The in-page "← Compétitions" link is a PUSH**~~ — **traité le 2026-09-13** : le ruban passe `state.from` à la fiche ; venu de `/competitions`, le lien fait `navigate(-1)` et retrouve la position.
 
-## Boîtes publiques sans plafond (antérieur au lot C)
+## ~~Boîtes publiques sans plafond (antérieur au lot C)~~ — traité le 2026-09-13
+
+Migration `0026-submissions-takedowns-rate-limit.sql` : même trigger que `competition_submissions` (10/min, 60/jour, PT429) sur `video_submissions` et `takedown_requests`, grants anon par colonne, et les deux formulaires affichent enfin l'échec (la modale de retrait annonçait « envoyée » sans rien vérifier). **À appliquer sur la base live.** Reste vrai ci-dessous : le plafond est global. Contexte d'origine :
 
 `video_submissions` et `takedown_requests` acceptent des insertions anonymes sans
 limitation de débit, et la première déclenche un e-mail à chaque ligne. Le
@@ -71,12 +73,14 @@ navigateur ne déclenche pas le chargement différé d'une image d'aire nulle. E
 reste invisible indéfiniment. Constaté sur l'emblème des pages de circuit,
 corrigé là par le prop `eager` + une largeur minimale.
 
-**Reste exposé** : `CompetitionDetail.jsx` (logo de circuit et logo FFSNW dans le
-bloc d'affiliation) appelle `RemoteLogo` sans réserver de largeur. Non reproduit
-sur un cache chaud. À traiter en réservant la place plutôt qu'en passant tout en
-`eager` — ces logos-là ne sont pas en haut de page.
+~~**Reste exposé** : `CompetitionDetail.jsx`~~ — **traité le 2026-09-13** :
+`RemoteLogo` réserve désormais une largeur minimale égale à `height`, ce qui
+couvre le bloc d'affiliation ; l'affiche de la fiche, en tête de page, passe en
+`eager`.
 
-## Clés `localStorage` du dédoublonnage de `figure_views` (2026-09-12)
+## ~~Clés `localStorage` du dédoublonnage de `figure_views` (2026-09-12)~~ — traité le 2026-09-13
+
+`hooks/useTrackFigureView.js` passe par `vuDuJour.js` et purge les anciennes clés `wakeref_viewed_*`. Contexte d'origine :
 
 `FigureDetail.jsx` pose une clé par figure et par jour (`wakeref_viewed_<id>_<date>`)
 pour ne pas compter deux fois la même visite. Ces clés ne sont jamais relues

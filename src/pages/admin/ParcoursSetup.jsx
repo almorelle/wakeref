@@ -1,16 +1,14 @@
 import { useEffect, useReducer, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import CableMinimap from '../../components/competition/CableMinimap'
+import { useNavigate, useParams, useOutletContext } from 'react-router-dom'
+import CableMinimap from '../../components/judge/CableMinimap'
 import {
   DEFAULT_CABLE_SPIN, DEFAULT_NB_POULIES, DEFAULT_POULIE_START, DEFAULT_NEXT_ID,
   defaultParcours, renumberPoulies, syncPoulies, syncTwins, toggleSecondPass,
   insertZoneAt, setupSummary, snapshotFrom, initFromSnapshot,
-} from '../../lib/competition/model'
+} from '../../lib/judge/model'
 import {
   loadParcours, insertParcours, updateParcours, DuplicateNameError,
-} from '../../lib/competition/api'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
+} from '../../lib/judge/api'
 import Icon from '../../components/Icon'
 import styles from './ParcoursSetup.module.css'
 
@@ -92,7 +90,7 @@ export default function ParcoursSetup() {
   const { cableSpin, nbPoulies, poulieStart, parcours } = state
   const { id } = useParams()
   const navigate = useNavigate()
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
 
   const [name, setName] = useState('')
   const [savedCode, setSavedCode] = useState(id || null) // short-code une fois persisté
@@ -179,7 +177,6 @@ export default function ParcoursSetup() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
 
       <div className={styles.headerBar}>
         <input

@@ -62,7 +62,7 @@ function useRecorder() {
 
 // Hook principal : figures + enregistreur + file d'attente de transcription.
 // `enqueue(kind, blob, target)` où target = { fill:'fillTrick'|'fillAir'|'fillAdhoc', ...coords }.
-export function useCompetitionVoice(dispatch, onError) {
+export function useJudgeVoice(dispatch, onError) {
   const index = useVoiceFigures()
   const indexRef = useRef(index)
   useEffect(() => { indexRef.current = index }, [index])

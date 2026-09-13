@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import CableMinimap from '../../components/competition/CableMinimap'
-import { sideLabel } from '../../lib/competition/model'
-import { linearPos } from '../../lib/competition/heatStore'
-import { micSupported } from '../../lib/competition/voice'
+import CableMinimap from '../../components/judge/CableMinimap'
+import { sideLabel } from '../../lib/judge/model'
+import { linearPos } from '../../lib/judge/heatStore'
+import { micSupported } from '../../lib/judge/voice'
 import { loadWhisper } from '../../lib/whisperStt'
 import {
   RATES, RLAB, leftSide, rightSide, secOf, moduleKind, moduleSides,
   entrySummary, zoneShortLabel,
-} from '../../lib/competition/runModel'
+} from '../../lib/judge/runModel'
 import styles from './RunTab.module.css'
 
 // Bouton micro PUSH-TO-TALK : maintien = enregistre, relâche = stop → transcription.

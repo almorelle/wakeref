@@ -52,7 +52,7 @@ const CompetitionForm = lazy(() => import('./pages/admin/CompetitionForm'))
 const AdminParcours = lazy(() => import('./pages/admin/AdminParcours'))
 const ParcoursSetup = lazy(() => import('./pages/admin/ParcoursSetup'))
 // Consommateur public d'un parcours partagé (hors Navbar, lazy) — comme le labo juge.
-const CompetitionView = lazy(() => import('./pages/competition/CompetitionView'))
+const JudgeView = lazy(() => import('./pages/judge/JudgeView'))
 
 export default function App() {
   return (
@@ -118,8 +118,8 @@ export default function App() {
           <Route path="/grille-composition" element={<France2026 />} />
 
           {/* Juge (public, hors Navbar) : le juge charge un parcours par son code */}
-          <Route path="/juge" element={<CompetitionView />} />
-          <Route path="/juge/:code" element={<CompetitionView />} />
+          <Route path="/juge" element={<JudgeView />} />
+          <Route path="/juge/:code" element={<JudgeView />} />
 
           {/* Anciens chemins encore en circulation (runs partagés, codes de parcours
               transmis aux juges, pages indexées). L'ensemble des suffixes legacy est

@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { listParcours, duplicateParcours, deleteParcours } from '../../lib/competition/api'
-import { zonesOnly } from '../../lib/competition/model'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
+import { Link, useNavigate, useOutletContext } from 'react-router-dom'
+import { listParcours, duplicateParcours, deleteParcours } from '../../lib/judge/api'
+import { zonesOnly } from '../../lib/judge/model'
 import Icon from '../../components/Icon'
 import styles from './AdminParcours.module.css'
 
@@ -12,7 +10,7 @@ const zoneCount = (data) => zonesOnly(data?.parcours || []).length
 export default function AdminParcours() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
   const navigate = useNavigate()
 
   const load = async () => {
@@ -40,7 +38,6 @@ export default function AdminParcours() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
 
       <div className={styles.head}>
         <h1 className={styles.title}>Parcours de compétition</h1>

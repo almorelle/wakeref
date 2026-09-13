@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { formatCompetitionDate } from '../../lib/competitionDates'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
 import styles from './AdminCompetitions.module.css'
 
@@ -12,7 +10,7 @@ const AFFILIATION_LABELS = { federal: 'Fédérale', independent: 'Indépendante'
 export default function AdminCompetitions() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
   const navigate = useNavigate()
 
   // Chargement inline plutôt qu'une fonction `load` externe : non mémoïsée, elle
@@ -76,7 +74,6 @@ export default function AdminCompetitions() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Compétitions</h1>

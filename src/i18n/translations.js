@@ -95,6 +95,9 @@ export const t = {
     takedownMsgPh:   'À quel titre ? Auteur·ice, personne filmée…',
     takedownSend:    'Envoyer la demande',
     takedownSuccessMsg: 'Votre demande a bien été envoyée. Nous traiterons votre demande dans les plus brefs délais.',
+    takedownFlood:   'Trop de demandes reçues à l’instant : la vôtre n’a pas été enregistrée. Réessayez dans une minute, ou écrivez-nous directement :',
+    takedownError:   'L’envoi a échoué : votre demande n’a pas été enregistrée. Réessayez, ou écrivez-nous directement :',
+    takedownContactLink: 'page Contact',
     cancel: 'Annuler',
     close:  'Fermer',
     menu:   'Menu',
@@ -396,6 +399,7 @@ export const t = {
     submitSending:     'Envoi en cours…',
     submitSuccess:     'Merci ! Ta soumission a bien été reçue. Je l\'examinerai dès que possible.',
     submitError:       'Une erreur est survenue. Réessaie dans quelques instants.',
+    submitFlood:       'Trop de vidéos soumises à l’instant. Réessaie dans une minute.',
   },
 
   en: {
@@ -494,6 +498,9 @@ export const t = {
     takedownMsgPh:   'In what capacity? Author, person filmed…',
     takedownSend:    'Send request',
     takedownSuccessMsg: 'Your request has been submitted. We will process it as soon as possible.',
+    takedownFlood:   'Too many requests just now: yours was not recorded. Try again in a minute, or write to us directly:',
+    takedownError:   'Sending failed: your request was not recorded. Try again, or write to us directly:',
+    takedownContactLink: 'Contact page',
     cancel: 'Cancel',
     close:  'Close',
     menu:   'Menu',
@@ -795,6 +802,7 @@ export const t = {
     submitSending:     'Sending…',
     submitSuccess:     'Thank you! Your submission has been received. I\'ll review it as soon as possible.',
     submitError:       'Something went wrong. Please try again in a moment.',
+    submitFlood:       'Too many videos submitted just now. Try again in a minute.',
   },
 }
 

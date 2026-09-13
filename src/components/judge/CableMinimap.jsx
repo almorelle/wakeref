@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { zonesOnly } from '../../lib/competition/model'
+import { zonesOnly } from '../../lib/judge/model'
 import styles from './CableMinimap.module.css'
 
 // Aperçu SVG du câble et du parcours. Géométrie PORTÉE TELLE QUELLE depuis

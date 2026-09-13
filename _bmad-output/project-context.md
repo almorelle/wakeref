@@ -38,7 +38,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Build, lint & verification
 
-- **`npm run lint` (ESLint 9) is the only automated check — there are no tests.** The target is 0 errors / 0 warnings. ⚠️ **9 errors / 7 warnings remain, ALL inside the judging & competition module** (`admin/ParcoursSetup.jsx`, `admin/AdminParcours.jsx`, `competition/CompetitionView.jsx`, `competition/HeatTab.jsx`, `JudgeVoice.jsx`, `CompositionSimple.jsx`, `France2026.jsx`) — that module is **still under active development**, so its noise is accepted and deliberately not churned. **Everything else is clean: any new error you introduce outside that module is yours.** Inside it, prefer solving the pattern (re-key the component, derive the flag) over moving a `setState` one line down to silence the rule.
+- **`npm run lint` (ESLint 9) is the only automated check — there are no tests.** The target is 0 errors / 0 warnings. ⚠️ **9 errors / 7 warnings remain, ALL inside the judging & competition module** (`admin/ParcoursSetup.jsx`, `admin/AdminParcours.jsx`, `judge/JudgeView.jsx`, `judge/HeatTab.jsx`, `JudgeVoice.jsx`, `CompositionSimple.jsx`, `France2026.jsx`) — that module is **still under active development**, so its noise is accepted and deliberately not churned. **Everything else is clean: any new error you introduce outside that module is yours.** Inside it, prefer solving the pattern (re-key the component, derive the flag) over moving a `setState` one line down to silence the rule.
 - The `react-hooks` rules are the strict React-Compiler set: no `setState` synchronously inside a `useEffect` body, no component declared during render (hoist it to module scope), no ref `.current` access during render. `react/prop-types` is off; unused vars are warnings (`^[A-Z_]` vars / `^_` args exempt).
 - **`npm run build`** runs `scripts/generate-sitemap.js` then `vite build`. The sitemap step is **best-effort** — a Supabase outage or missing env vars no longer fails the build. To verify a change, prefer **`npm run dev`** over a full build.
 - The `VITE_SUPABASE_*` env vars are baked into the client bundle (`import.meta.env`), so they are still required at build time for the app to work.
@@ -51,13 +51,13 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Do NOT add a server / API layer — the backend is Postgres (RLS + views + RPCs) plus 3 Deno Edge Functions.
 - Do NOT add a CSS framework or component library — UI is **CSS Modules** + global tokens in `src/index.css` (`[data-theme]` theming).
 - Do NOT import Tabler icons directly in a component — extend the `Icon` wrapper's name map instead.
-- Do NOT put domain logic in components. Scoring (`lib/compoGrids.js`), diffing (`lib/judgeDiff.js`), course/run models (`lib/competition/*`) and the voice pipeline (`voiceMatch.js`, `normalizeJib.js`, `whisperStt.js`) are React-free modules. **`compoGrids.js` must stay React-free** — it is imported by both `Compo` and `RunSaisie`, and a React import there re-creates the cycle it was extracted to break.
+- Do NOT put domain logic in components. Scoring (`lib/compoGrids.js`), diffing (`lib/judgeDiff.js`), course/run models (`lib/judge/*`) and the voice pipeline (`voiceMatch.js`, `normalizeJib.js`, `whisperStt.js`) are React-free modules. **`compoGrids.js` must stay React-free** — it is imported by both `Compo` and `RunSaisie`, and a React import there re-creates the cycle it was extracted to break.
 - Do NOT make `@huggingface/transformers` a static import, and do NOT remove the `workbox.globIgnores` entries (`transformers-*`, `*.wasm`, `ort-*`, `jszip*`). A regular visitor must never download the speech stack; Whisper weights come from the HF CDN at runtime, never `dist/`.
 - New `scripts/*.js` are Node ESM and load env via `dotenv` from `.env.local`.
 
 ### Data layer (Supabase)
 
-- Use the singleton client from `src/lib/supabase.js` — never call `createClient` elsewhere. Components query Supabase directly; there is no service/repository layer. The one deliberate exception is `src/lib/competition/api.js` (it owns short-code generation and `23505` retry semantics).
+- Use the singleton client from `src/lib/supabase.js` — never call `createClient` elsewhere. Components query Supabase directly; there is no service/repository layer. The one deliberate exception is `src/lib/judge/api.js` (it owns short-code generation and `23505` retry semantics).
 - **Two read views.** `figures_full` = detail (JSON aggregates: videos, prerequisites, switch group, built-on tree, decomposition). `figures_card` = light list payload + `aliases`, used by `/figures`, the home rows, and cached in `localStorage` as the **offline catalogue of the voice matcher**. Use raw tables mainly for admin writes and narrow lookups.
 - `figures_full` JSON aggregates (`videos`, `prerequisites`, `switch_versions`, `built_on_children`) may arrive as **strings** via PostgREST — guard with `typeof x === 'string' ? JSON.parse(x) : x`.
 - **Switch groups** share videos via `coalesce(switch_of, id)`; `takedown_requested = true` hides a video everywhere.
@@ -106,13 +106,13 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Judging modules (`/entrainement-juge`, `/juge`, `/grille-composition`)
 
-- **Local-first, no server state.** A heat lives only in `localStorage['wakeref_heat_<code>']` (`lib/competition/heatStore.js`); the voice corpus only in IndexedDB (`lib/voiceDataset.js`). The ONLY thing that travels between devices is the *parcours*, read by short code via `get_parcours`. Don't add multi-judge sync assumptions, and don't rename a storage key without a migration — that discards a judge's work in progress.
+- **Local-first, no server state.** A heat lives only in `localStorage['wakeref_heat_<code>']` (`lib/judge/heatStore.js`); the voice corpus only in IndexedDB (`lib/voiceDataset.js`). The ONLY thing that travels between devices is the *parcours*, read by short code via `get_parcours`. Don't add multi-judge sync assumptions, and don't rename a storage key without a migration — that discards a judge's work in progress.
 - **Scoring is binary and normalized to /20** (`score20`), no degree thresholds (anti-perf invariant), so grids stay comparable. Adding a grid = one entry in `GRIDS` (`lib/compoGrids.js`) + translations.
 - **`SCORING_SLUGS` references figure slugs by value** and slugs are editable in admin -> silent drift. A dev-only guard in `Compo` warns when a referenced slug is missing; check the console after renames.
-- `lib/competition/runModel.js` **mutates** the rows it receives — the reducer always hands it a deep clone. Keep that contract if you touch either side.
+- `lib/judge/runModel.js` **mutates** the rows it receives — the reducer always hands it a deep clone. Keep that contract if you touch either side.
 - `France2026.jsx` keeps its **own** self-contained grids on purpose: the official sheet must not move when `compoGrids.js` evolves. A rules change may need applying in both.
 - **Voice: two house models** — `almorelle/whisper-wakeref-onnx` (tricks, with vocab bias) and `almorelle/whisper-wakeref-jib-onnx` (jib passes, no bias, then `normalizeJib`).
-- **Transcription must stay non-blocking** (8-15 s/pass): the judge dictates, the entry goes "pending", a background queue fills it in (`lib/competition/voice.js`). Never make the judge wait.
+- **Transcription must stay non-blocking** (8-15 s/pass): the judge dictates, the entry goes "pending", a background queue fills it in (`lib/judge/voice.js`). Never make the judge wait.
 - **Adding a jib trick** = a line in the `VOCAB` of `lib/normalizeJib.js` (vocabulary sourced from `scripts/jib-atoms.md`), never a new regex. Verify with `node scripts/test-normalize-jib.mjs`.
 - `lib/judgeDiff.js` aligns by element **type** (LCS) then judges content **binary** correct/wrong — no partial credit, no score computed there.
 

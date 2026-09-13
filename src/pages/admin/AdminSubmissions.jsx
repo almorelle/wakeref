@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { externalUrl } from '../../lib/url'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import styles from './AdminSubmissions.module.css'
 import Icon from '../../components/Icon'
 
 export default function AdminSubmissions() {
   const [submissions, setSubmissions] = useState([])
   const [loading, setLoading] = useState(true)
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
 
   const load = async () => {
     const { data } = await supabase
@@ -33,7 +32,6 @@ export default function AdminSubmissions() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <h1 className={styles.title}>Soumissions de vidéos</h1>
 
       {loading && <span className="spinner" />}

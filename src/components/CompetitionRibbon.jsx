@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Link, useNavigationType } from 'react-router-dom'
+import { Link, useLocation, useNavigationType } from 'react-router-dom'
 import { useT } from '../i18n/useT'
 import { useLanguage } from '../contexts/language-context'
 import { competitionState, competitionPath, formatCompetitionDate, dateSegments, todayISO } from '../lib/competitionDates'
@@ -42,6 +42,9 @@ export default function CompetitionRibbon({ rows, suggest = false, timeline = tr
   const { lang } = useLanguage()
   const anchorRef = useRef(null)
   const navType = useNavigationType()
+  // Transmis à la fiche : elle sait ainsi qu'on vient de CE fil, et son lien
+  // « ← Compétitions » peut revenir en arrière au lieu d'ouvrir une page neuve.
+  const { pathname } = useLocation()
 
   const now = new Date()
   const states = rows.map(c => competitionState(c, now))
@@ -163,7 +166,7 @@ export default function CompetitionRibbon({ rows, suggest = false, timeline = tr
               emptyClassName={styles.nodeEmpty}
               fallback={<span className={styles.logoFallback} aria-hidden="true">{[...c.name].slice(0, 2).join('')}</span>}
             />
-            <Link to={competitionPath(c)} className={styles.card}>
+            <Link to={competitionPath(c)} state={{ from: pathname }} className={styles.card}>
               <span className={styles.when}>
                 {dateSegments(formatCompetitionDate(c, lang), lang).map((seg, n) => (
                   <span key={n} className={seg.isMonth ? styles.month : undefined}>{seg.text}</span>

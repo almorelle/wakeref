@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { zonesOnly } from '../../lib/competition/model'
-import { order2, orderFor } from '../../lib/competition/heatStore'
-import { micSupported } from '../../lib/competition/voice'
+import { zonesOnly } from '../../lib/judge/model'
+import { order2, orderFor } from '../../lib/judge/heatStore'
+import { micSupported } from '../../lib/judge/voice'
 import { loadWhisper, isWhisperLoaded } from '../../lib/whisperStt'
 import {
   scoreVal, bestScore, allScored, runNotes, riderNotes,
   jibSummary, anyRun2Touched,
-} from '../../lib/competition/runModel'
+} from '../../lib/judge/runModel'
 import styles from './HeatTab.module.css'
 
 // Onglet Heat : matrice de résultats (lignes = sections, colonnes = riders),

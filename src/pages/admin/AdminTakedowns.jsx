@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react'
+import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import styles from './AdminTakedowns.module.css'
 import Icon from '../../components/Icon'
 
 export default function AdminTakedowns() {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
 
   const load = async () => {
     const { data } = await supabase
@@ -35,7 +34,6 @@ export default function AdminTakedowns() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <h1 className={styles.title}>Demandes de retrait</h1>
 
       {loading && <span className="spinner" />}

@@ -20,7 +20,7 @@ export default function SubmitVideo() {
     creator_url: '',
     caption: '',
   })
-  const [status, setStatus] = useState('idle') // idle | sending | success | error
+  const [status, setStatus] = useState('idle') // idle | sending | success | flood | error
 
   useEffect(() => {
     supabase.from('figures').select('id, name, slug').order('name').then(({ data }) => {
@@ -37,7 +37,7 @@ export default function SubmitVideo() {
   const submit = async (e) => {
     e.preventDefault()
     setStatus('sending')
-    const { error } = await supabase.from('video_submissions').insert({
+    const { error, status: httpStatus } = await supabase.from('video_submissions').insert({
       figure_id: Number(form.figure_id),
       source_url: form.source_url,
       title: form.title || null,
@@ -45,7 +45,9 @@ export default function SubmitVideo() {
       creator_url: form.creator_url || null,
       caption: form.caption || null,
     })
-    setStatus(error ? 'error' : 'success')
+    if (!error) { setStatus('success'); return }
+    // Le trigger de plafond lève un PT429, que PostgREST rend en HTTP 429.
+    setStatus(httpStatus === 429 || error.code === 'PT429' ? 'flood' : 'error')
   }
 
   return (
@@ -151,6 +153,9 @@ export default function SubmitVideo() {
               <Link to="/terms">{tr.submitConsentLink}</Link>
             </p>
 
+            {status === 'flood' && (
+              <p className={styles.error}>{tr.submitFlood}</p>
+            )}
             {status === 'error' && (
               <p className={styles.error}>{tr.submitError}</p>
             )}

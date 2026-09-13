@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { externalUrl } from '../../lib/url'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
 import styles from './AdminCompetitionSubmissions.module.css'
 
@@ -19,7 +17,7 @@ export default function AdminCompetitionSubmissions() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -62,7 +60,6 @@ export default function AdminCompetitionSubmissions() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Propositions</h1>

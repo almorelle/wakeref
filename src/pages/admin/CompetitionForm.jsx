@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { externalUrl } from '../../lib/url'
 import { MAX_IMAGE_MB, refusSiTropLourd } from '../../lib/uploadLimits'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
 import styles from './CompetitionForm.module.css'
 
@@ -39,7 +37,7 @@ export default function CompetitionForm() {
   const { id } = useParams()
   const isEdit = !!id
   const navigate = useNavigate()
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
   // Une proposition reçue ouvre le formulaire avec le nom exact employé par
   // l'organisateur. `quand` et `lien` n'ont pas de champ où atterrir — la date
   // est libre, le lien n'est pas typé — donc ils s'affichent en bandeau plutôt
@@ -54,6 +52,10 @@ export default function CompetitionForm() {
   // (repère dans le fil public). Même mécanique, même préfixe Storage. Aucun
   // ratio n'est imposé — le rendu les contient sans recadrer ni déformer.
   const [images, setImages] = useState({ poster_path: null, logo_path: null })
+  // Les chemins tels qu'ENREGISTRÉS en base, figés au chargement. `images` suit le
+  // formulaire (« Retirer » le vide) : c'est donc contre `stored` qu'on repère
+  // l'objet qui n'est plus référencé une fois la ligne écrite.
+  const [stored, setStored] = useState({ poster_path: null, logo_path: null })
   const [files, setFiles] = useState({ poster_path: null, logo_path: null })
   // L'année vit dans son propre état : la faire transiter par `date_start` à
   // chaque frappe la repassait par padStart(4,'0'), et taper « 2 » affichait « 0002 ».
@@ -76,7 +78,9 @@ export default function CompetitionForm() {
       // l'enregistrer écraserait la ligne réelle avec des valeurs par défaut.
       if (error || !data) { toast('Compétition introuvable', 'error'); setLoadFailed(true); setLoading(false); return }
       setForm({ ...EMPTY, ...Object.fromEntries(Object.keys(EMPTY).map(k => [k, data[k] ?? EMPTY[k]])) })
-      setImages({ poster_path: data.poster_path || null, logo_path: data.logo_path || null })
+      const loaded = { poster_path: data.poster_path || null, logo_path: data.logo_path || null }
+      setImages(loaded)
+      setStored(loaded)
       setYear(yearOf(data.date_start))
       const { data: vids, error: vErr } = await supabase.from('competition_videos')
         .select('id, url, title, sort_order').eq('competition_id', id).order('sort_order')
@@ -126,7 +130,9 @@ export default function CompetitionForm() {
       const file = files[key]
       if (!file) continue
       const ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'bin'
-      const path = `competitions/${Date.now()}-${key === 'logo_path' ? 'logo' : 'affiche'}.${ext}`
+      // Nom aléatoire, pas un horodatage : le bucket est public, et l'URL d'une
+      // image de brouillon ne doit pas pouvoir se deviner.
+      const path = `competitions/${crypto.randomUUID()}-${key === 'logo_path' ? 'logo' : 'affiche'}.${ext}`
       const { error: upErr } = await supabase.storage.from('videos')
         .upload(path, file, { contentType: file.type || undefined, upsert: false })
       if (upErr) {
@@ -161,9 +167,12 @@ export default function CompetitionForm() {
     }
     // Les anciennes images ne sont supprimées qu'une fois la ligne écrite :
     // l'inverse détruisait l'objet même quand l'enregistrement échouait.
+    // Remplacée OU retirée : dans les deux cas le chemin enregistré n'est plus
+    // celui de la ligne. Comparer à `images` ratait le retrait, puisque
+    // « Retirer » vide justement `images` — l'objet restait dans le bucket.
     const orphans = ['poster_path', 'logo_path']
-      .filter(k => files[k] && images[k] && images[k] !== paths[k])
-      .map(k => images[k])
+      .filter(k => stored[k] && stored[k] !== paths[k])
+      .map(k => stored[k])
     if (orphans.length) await supabase.storage.from('videos').remove(orphans)
 
     // Les vidéos sont peu nombreuses : on remplace le jeu complet plutôt que de
@@ -189,7 +198,6 @@ export default function CompetitionForm() {
   if (loadFailed && isEdit && !form.name) {
     return (
       <div className={styles.page}>
-        <ToastContainer toasts={toasts} />
         <p className={styles.empty}>Cette compétition est introuvable ou illisible.</p>
         <button className="btn btn-primary" onClick={() => navigate('/admin/competitions')}>
           ← Retour à la liste
@@ -202,7 +210,6 @@ export default function CompetitionForm() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <div className={styles.header}>
         <button className="btn btn-ghost btn-sm" onClick={() => navigate('/admin/competitions')}>
           <Icon name="arrow-left" /> Retour

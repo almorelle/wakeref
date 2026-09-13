@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import Icon from '../../components/Icon'
 import styles from './AdminJudgeRuns.module.css'
 
@@ -12,7 +10,7 @@ const DIFFICULTY_LABELS = { easy: 'Facile', medium: 'Moyen', hard: 'Difficile' }
 export default function AdminJudgeRuns() {
   const [runs, setRuns] = useState([])
   const [loading, setLoading] = useState(true)
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
   const navigate = useNavigate()
 
   const load = async () => {
@@ -37,7 +35,6 @@ export default function AdminJudgeRuns() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <div className={styles.header}>
         <div>
           <h1 className={styles.title}>Runs juge</h1>

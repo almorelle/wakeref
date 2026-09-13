@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
-import { useToast } from '../../hooks/useToast'
-import ToastContainer from '../../components/Toast'
 import styles from './AdminCompositions.module.css'
 import Icon from '../../components/Icon'
 
@@ -12,7 +10,7 @@ const trickCount = (data) =>
 export default function AdminCompositions() {
   const [runs, setRuns] = useState([])
   const [loading, setLoading] = useState(true)
-  const { toasts, toast } = useToast()
+  const { toast } = useOutletContext()
 
   const load = async () => {
     const { data } = await supabase
@@ -35,7 +33,6 @@ export default function AdminCompositions() {
 
   return (
     <div className={styles.page}>
-      <ToastContainer toasts={toasts} />
       <h1 className={styles.title}>Runs sauvegardés</h1>
 
       {loading && <span className="spinner" />}

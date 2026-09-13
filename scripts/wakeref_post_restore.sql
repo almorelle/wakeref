@@ -315,6 +315,53 @@ begin
 end;
 $$;
 
+-- Anti-spam : même plafond sur les deux autres boîtes publiques (migration 0026).
+-- `video_submissions` déclenche un e-mail par ligne ; `takedown_requests` n'en
+-- déclenche pas, mais une file noyée masquerait une vraie demande de retrait.
+create or replace function public.video_submissions_rate_limit()
+returns trigger
+language plpgsql security definer
+set search_path = public as $$
+declare
+  last_minute integer;
+  last_day    integer;
+begin
+  select count(*) filter (where submitted_at > now() - interval '1 minute'),
+         count(*) filter (where submitted_at > now() - interval '1 day')
+    into last_minute, last_day
+  from video_submissions;
+
+  if last_minute > 10 or last_day > 60 then
+    raise exception 'Trop de vidéos soumises récemment. Réessaie plus tard.'
+      using errcode = 'PT429';
+  end if;
+
+  return null;
+end;
+$$;
+
+create or replace function public.takedown_requests_rate_limit()
+returns trigger
+language plpgsql security definer
+set search_path = public as $$
+declare
+  last_minute integer;
+  last_day    integer;
+begin
+  select count(*) filter (where created_at > now() - interval '1 minute'),
+         count(*) filter (where created_at > now() - interval '1 day')
+    into last_minute, last_day
+  from takedown_requests;
+
+  if last_minute > 10 or last_day > 60 then
+    raise exception 'Trop de demandes de retrait reçues récemment. Réessaie plus tard.'
+      using errcode = 'PT429';
+  end if;
+
+  return null;
+end;
+$$;
+
 
 -- Stats publiques de la home : total de figures + nb de figures ayant
 -- au moins une vidéo (hors retraits). Évite de transférer toutes les lignes.
@@ -808,6 +855,19 @@ create trigger competition_submissions_rate_limit
   after insert on competition_submissions
   for each statement execute function competition_submissions_rate_limit();
 
+create index if not exists video_submissions_submitted_idx on video_submissions (submitted_at desc);
+create index if not exists takedown_requests_created_idx   on takedown_requests (created_at desc);
+
+drop trigger if exists video_submissions_rate_limit on video_submissions;
+create trigger video_submissions_rate_limit
+  after insert on video_submissions
+  for each statement execute function video_submissions_rate_limit();
+
+drop trigger if exists takedown_requests_rate_limit on takedown_requests;
+create trigger takedown_requests_rate_limit
+  after insert on takedown_requests
+  for each statement execute function takedown_requests_rate_limit();
+
 drop trigger if exists parcours_touch on parcours;
 create trigger parcours_touch
   before update on parcours
@@ -946,16 +1006,17 @@ on conflict do nothing;
 -- en place et pas seulement à blanc.
 update storage.buckets set file_size_limit = 25 * 1024 * 1024 where id = 'videos';
 
-drop policy if exists "Videos publiques"      on storage.objects;
-drop policy if exists "Upload admin seulement" on storage.objects;
-drop policy if exists "Delete admin seulement" on storage.objects;
+drop policy if exists "Videos publiques"        on storage.objects;
+drop policy if exists "Lecture admin seulement" on storage.objects;
+drop policy if exists "Upload admin seulement"  on storage.objects;
+drop policy if exists "Delete admin seulement"  on storage.objects;
 
-create policy "Videos publiques"
+-- Le SELECT sur storage.objects ne sert pas à télécharger (un bucket public sert
+-- `/object/public/…` sans policy) : il sert à LISTER. Ouvert à anon, il livrait
+-- le nom de chaque fichier, brouillons compris. Réservé à l'admin (migration 0025).
+create policy "Lecture admin seulement"
   on storage.objects for select
-  using (
-    bucket_id = 'videos'
-    and (storage.foldername(name))[1] is not null
-  );
+  using (bucket_id = 'videos' and (select auth.role()) = 'authenticated');
 
 create policy "Upload admin seulement"
   on storage.objects for insert
@@ -985,7 +1046,14 @@ grant execute on function public.get_composition(text)    to anon, authenticated
 grant execute on function public.list_judge_runs(text, text)        to anon, authenticated;
 grant execute on function public.get_judge_run_solution(bigint)     to anon, authenticated;
 grant execute on function public.immutable_unaccent(text)  to anon, authenticated;
-grant insert on public.video_submissions to anon, authenticated;
+-- Grants par COLONNE pour anon (migration 0026) : sinon l'anon pose lui-même la
+-- date (la ligne échappe au plafond) ou le statut (elle naît classée).
+revoke insert on public.video_submissions from anon;
+grant insert (figure_id, source_url, title, creator_name, creator_url, caption) on public.video_submissions to anon;
+grant insert on public.video_submissions to authenticated;
+revoke insert on public.takedown_requests from anon;
+grant insert (video_id, name, email, message) on public.takedown_requests to anon;
+grant usage, select on sequence takedown_requests_id_seq to anon, authenticated;
 grant select, update on public.video_submissions to authenticated;
 grant usage, select on sequence video_submissions_id_seq to anon, authenticated;
 grant insert on public.compositions to anon, authenticated;

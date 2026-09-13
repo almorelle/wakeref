@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { useToast } from '../../hooks/useToast'
+import ToastContainer from '../../components/Toast'
 import styles from './AdminLayout.module.css'
 import Icon from '../../components/Icon'
 
@@ -10,6 +12,11 @@ export default function AdminLayout() {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [prevPath, setPrevPath] = useState(location.pathname)
+  // Un seul hôte de toasts pour tout l'admin, porté par le layout qui, lui, ne se
+  // démonte pas d'une page à l'autre : un « Compétition créée ! » suivi d'un
+  // navigate() survit ainsi au changement d'écran. Les pages le lisent par
+  // `useOutletContext()`.
+  const { toasts, toast } = useToast()
   const logo = <><span className={styles.logoMark} aria-hidden="true" />WakeRef</>
 
   useEffect(() => {
@@ -98,8 +105,13 @@ export default function AdminLayout() {
         </div>
       )}
 
+      <ToastContainer toasts={toasts} />
       <main className={styles.main}>
-        <Outlet />
+        {/* Boundary locale : le chargement d'une page paresseuse ne remplace que
+            le contenu, jamais le layout — sinon les toasts en cours partiraient avec. */}
+        <Suspense fallback={<span className="spinner" />}>
+          <Outlet context={{ toast }} />
+        </Suspense>
       </main>
     </div>
   )

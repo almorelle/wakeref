@@ -486,6 +486,14 @@ a.treeNode:hover { border-color: var(--c-accent); color: var(--c-accent-ink); }
 .takedownSuccessIcon { color: var(--c-success); }
 .modalActions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
 .takedownInfo { font-size: 13.5px; color: var(--c-muted); line-height: 1.6; }
+.takedownError {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--c-danger);
+  border-left: 3px solid var(--c-danger);
+  padding: 6px 0 6px 12px;
+}
+.takedownError a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .takedownSuccess {
   display: flex;
   flex-direction: column;

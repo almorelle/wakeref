@@ -21,6 +21,12 @@ import { supabase } from '../lib/supabase'
  * le navigateur ne déclenche pas le chargement différé d'une image d'aire nulle.
  * Elle reste donc invisible indéfiniment. Constaté sur l'emblème d'une page de
  * circuit ; le fil, lui, n'est pas concerné : sa pastille impose 64 px.
+ *
+ * D'où aussi, dès qu'une `height` est donnée, une largeur minimale égale à
+ * cette hauteur : la place est réservée avant chargement, et le différé
+ * redevient sûr pour les logos plus bas dans la page (bloc d'affiliation d'une
+ * fiche). Un logo plus large reprend sa largeur naturelle une fois chargé ; un
+ * logo plus étroit que carré est centré dans la case, sans déformation.
  */
 export default function RemoteLogo({
   path, alt = '', height, className, imgClassName, emptyClassName, fallback = null, eager = false,
@@ -43,7 +49,7 @@ export default function RemoteLogo({
       className={imgClassName}
       loading={eager ? 'eager' : 'lazy'}
       onError={() => setFailedPath(path)}
-      style={height ? { height, width: 'auto', maxWidth: '100%', objectFit: 'contain', display: 'block' } : undefined}
+      style={height ? { height, width: 'auto', minWidth: height, maxWidth: '100%', objectFit: 'contain', display: 'block' } : undefined}
     />
   )
   return fallback || className ? <span className={className}>{img}</span> : img
