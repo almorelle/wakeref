@@ -64,6 +64,15 @@ const dayFmt = new Intl.DateTimeFormat('en-CA', {
 })
 export const todayISO = (now = new Date()) => dayFmt.format(now)
 
+// Le jour civil d'une colonne date, comparable tel quel : en ISO, l'ordre
+// lexicographique EST l'ordre chronologique.
+const isoDay = (v) => String(v || '').slice(0, 10)
+
+// Le jour où une compétition CESSE — la fin quand elle existe, le début sinon.
+// C'est la borne qui décide de l'état, et donc celle sur laquelle le fil se
+// range : voir `sortCompetitions`.
+const lastDay = (comp) => isoDay(comp?.date_end) || isoDay(comp?.date_start)
+
 /**
  * État temporel d'une compétition : 'live' | 'past' | 'upcoming'.
  *
@@ -76,16 +85,47 @@ export const todayISO = (now = new Date()) => dayFmt.format(now)
  * Une compétition annulée n'est jamais 'live' non plus : elle n'a pas lieu.
  */
 export function competitionState(comp, now = new Date()) {
-  const start = String(comp?.date_start || '').slice(0, 10)
+  const start = isoDay(comp?.date_start)
   if (!start) return 'upcoming'
   if (import.meta.env?.DEV && comp?.date_precision == null) {
     console.warn('[competitionDates] `date_precision` absent — ajoute-le au select, sinon une compétition à l’année peut être dite « en cours ».', comp)
   }
-  const end = String(comp?.date_end || '').slice(0, 10) || start
+  const end = lastDay(comp)
   const today = todayISO(now)
   if (today > end) return 'past'
   if (today < start) return 'upcoming'
   return comp?.date_precision === 'day' && !comp?.cancelled ? 'live' : 'upcoming'
+}
+
+/**
+ * Range un fil de compétitions : le futur en tête, comme le ruban le rend.
+ *
+ * La clé est le DERNIER jour, pas le premier. C'est lui qui décide de l'état —
+ * `competitionState` bascule 'past' quand aujourd'hui l'a dépassé —, donc lui
+ * seul garantit que le passé forme un bloc continu au bas du fil. Trier sur
+ * `date_start` laissait une compétition de deux jours encore en cours passer
+ * AVANT une compétition d'un jour déjà finie commencée le même jour : la suite
+ * des états n'était plus monotone, et `CompetitionRibbon` — qui pose son repère
+ * « aujourd'hui » à chaque entrée dans le passé — l'affichait deux fois, en
+ * encadrant la compétition en cours de deux « aujourd'hui ».
+ * Le millésime se range du même coup, lui qui se lit déjà sur la fin (une
+ * compétition du 28 décembre au 2 janvier appartient à l'année qui commence).
+ *
+ * Départages : la date de début décroissante — à fin égale, celle qui commence
+ * le plus tard est la plus proche du futur —, puis l'id, pour que l'ordre soit
+ * total et ne bouge pas d'un chargement à l'autre.
+ *
+ * Le tri SQL est conservé côté requête : c'est lui qui décide ce que le plafond
+ * de lignes coupe (les plus anciennes). Celui-ci ne corrige que l'ordre rendu.
+ */
+const desc = (a, b) => (a < b ? 1 : a > b ? -1 : 0)
+
+export function sortCompetitions(rows) {
+  return [...(rows || [])].sort((a, b) => (
+    desc(lastDay(a), lastDay(b))
+    || desc(isoDay(a?.date_start), isoDay(b?.date_start))
+    || desc(Number(a?.id) || 0, Number(b?.id) || 0)
+  ))
 }
 
 // Slug décoratif : seul l'id en tête est lu au routage, donc renommer une

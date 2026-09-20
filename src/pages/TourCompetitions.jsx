@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useT } from '../i18n/useT'
 import { externalUrl } from '../lib/url'
-import { slugify, todayISO } from '../lib/competitionDates'
+import { slugify, sortCompetitions, todayISO } from '../lib/competitionDates'
 import { tourLogoPath, tourPath, FFSNW_URL, FFSNW_LOGO, FEDERAL_PATH } from '../lib/competitionAssets'
 import SEO from '../components/SEO'
 import Icon from '../components/Icon'
@@ -41,6 +41,8 @@ function usePublishedCompetitions(narrow) {
       const { data, error } = await narrow(
         supabase.from('competitions').select(COLS).eq('published', true)
       )
+        // Comme l'agenda : l'ordre rendu vient de `sortCompetitions`, ce tri-ci
+        // ne sert qu'à choisir le côté par lequel le plafond coupe.
         .order('date_start', { ascending: false })
         .order('id', { ascending: false })
         // Même plafond que l'agenda. Ici le tri décroissant fait que la
@@ -50,7 +52,7 @@ function usePublishedCompetitions(narrow) {
         .limit(2000)
       if (cancelled) return
       if (error) { setFailed(true); setLoading(false); return }
-      setRows(data || [])
+      setRows(sortCompetitions(data))
       setLoading(false)
     })()
     return () => { cancelled = true }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { sortCompetitions } from '../lib/competitionDates'
 import { useT } from '../i18n/useT'
 import SEO from '../components/SEO'
 import CompetitionRibbon from '../components/CompetitionRibbon'
@@ -24,6 +25,9 @@ export default function Competitions() {
         .eq('published', true)
         // Le futur vers le haut, le passé en descendant : on lit d'abord ce qui
         // arrive, comme un fil d'actualité et non comme une frise scolaire.
+        // L'ordre RENDU est celui de `sortCompetitions`, qui se range sur la fin
+        // et non sur le début ; ce tri-ci reste parce que c'est lui qui décide
+        // du côté par lequel le plafond ci-dessous coupe.
         .order('date_start', { ascending: false })
         .order('id', { ascending: false })
         // Plafond explicite : sans lui, la troncature par défaut de PostgREST
@@ -32,7 +36,7 @@ export default function Competitions() {
         .limit(2000)
       if (cancelled) return
       if (error) { setFailed(true); setLoading(false); return }
-      setRows(data || [])
+      setRows(sortCompetitions(data))
       setLoading(false)
     })()
     return () => { cancelled = true }
