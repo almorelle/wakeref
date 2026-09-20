@@ -131,6 +131,8 @@ export default function CompetitionRibbon({ rows, suggest = false, timeline = tr
 
         // Annulée : traitée comme le passé, elle n'aura pas lieu.
         const tone = c.cancelled ? 'past' : state
+        // Une compétition annulée n'est jamais « en live », même le jour dit.
+        const isLive = state === 'live' && !c.cancelled
         // Forme compacte pour tout ce qui n'est pas imminent : le passé, et
         // les autres années — avant comme après. Ne reste en pleine forme que
         // ce qui arrive dans la saison en cours, c'est-à-dire ce pour quoi on
@@ -174,22 +176,22 @@ export default function CompetitionRibbon({ rows, suggest = false, timeline = tr
                 {isYear && <span className={styles.fuzzy}>{tr.competitions.dateTbd}</span>}
               </span>
               <span className={styles.name}>{c.name}</span>
-              {!compact && (
+              {/* Une seule ligne de méta, que le scotch « en live » ferme : il
+                  partageait auparavant la colonne avec le nom, une ligne pour lui
+                  seul sous une ligne à moitié vide. La forme compacte n'y garde
+                  que ce qui tient de l'état — annulée, en cours —, jamais le lieu
+                  ni le circuit. */}
+              {(!compact || c.cancelled || isLive) && (
                 <span className={styles.meta}>
                   {c.cancelled && <span className={styles.cancelledTag}>{tr.competitions.cancelled}</span>}
-                  {c.wakepark && <span>{c.wakepark}</span>}
-                  {c.tour_name && <span>{c.tour_name}</span>}
-                  {c.affiliation === 'federal' && <span>{tr.competitions.federal}</span>}
-                </span>
-              )}
-              {compact && c.cancelled && (
-                <span className={styles.meta}>
-                  <span className={styles.cancelledTag}>{tr.competitions.cancelled}</span>
-                </span>
-              )}
-              {state === 'live' && !c.cancelled && (
-                <span className={styles.liveTape}>
-                  <span className={styles.liveDot} aria-hidden="true" />{tr.competitions.live}
+                  {!compact && c.wakepark && <span>{c.wakepark}</span>}
+                  {!compact && c.tour_name && <span>{c.tour_name}</span>}
+                  {!compact && c.affiliation === 'federal' && <span>{tr.competitions.federal}</span>}
+                  {isLive && (
+                    <span className={styles.liveTape}>
+                      <span className={styles.liveDot} aria-hidden="true" />{tr.competitions.live}
+                    </span>
+                  )}
                 </span>
               )}
             </Link>

@@ -133,7 +133,9 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0 7px;
+  /* Une gouttière verticale, pour le seul cas qui passe à la ligne : le scotch
+     « en live », plus haut que le texte, se collait au lieu sous lui. */
+  gap: 3px 7px;
   font-size: 12.5px;
   color: var(--c-muted);
 }
@@ -206,17 +208,22 @@
 
 /* ══════════════ En live ══════════════
    Étiquette collée, reprise du vocabulaire de la couverture. Encre et blanc en
-   dur : ces valeurs ne suivent pas le thème, comme sur la home. */
+   dur : ces valeurs ne suivent pas le thème, comme sur la home.
+
+   Elle vit DANS la ligne de méta, en fin : seule sur sa ligne, elle occupait
+   une bande entière pour trois mots et s'éloignait d'autant du nom. Adossée au
+   lieu et au circuit, elle ferme la ligne qu'on lit de toute façon — et sa
+   taille peut monter sans pousser la carte, puisqu'elle n'ajoute plus de rang.
+   Ni `align-self` ni `margin-top` ici : c'était le vocabulaire de la colonne
+   qu'elle a quittée, et dans une ligne `align-self` la décollerait du texte. */
 .liveTape {
-  align-self: flex-start;
-  margin-top: 6px;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   background: #fff;
   color: #2a1e30;
-  padding: 4px 10px 3px;
-  font-size: 10.5px;
+  padding: 5px 11px 4px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -224,19 +231,46 @@
   clip-path: var(--tape-clip-alt);
   filter: var(--tape-shadow);
 }
-.left .liveTape { align-self: flex-end; }
+/* Un peu d'air en plus que la gouttière commune : le scotch est incliné, et son
+   coin haut-gauche revient vers le texte qui le précède. Posé sur `span + `, il
+   ne s'applique donc pas quand le scotch ouvre la ligne — seul sur la forme
+   compacte, ou faute de lieu et de circuit —, où il creuserait un retrait. */
+.meta > span + .liveTape { margin-left: 5px; }
+/* Le point médian sépare deux mentions de même nature ; le scotch est un objet,
+   pas un item de la liste. Sans ça, « Le Pro Tour · EN LIVE ». */
+.meta > span + .liveTape::before { content: none; }
 .liveDot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #d32f4f;
   flex-shrink: 0;
   animation: livePulse 1.8s ease-in-out infinite;
 }
 @keyframes livePulse { 0%, 100% { opacity: 1 } 50% { opacity: .35 } }
-@media (prefers-reduced-motion: reduce) { .liveDot { animation: none } }
 
-.live .node { box-shadow: 0 0 0 2px var(--c-accent); }
+/* Le filet reste pointillé sur toute sa hauteur, y compris à la traversée du
+   live : essayé en trait plein magenta, retiré. La ligne de temps est une
+   constante du fil, et l'interrompre sur une entrée la faisait lire comme une
+   rupture de la frise plutôt que comme une mise en avant.
+
+   L'anneau de la pastille respire au même rythme que le point du scotch : un
+   seul battement pour tout le live, deux cadences se liraient comme un défaut.
+   Il double le signal en diamètre (64px contre 7) sans rien colorer de plus.
+   L'anneau au repos reste déclaré ICI et non dans les images-clés : sous
+   `prefers-reduced-motion`, couper l'animation ne doit pas effacer le cerne. */
+.live .node {
+  box-shadow: 0 0 0 2px var(--c-accent);
+  animation: liveRing 1.8s ease-in-out infinite;
+}
+@keyframes liveRing {
+  0%, 100% { box-shadow: 0 0 0 2px var(--c-accent) }
+  50%      { box-shadow: 0 0 0 5px var(--c-accent) }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveDot, .live .node { animation: none }
+}
 
 /* Annulée : barrée, jamais masquée — l'information vaut mieux que le silence. */
 .cancelled .name { text-decoration: line-through; }
@@ -260,7 +294,6 @@
   .node { grid-column: 1; }
   .left .card, .right .card { grid-column: 2; grid-row: 1; text-align: left; align-items: flex-start; }
   .left .when, .left .meta { justify-content: flex-start; }
-  .left .liveTape { align-self: flex-start; }
   .card::after { display: none; }
   /* Alignés à gauche, sans décalage : `translateX(-50%)` s'appliquait au bloc
      pleine largeur et non à l'étiquette, ce qui projetait le repère à 220px
