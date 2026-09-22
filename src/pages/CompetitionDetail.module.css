@@ -104,12 +104,17 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: .7rem 0;
+  padding: .7rem .8rem;   /* retrait latéral : le fond teinté d'un lien présent ne colle pas au texte */
   font-size: 14.5px;
 }
-.linkOn a { color: var(--c-text); }
+/* L'écart entre un lien présent et un lien « à venir » doit se voir sans lire
+   la mention : le présent se pose sur un fond teinté, l'absent
+   s'estompe — sauf sa mention « à venir » et le ruban du parc, qui restent des
+   informations lisibles. */
+.linkOn a { color: var(--c-text); background: var(--c-surface); }
 .linkOn a:hover { color: var(--c-accent); }
 .linkOff > span { color: var(--c-faint); }
+.linkOff > span > :not(.tbd):not(.tape) { opacity: .5; }
 .tbd {
   margin-left: auto;
   font-style: normal;
@@ -203,9 +208,10 @@
   font-size: 15px;
   height: 100%;
 }
-.onNow a { color: var(--c-text); border-color: var(--c-text); }
+.onNow a { color: var(--c-text); border-color: var(--c-text); background: var(--c-surface); }
 .onNow a:hover { color: var(--c-accent); border-color: var(--c-accent); }
-.offNow > span { color: var(--c-faint); border-style: dotted; }
+.offNow > span { color: var(--c-faint); border: 1px dashed var(--c-border2); }
+.offNow > span > :not(.tbd) { opacity: .5; }
 
 /* ══════════════ Vidéos ══════════════ */
 .videos {
@@ -293,7 +299,7 @@ a:hover > .tape { color: #8f2a64; transform: rotate(0deg); }
   .links li { position: relative; }
   .tape {
     position: absolute;
-    right: 30px;              /* la place de l'icône « lien externe » */
+    right: calc(30px + .8rem); /* la place de l'icône « lien externe », plus le retrait de la ligne */
     top: 50%;
     margin: 0;
     /* Assez étroit pour ne pas recouvrir le libellé du lien : le ruban déborde
