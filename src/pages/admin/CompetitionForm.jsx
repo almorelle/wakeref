@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { externalUrl } from '../../lib/url'
 import { MAX_IMAGE_MB, refusSiTropLourd } from '../../lib/uploadLimits'
 import Icon from '../../components/Icon'
+import VideoThumbField from './VideoThumbField'
 import styles from './CompetitionForm.module.css'
 
 // Une fiche n'est qu'un carrefour de liens : rien n'est obligatoire hormis le
@@ -304,24 +305,27 @@ export default function CompetitionForm() {
 
         <p className={styles.groupTitle}>Vidéos</p>
         {videos.map((v, i) => (
-          <div className={styles.row} key={v.id ?? v.uid}>
-            <div className="field">
-              <label htmlFor={`c-vurl-${i}`}>Lien {i + 1}</label>
-              <input id={`c-vurl-${i}`} className="input" type="url" maxLength={500} value={v.url}
-                onChange={setVideo(i, 'url')} placeholder="https://youtube.com/… ou instagram.com/…" />
-            </div>
-            <div className="field">
-              <label htmlFor={`c-vtitle-${i}`}>Titre (optionnel)</label>
-              <div className={styles.videoRow}>
-                <input id={`c-vtitle-${i}`} className="input" maxLength={160} value={v.title || ''}
-                  onChange={setVideo(i, 'title')} placeholder="ex. Finale open" />
-                <button type="button" className="btn btn-ghost btn-sm btn-icon" title="Retirer"
-                  aria-label={`Retirer la vidéo ${i + 1}`} style={{ color: 'var(--c-danger)' }}
-                  onClick={() => removeVideo(i)}>
-                  <Icon name="trash" />
-                </button>
+          <div className={styles.video} key={v.id ?? v.uid}>
+            <div className={styles.row}>
+              <div className="field">
+                <label htmlFor={`c-vurl-${i}`}>Lien {i + 1}</label>
+                <input id={`c-vurl-${i}`} className="input" type="url" maxLength={500} value={v.url}
+                  onChange={setVideo(i, 'url')} placeholder="https://youtube.com/… ou instagram.com/…" />
+              </div>
+              <div className="field">
+                <label htmlFor={`c-vtitle-${i}`}>Titre (optionnel)</label>
+                <div className={styles.videoRow}>
+                  <input id={`c-vtitle-${i}`} className="input" maxLength={160} value={v.title || ''}
+                    onChange={setVideo(i, 'title')} placeholder="ex. Finale open" />
+                  <button type="button" className="btn btn-ghost btn-sm btn-icon" title="Retirer"
+                    aria-label={`Retirer la vidéo ${i + 1}`} style={{ color: 'var(--c-danger)' }}
+                    onClick={() => removeVideo(i)}>
+                    <Icon name="trash" />
+                  </button>
+                </div>
               </div>
             </div>
+            <VideoThumbField url={v.url} />
           </div>
         ))}
         <button type="button" className="btn btn-ghost btn-sm" onClick={addVideo}>

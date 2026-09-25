@@ -97,3 +97,6 @@
   color: var(--c-muted);
 }
 .fromSubmission a { color: var(--c-accent); word-break: break-all; }
+
+/* Une vidéo = ses deux champs + sa miniature, groupés. */
+.video { display: flex; flex-direction: column; gap: 14px; }

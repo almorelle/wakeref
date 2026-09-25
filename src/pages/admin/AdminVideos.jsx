@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import styles from './AdminVideos.module.css'
 import Icon from '../../components/Icon'
 import { MAX_VIDEO_MB, refusSiTropLourd } from '../../lib/uploadLimits'
+import VideoThumbField from './VideoThumbField'
 
 const SPORT_LABELS = { wakeboard: 'Wakeboard', wakeskate: 'Wakeskate', seated: 'Wakeboard assis' }
 const GENDER_LABELS = { woman: 'Femme', man: 'Homme', other: 'Autre' }
@@ -284,6 +285,8 @@ export default function AdminVideos() {
                   : 'Ajoute un fichier ou un lien Instagram/YouTube'}
             </p>
           </div>
+          {/* Un fichier joint est lu sur place : la miniature ne sert qu'aux liens. */}
+          {!file && <VideoThumbField url={form.source_url} />}
 
           <div className={styles.row2}>
             <div className="field">
